@@ -13,35 +13,93 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { useFacebookLogin } from "@kazion/react-facebook-login";
 import { jwtDecode } from "jwt-decode";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaFacebookF } from "react-icons/fa6";
+import { useAppStore } from "@/store";
+import { useNavigate } from "react-router-dom";
 const Auth = () => {
+  const [name, setName] = useState("Le Van Quy");
   const [phone, setPhone] = useState("0922143002");
-  const [errorphone, setErrorPhone] = useState("");
+  const [password, setPassword] = useState("123");
+  const [errorName, setErrorName] = useState("");
+  const [errorPhone, setErrorPhone] = useState("");
+  const [errorPassword, setErrorPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
+  const { setUserInfo } = useAppStore();
+  const navigate = useNavigate();
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
-  const handleChange = (e) => {
-    const value = e.target.value;
-    const phonePattern = /^[0-9]{10}$/; // Example pattern for a 10-digit phone number
+  const validateName = (value) => {
+    if (!value) {
+      setErrorName("Họ tên không được để trống");
+    } else {
+      setErrorName("");
+    }
+  };
 
+  const validatePhone = (value) => {
+    const phonePattern = /^[0-9]{10}$/; // Example pattern for a 10-digit phone number
     if (!phonePattern.test(value)) {
       setErrorPhone("Số điện thoại không hợp lệ");
     } else {
       setErrorPhone("");
     }
-
-    setPhone(value);
   };
+
+  const validatePassword = (value) => {
+    const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z]).{6,}$/; // At least 6 characters, one uppercase, one lowercase
+    if (!passwordPattern.test(value)) {
+      setErrorPassword(
+        "Mật khẩu phải có ít nhất 6 ký tự, bao gồm chữ hoa và chữ thường"
+      );
+    } else {
+      setErrorPassword("");
+    }
+  };
+
+  const handleNameChange = (e) => {
+    const value = e.target.value;
+    setName(value);
+    validateName(value);
+  };
+
+  const handlePhoneChange = (e) => {
+    const value = e.target.value;
+    setPhone(value);
+    validatePhone(value);
+  };
+
+  const handlePasswordChange = (e) => {
+    const value = e.target.value;
+    setPassword(value);
+    validatePassword(value);
+  };
+
+  useEffect(() => {
+    setIsFormValid(
+      !errorName && !errorPhone && !errorPassword && name && phone && password
+    );
+  }, [errorName, errorPhone, errorPassword, name, phone, password]);
+
   const login = useFacebookLogin({
     onSuccess: (response) => {
       console.log(response);
     },
   });
-  console.log(import.meta.env.VITE_CLIENT_ID_OF_GOOGLE);
+
+  const handleSignIn = async () => {
+    setUserInfo({
+      name,
+      phone,
+      password,
+    });
+    navigate("/home-page");
+  };
+
   return (
     <div className="flex items-center justify-center h-screen">
       <Tabs defaultValue="account" className="w-[400px]">
@@ -61,7 +119,13 @@ const Auth = () => {
             <CardContent className="space-y-2">
               <div className="space-y-1">
                 <Label htmlFor="name">Họ tên</Label>
-                <Input id="name" defaultValue="09221430122" />
+                <Input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={handleNameChange}
+                />
+                {errorName && <p className="text-red-500">{errorName}</p>}
               </div>
               <div className="space-y-1">
                 <Label htmlFor="phone">Số điện thoại</Label>
@@ -69,9 +133,9 @@ const Auth = () => {
                   id="phone"
                   type="number"
                   value={phone}
-                  onChange={handleChange}
+                  onChange={handlePhoneChange}
                 />
-                {errorphone && <p className="text-red-500">{errorphone}</p>}
+                {errorPhone && <p className="text-red-500">{errorPhone}</p>}
               </div>
               <div className="space-y-1">
                 <Label htmlFor="password">Mật Khẩu</Label>
@@ -79,7 +143,8 @@ const Auth = () => {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    defaultValue="123"
+                    value={password}
+                    onChange={handlePasswordChange}
                     className="pr-10" // Add padding to the right to avoid overlap with the button
                   />
                   <button
@@ -90,6 +155,9 @@ const Auth = () => {
                     {showPassword ? "Hide" : "Show"}
                   </button>
                 </div>
+                {errorPassword && (
+                  <p className="text-red-500">{errorPassword}</p>
+                )}
               </div>
               <div className="space-y-1">
                 <p className="text-center my-2">Hoặc</p>
@@ -99,7 +167,6 @@ const Auth = () => {
                     width={100}
                     onSuccess={(credentialResponse) => {
                       const decoded = jwtDecode(credentialResponse.credential);
-                      console.log(decoded);
                     }}
                     onError={() => {
                       console.log("Login Failed");
@@ -116,7 +183,9 @@ const Auth = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button>Save changes</Button>
+              <Button onClick={handleSignIn} disabled={!isFormValid}>
+                Save changes
+              </Button>
             </CardFooter>
           </Card>
         </TabsContent>
@@ -135,9 +204,9 @@ const Auth = () => {
                   id="phone"
                   type="number"
                   value={phone}
-                  onChange={handleChange}
+                  onChange={handlePhoneChange}
                 />
-                {errorphone && <p className="text-red-500">{errorphone}</p>}
+                {errorPhone && <p className="text-red-500">{errorPhone}</p>}
               </div>
               <div className="space-y-1">
                 <Label htmlFor="password">Mật Khẩu</Label>
@@ -190,4 +259,5 @@ const Auth = () => {
     </div>
   );
 };
+
 export default Auth;
