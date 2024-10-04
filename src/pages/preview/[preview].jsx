@@ -272,7 +272,7 @@ const PropertyDetails = ({
         </div>
 
         <div className="mb-6">
-          <h2 className="text-2xl font-semibold mb-2">Description1</h2>
+          <h2 className="text-2xl font-semibold mb-2">Description</h2>
           <p className="text-gray-600">{data.describedetail}</p>
         </div>
 
