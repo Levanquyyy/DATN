@@ -37,8 +37,492 @@ const PropertyDetails = ({
   prevImage,
   nextImage,
   forsale,
+  page1020,
+  page1060,
+  page1070,
+  page1080,
 }) => {
   const navigate = useNavigate();
+  let content;
+
+  if (page1060) {
+    content = (
+      <div className="p-6">
+        <div className="flex flex-wrap justify-between items-center mb-6">
+          <div className="text-3xl font-bold text-indigo-600">
+            {data.price} VND
+          </div>
+          <div className="flex items-center text-gray-600">
+            <FaMapMarkerAlt className="mr-2" />
+            <span>
+              {data.city},{data.district},{data.ward}
+            </span>
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-2">Description</h2>
+          <p className="text-gray-600">{data.describedetail}</p>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-4">Unit Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <DetailItem
+              icon={<IoIosResize />}
+              label="Tình trạng"
+              value={data.status}
+              className="dark:bg-background text-foreground"
+            />
+            <DetailItem icon={<FaExpand />} label="Hãng" value={data.brand} />
+            <DetailItem
+              icon={<FaExpand />}
+              label="Dòng máy"
+              value={"dang hard code dong may"}
+            />
+            <DetailItem
+              icon={<FaExpand />}
+              label="Màu sắc"
+              value={data.color}
+            />
+            <DetailItem
+              icon={<FaExpand />}
+              label="Dung lượng"
+              value={data.memory}
+            />
+            <DetailItem
+              icon={<FaRulerHorizontal />}
+              label="Chính sách bảo hành"
+              value={data.warranty_policy}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Xuất xứ"
+              value={data.from}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  } else if (page1020) {
+    console.log(forsale);
+
+    content = (
+      <div className="p-6">
+        <div className="flex flex-wrap justify-between items-center mb-6">
+          <div className="text-3xl font-bold text-indigo-600">
+            {forsale ? data.price : data.priceforrent} VND
+          </div>
+          <div className="flex items-center text-gray-600">
+            <FaMapMarkerAlt className="mr-2" />
+            <span>
+              {data.city},{data.district},{data.ward}, {data.namedistrict},
+              {data.numberofstreet}
+            </span>
+            {!forsale ? (
+              <span>
+                {data.city},{data.district},{data.ward}, {data.namedistrict},
+                {data.namedistrictforrent}, {data.numberofstreetforrent}
+              </span>
+            ) : (
+              ""
+            )}
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-2">Description</h2>
+          <p className="text-gray-600">
+            {forsale ? data.describedetail : data.describedetailforrent}
+          </p>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-4">Unit Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <DetailItem
+              icon={<IoIosResize />}
+              label="Diện tích"
+              value={forsale ? data.acreage : data.acreageforrent}
+              className="dark:bg-background text-foreground"
+            />
+            {!forsale ? (
+              <DetailItem
+                icon={<FaExpand />}
+                label="Giá thuê"
+                value={data.deposit}
+              />
+            ) : (
+              ""
+            )}
+            {!forsale ? (
+              <DetailItem
+                icon={<FaExpand />}
+                label="Vị trí BDS"
+                value={data.positionBDSforrent}
+              />
+            ) : (
+              ""
+            )}
+
+            <DetailItem
+              icon={<FaExpand />}
+              label="Block/Tháp"
+              value={forsale ? data.block : data.blockforrent}
+            />
+            <DetailItem
+              icon={<FaExpand />}
+              label="Mã căn"
+              value={forsale ? data.positionBDS : data.blockforrent}
+            />
+            <DetailItem
+              icon={<FaExpand />}
+              label="Floor Number"
+              value={forsale ? data.numberoffloor : data.numberoffloorforrent}
+            />
+            <DetailItem
+              icon={<FaExpand />}
+              label="Apartment Type"
+              value={forsale ? data.typeofhouse : data.typeofhouseforrent}
+            />
+            <DetailItem
+              icon={<FaExpand />}
+              label="Diện tích đã sử dụng"
+              value={forsale ? data.acreaged : data.acreagedforrent}
+            />
+            <DetailItem
+              icon={<FaRulerHorizontal />}
+              label="Chiều rộng mặt tiền"
+              value={forsale ? data.horizontal : data.horizontalforrent}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Chiều dài mặt tiền"
+              value={forsale ? data.vertical : data.verticalforrent}
+            />
+            <DetailItem
+              icon={<FaRegObjectGroup />}
+              label="Đặc điểm phân khu"
+              value={
+                forsale ? data.propertyofhouse : data.propertyofhouseforrent
+              }
+            />
+            <DetailItem
+              icon={<FaBed />}
+              label="Bedrooms"
+              value={
+                forsale ? data.numberofbedroom : data.numberofbedroomforrent
+              }
+            />
+            <DetailItem
+              icon={<FaBath />}
+              label="Bathrooms"
+              value={forsale ? data.numberofbath : data.numberofbathforrent}
+            />
+            <DetailItem
+              icon={<FaCompass />}
+              label="Balcony Direction"
+              value={forsale ? data.viewbalcony : data.viewbalconyforrent}
+            />
+            <DetailItem
+              icon={<FaCompass />}
+              label="Main Door Direction"
+              value={forsale ? data.viewmaindoor : data.viewmaindoorforrent}
+            />
+            <DetailItem
+              icon={<FaFileContract />}
+              label="Legal Documents"
+              value={forsale ? data.liescene : data.liesceneforrent}
+            />
+            <DetailItem
+              icon={<FaCouch />}
+              label="Furnishing Status"
+              value={forsale ? data.funiture : data.funitureforrent}
+            />
+            <DetailItem icon={<FaExpand />} label="Size" value="42 m²" />
+            <DetailItem
+              icon={<FaRegBuilding />}
+              label="Phân khu/Lô"
+              value={forsale ? data.sperate : data.sperateforrent}
+            />
+            {!forsale ? (
+              <DetailItem
+                icon={<FaExpand />}
+                label="Giá thuê"
+                value={data.priceforrent}
+              />
+            ) : null}
+          </div>
+        </div>
+      </div>
+    );
+  } else if (page1070) {
+    content = (
+      <div className="p-6">
+        <div className="flex flex-wrap justify-between items-center mb-6">
+          <div className="text-3xl font-bold text-indigo-600">
+            {data.price} VND
+          </div>
+          <div className="flex items-center text-gray-600">
+            <FaMapMarkerAlt className="mr-2" />
+            <span>
+              {data.city},{data.district},{data.ward}
+            </span>
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-2">Description</h2>
+          <p className="text-gray-600">{data.describedetail}</p>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-4">Unit Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <DetailItem
+              icon={<IoIosResize />}
+              label="Tình trạng"
+              value={data.status}
+              className="dark:bg-background text-foreground"
+            />
+            <DetailItem icon={<FaExpand />} label="Hãng" value={data.brand} />
+            <DetailItem
+              icon={<FaExpand />}
+              label="Dòng máy"
+              value={"dang hard code dong may"}
+            />
+            <DetailItem
+              icon={<FaExpand />}
+              label="Màu sắc"
+              value={data.color}
+            />
+            <DetailItem
+              icon={<FaExpand />}
+              label="Dung lượng"
+              value={data.memory}
+            />
+            <DetailItem
+              icon={<FaRulerHorizontal />}
+              label="Chính sách bảo hành"
+              value={data.warranty_policy}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Xuất xứ"
+              value={data.from}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Kích thước màn hình"
+              value={data.sizescreen}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Hỗ trợ 3G | 4G"
+              value={data.use3G}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Version"
+              value={data.version}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Saleman"
+              value={data.typeperson}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  } else if (page1080) {
+    content = (
+      <div className="p-6">
+        <div className="flex flex-wrap justify-between items-center mb-6">
+          <div className="text-3xl font-bold text-indigo-600">
+            {data.price} VND
+          </div>
+          <div className="flex items-center text-gray-600">
+            <FaMapMarkerAlt className="mr-2" />
+            <span>
+              {data.city},{data.district},{data.ward}
+            </span>
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-2">Description</h2>
+          <p className="text-gray-600">{data.describedetail}</p>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-4">Unit Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <DetailItem
+              icon={<IoIosResize />}
+              label="Brand"
+              value={data.brand}
+              className="dark:bg-background text-foreground"
+            />
+            <DetailItem icon={<FaExpand />} label="Hãng" value={data.brand} />
+            <DetailItem
+              icon={<FaExpand />}
+              label="graphic_card"
+              value={data.graphic_card}
+            />
+            <DetailItem
+              icon={<FaExpand />}
+              label="Ổ cứng"
+              value={data.hard_drive}
+            />
+            <DetailItem
+              icon={<FaExpand />}
+              label="Vi xử lý"
+              value={data.microprocessor}
+            />
+            <DetailItem
+              icon={<FaRulerHorizontal />}
+              label="Ram"
+              value={data.ram}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Kích thước màn hình"
+              value={data.sizescreen}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Tình trạng"
+              value={data.status}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Loại ổ cứng"
+              value={data.type_of_hard_drive}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Chính sách bảo hành"
+              value={data.warranty_policy}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  } else {
+    content = (
+      <div className="p-6">
+        <div className="flex flex-wrap justify-between items-center mb-6">
+          <div className="text-3xl font-bold text-indigo-600">
+            {forsale ? data.price : data.priceforrent} VND
+          </div>
+          <div className="flex items-center text-gray-600">
+            <FaMapMarkerAlt className="mr-2" />
+            <span>
+              {data.city},{data.district},{data.ward}
+            </span>
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-2">Description</h2>
+          <p className="text-gray-600">
+            {forsale ? data.describedetail : data.describedetailforrent}
+          </p>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-4">Unit Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <DetailItem
+              icon={<IoIosResize />}
+              label="Diện tích"
+              value={forsale ? data.acreage : data.acreageforrent}
+              className="dark:bg-background text-foreground"
+            />
+            <DetailItem
+              icon={<FaExpand />}
+              label="Block/Tháp"
+              value={forsale ? data.block : data.blockforrent}
+            />
+            <DetailItem
+              icon={<FaExpand />}
+              label="Floor Number"
+              value={forsale ? data.numberoffloor : data.numberoffloorforrent}
+            />
+            <DetailItem
+              icon={<FaExpand />}
+              label="Apartment Type"
+              value={forsale ? data.typeofhouse : data.typeofhouseforrent}
+            />
+            <DetailItem
+              icon={<FaExpand />}
+              label="Diện tích đã sử dụng"
+              value={forsale ? data.acreaged : data.acreagedforrent}
+            />
+            <DetailItem
+              icon={<FaRulerHorizontal />}
+              label="Chiều rộng mặt tiền"
+              value={forsale ? data.horizontal : data.horizontalforrent}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Chiều dài mặt tiền"
+              value={forsale ? data.vertical : data.verticalforrent}
+            />
+            <DetailItem
+              icon={<FaRegObjectGroup />}
+              label="Đặc điểm phân khu"
+              value={
+                forsale ? data.propertyofhouse : data.propertyofhouseforrent
+              }
+            />
+            <DetailItem
+              icon={<FaBed />}
+              label="Bedrooms"
+              value={
+                forsale ? data.numberofbedroom : data.numberofbedroomforrent
+              }
+            />
+            <DetailItem
+              icon={<FaBath />}
+              label="Bathrooms"
+              value={forsale ? data.numberofbath : data.numberofbathforrent}
+            />
+            <DetailItem
+              icon={<FaCompass />}
+              label="Balcony Direction"
+              value={forsale ? data.viewbalcony : data.viewbalconyforrent}
+            />
+            <DetailItem
+              icon={<FaCompass />}
+              label="Main Door Direction"
+              value={forsale ? data.viewmaindoor : data.viewmaindoorforrent}
+            />
+            <DetailItem
+              icon={<FaFileContract />}
+              label="Legal Documents"
+              value={forsale ? data.liescene : data.liesceneforrent}
+            />
+            <DetailItem
+              icon={<FaCouch />}
+              label="Furnishing Status"
+              value={forsale ? data.funiture : data.funitureforrent}
+            />
+            <DetailItem icon={<FaExpand />} label="Size" value="42 m²" />
+
+            {!forsale ? (
+              <DetailItem
+                icon={<FaExpand />}
+                label="Giá thuê"
+                value={data.priceforrent}
+              />
+            ) : null}
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="container mx-auto p-4 bg-gray-100 min-h-screen dark:bg-background text-foreground">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden dark:bg-background text-foreground">
@@ -72,125 +556,12 @@ const PropertyDetails = ({
           </div>
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
             <h1 className="text-3xl font-bold text-white">
-              {data.nameofbuilding}
+              {page1060 || page1070 ? data.title : data.nameofbuilding}
             </h1>
           </div>
         </div>
 
-        <div className="p-6">
-          <div className="flex flex-wrap justify-between items-center mb-6">
-            <div className="text-3xl font-bold text-indigo-600">
-              {forsale ? data.price : data.priceforrent} VND
-            </div>
-            <div className="flex items-center text-gray-600">
-              <FaMapMarkerAlt className="mr-2" />
-              <span>
-                {data.city},{data.district},{data.ward}
-              </span>
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <h2 className="text-2xl font-semibold mb-2">Description</h2>
-            <p className="text-gray-600">
-              {forsale ? data.describedetail : data.describedetailforrent}
-            </p>
-          </div>
-
-          <div className="mb-6">
-            <h2 className="text-2xl font-semibold mb-4">Unit Details</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <DetailItem
-                icon={<IoIosResize />}
-                label="Diện tích"
-                value={forsale ? data.acreage : data.acreageforrent}
-                className="dark:bg-background text-foreground"
-              />
-              <DetailItem
-                icon={<FaExpand />}
-                label="Block/Tháp"
-                value={forsale ? data.block : data.blockforrent}
-              />
-              <DetailItem
-                icon={<FaExpand />}
-                label="Floor Number"
-                value={forsale ? data.floor : data.numberoffloorforrent}
-              />
-              <DetailItem
-                icon={<FaExpand />}
-                label="Apartment Type"
-                value={forsale ? data.typeofhouse : data.typeofhouseforrent}
-              />
-              <DetailItem
-                icon={<FaExpand />}
-                label="Diện tích đã sử dụng"
-                value={forsale ? data.acreaged : data.acreagedforrent}
-              />
-              <DetailItem
-                icon={<FaRulerHorizontal />}
-                label="Chiều rộng mặt tiền"
-                value={forsale ? data.horizontal : data.horizontalforrent}
-              />
-              <DetailItem
-                icon={<FaRulerVertical />}
-                label="Chiều dài mặt tiền"
-                value={forsale ? data.vertical : data.verticalforrent}
-              />
-              <DetailItem
-                icon={<FaRegObjectGroup />}
-                label="Đặc điểm phân khu"
-                value={
-                  forsale ? data.propertyofhouse : data.propertyofhouseforrent
-                }
-              />
-              <DetailItem
-                icon={<FaBed />}
-                label="Bedrooms"
-                value={
-                  forsale ? data.numberofbedroom : data.numberofbedroomforrent
-                }
-              />
-              <DetailItem
-                icon={<FaBath />}
-                label="Bathrooms"
-                value={forsale ? data.numberofbath : data.numberofbathforrent}
-              />
-              <DetailItem
-                icon={<FaCompass />}
-                label="Balcony Direction"
-                value={forsale ? data.viewbalcony : data.viewbalconyforrent}
-              />
-              <DetailItem
-                icon={<FaCompass />}
-                label="Main Door Direction"
-                value={forsale ? data.viewmaindoor : data.viewmaindoorforrent}
-              />
-              <DetailItem
-                icon={<FaFileContract />}
-                label="Legal Documents"
-                value={forsale ? data.liescene : data.liesceneforrent}
-              />
-              <DetailItem
-                icon={<FaCouch />}
-                label="Furnishing Status"
-                value={forsale ? data.funiture : data.funitureforrent}
-              />
-              <DetailItem icon={<FaExpand />} label="Size" value="42 m²" />
-              <DetailItem
-                icon={<FaRegBuilding />}
-                label="Phân khu/Lô"
-                value={forsale ? data.sperate : data.sperateforrent}
-              />
-              {!forsale ? (
-                <DetailItem
-                  icon={<FaExpand />}
-                  label="Giá thuê"
-                  value={data.priceforrent}
-                />
-              ) : null}
-            </div>
-          </div>
-        </div>
+        {content}
 
         <div className="flex justify-end items-center gap-3 p-6">
           <Button variant="outline">Sửa tin</Button>
@@ -206,6 +577,10 @@ const ReviewPage = () => {
   const imageNames = useAppStore((state) => state.imageNames);
   const video = useAppStore((state) => state.video);
   const forsale = useAppStore((state) => state.forsale);
+  const page1060 = useAppStore((state) => state.page1060);
+  const page1020 = useAppStore((state) => state.page1020);
+  const page1070 = useAppStore((state) => state.page1070);
+  const page1080 = useAppStore((state) => state.page1080);
   const [currentData, setCurrentData] = useState(data);
   console.log(data);
   const images = [
@@ -251,6 +626,10 @@ const ReviewPage = () => {
                     prevImage={prevImage}
                     nextImage={nextImage}
                     forsale={forsale}
+                    page1020={page1020}
+                    page1060={page1060}
+                    page1070={page1070}
+                    page1080={page1080}
                   />
                 </div>
               </div>
