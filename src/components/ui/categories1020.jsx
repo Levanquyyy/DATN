@@ -181,6 +181,7 @@ const options = [
 ];
 const CategoryPage1020 = () => {
   const setFormData = useAppStore((state) => state.setFormData);
+  const setpage1020 = useAppStore((state) => state.setpage1020);
   const form = useForm({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -362,9 +363,12 @@ const CategoryPage1020 = () => {
 
     if (!hasError) {
       if (isForRent) {
+        setpage1020(true);
         setFormData(data, imageNames, video, false);
         navigate("/preview");
       } else {
+        setpage1020(true);
+
         setFormData(data, imageNames, video, true);
         navigate("/preview");
       }

@@ -454,15 +454,33 @@ const Header = () => {
                     <LaptopMinimal className="mr-2" /> Đồ điện tử
                   </MenubarSubTrigger>
                   <MenubarSubContent>
-                    <MenubarItem>Điện thoại</MenubarItem>
-                    <MenubarItem>Máy tính bảng</MenubarItem>
-                    <MenubarItem>Laptop</MenubarItem>
-                    <MenubarItem>Máy tính để bàn</MenubarItem>
-                    <MenubarItem>Máy ảnh, Máy quay</MenubarItem>
-                    <MenubarItem>Tivi, Âm thanh</MenubarItem>
-                    <MenubarItem>Thiết bị đeo thông minh</MenubarItem>
-                    <MenubarItem>Phụ kiện (Màn hình, Chuột,...)</MenubarItem>
-                    <MenubarItem>Linh kiện (RAM, Card,...)</MenubarItem>
+                    <Link to="/dang-tin?category=1060" className="w-full">
+                      <MenubarItem>Điện thoại</MenubarItem>
+                    </Link>
+                    <Link to="/dang-tin?category=1070" className="w-full">
+                      <MenubarItem>Máy tính bảng</MenubarItem>
+                    </Link>
+                    <Link to="/dang-tin?category=1080" className="w-full">
+                      <MenubarItem>Laptop</MenubarItem>
+                    </Link>
+                    <Link to="/dang-tin?category=1090" className="w-full">
+                      <MenubarItem>Máy tính để bàn</MenubarItem>
+                    </Link>
+                    <Link to="/dang-tin?category=1100" className="w-full">
+                      <MenubarItem>Máy ảnh, Máy quay</MenubarItem>
+                    </Link>
+                    <Link to="/dang-tin?category=1110" className="w-full">
+                      <MenubarItem>Tivi, Âm thanh</MenubarItem>
+                    </Link>
+                    <Link to="/dang-tin?category=1120" className="w-full">
+                      <MenubarItem>Thiết bị đeo thông minh</MenubarItem>
+                    </Link>
+                    <Link to="/dang-tin?category=1130" className="w-full">
+                      <MenubarItem>Phụ kiện (Màn hình, Chuột,...)</MenubarItem>
+                    </Link>
+                    <Link to="/dang-tin?category=1140" className="w-full">
+                      <MenubarItem>Linh kiện (RAM, Card,...)</MenubarItem>
+                    </Link>
                   </MenubarSubContent>
                 </MenubarSub>
                 <MenubarSub>
