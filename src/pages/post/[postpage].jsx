@@ -31,6 +31,7 @@ const ServiceOption = ({
     { days: 7, price: 45000, oldPrice: 56000, discount: 20 },
     { days: 14, price: 84000, oldPrice: 112000, discount: 25 },
     { days: 30, price: 144000, oldPrice: 240000, discount: 40 },
+    { days: 30, price: 144000, oldPrice: 250000, discount: 41 },
   ];
 
   const [selectedOption, setSelectedOption] = useState(null);
