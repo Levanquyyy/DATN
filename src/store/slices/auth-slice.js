@@ -14,6 +14,12 @@ export const createAuthSlice = (set) => ({
   setpage1070: (page1070) => set({ page1070 }),
   page1080: null,
   setpage1080: (page1080) => set({ page1080 }),
+  page1090: null,
+  setpage1090: (page1090) => set({ page1090 }),
+  page1100: null,
+  setpage1100: (page1100) => set({ page1100 }),
+  page1110: null,
+  setpage1110: (page1110) => set({ page1110 }),
   setUserInfo: (userInfo) => set({ userInfo }),
   setFormData: (data, imageNames, video, forsale) =>
     set({ data, imageNames, video, forsale }),

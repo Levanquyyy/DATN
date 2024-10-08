@@ -41,6 +41,9 @@ const PropertyDetails = ({
   page1060,
   page1070,
   page1080,
+  page1090,
+  page1100,
+  page1110,
 }) => {
   const navigate = useNavigate();
   let content;
@@ -409,6 +412,169 @@ const PropertyDetails = ({
         </div>
       </div>
     );
+  } else if (page1090) {
+    content = (
+      <div className="p-6">
+        <div className="flex flex-wrap justify-between items-center mb-6">
+          <div className="text-3xl font-bold text-indigo-600">
+            {data.price} VND
+          </div>
+          <div className="flex items-center text-gray-600">
+            <FaMapMarkerAlt className="mr-2" />
+            <span>
+              {data.city},{data.district},{data.ward}
+            </span>
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-2">Description</h2>
+          <p className="text-gray-600">{data.describedetail}</p>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-4">Unit Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <DetailItem
+              icon={<FaExpand />}
+              label="graphic_card"
+              value={data.graphic_card}
+            />
+            <DetailItem
+              icon={<FaExpand />}
+              label="Ổ cứng"
+              value={data.hard_drive}
+            />
+            <DetailItem
+              icon={<FaExpand />}
+              label="Vi xử lý"
+              value={data.microprocessor}
+            />
+            <DetailItem
+              icon={<FaRulerHorizontal />}
+              label="Ram"
+              value={data.ram}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Kích thước màn hình"
+              value={data.sizescreen}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Tình trạng"
+              value={data.status}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Loại ổ cứng"
+              value={data.type_of_hard_drive}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Chính sách bảo hành"
+              value={data.warranty_policy}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  } else if (page1100) {
+    content = (
+      <div className="p-6">
+        <div className="flex flex-wrap justify-between items-center mb-6">
+          <div className="text-3xl font-bold text-indigo-600">
+            {data.price} VND
+          </div>
+          <div className="flex items-center text-gray-600">
+            <FaMapMarkerAlt className="mr-2" />
+            <span>
+              {data.city},{data.district},{data.ward}
+            </span>
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-2">Description</h2>
+          <p className="text-gray-600">{data.describedetail}</p>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-4">Unit Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Tình trạng"
+              value={data.status}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Thiết bị"
+              value={data.machines}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Hãng thiết bị"
+              value={data.brandofmachine}
+            />
+
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Chính sách bảo hành"
+              value={data.warranty_policy}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  } else if (page1110) {
+    content = (
+      <div className="p-6">
+        <div className="flex flex-wrap justify-between items-center mb-6">
+          <div className="text-3xl font-bold text-indigo-600">
+            {data.price} VND
+          </div>
+          <div className="flex items-center text-gray-600">
+            <FaMapMarkerAlt className="mr-2" />
+            <span>
+              {data.city},{data.district},{data.ward}
+            </span>
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-2">Description</h2>
+          <p className="text-gray-600">{data.describedetail}</p>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-4">Unit Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Tình trạng"
+              value={data.status}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Thiết bị"
+              value={data.machines}
+            />
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Hãng thiết bị"
+              value={data.brandofmachine}
+            />
+
+            <DetailItem
+              icon={<FaRulerVertical />}
+              label="Chính sách bảo hành"
+              value={data.warranty_policy}
+            />
+          </div>
+        </div>
+      </div>
+    );
   } else {
     content = (
       <div className="p-6">
@@ -581,6 +747,9 @@ const ReviewPage = () => {
   const page1020 = useAppStore((state) => state.page1020);
   const page1070 = useAppStore((state) => state.page1070);
   const page1080 = useAppStore((state) => state.page1080);
+  const page1090 = useAppStore((state) => state.page1090);
+  const page1100 = useAppStore((state) => state.page1100);
+  const page1110 = useAppStore((state) => state.page1110);
   const [currentData, setCurrentData] = useState(data);
   console.log(data);
   const images = [
@@ -630,6 +799,9 @@ const ReviewPage = () => {
                     page1060={page1060}
                     page1070={page1070}
                     page1080={page1080}
+                    page1090={page1090}
+                    page1100={page1100}
+                    page1110={page1110}
                   />
                 </div>
               </div>
