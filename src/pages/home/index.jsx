@@ -149,55 +149,59 @@ const HomePage = () => {
 
     return (
       <div className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105">
-        <img
-          src={recipe.image}
-          alt={recipe.name}
-          className="w-full h-48 object-cover"
-        />
-        <div className="p-4">
-          <h2 className="text-xl font-semibold mb-2">{recipe.name}</h2>
-          <p className="text-gray-600 mb-2">{recipe.price}</p>
-          <div className="flex items-center mb-2">
-            <Clock className="text-gray-500 mr-1" />
-            <span className="text-sm text-gray-500">{recipe.time}</span>
-          </div>
-          <div className="flex items-center mb-2"></div>
-          <div className="mb-2">
-            <h3 className="text-sm font-semibold mb-1">{recipe.location}</h3>
-          </div>
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex">
-              {[...Array(5)].map((_, index) => (
-                <Star
-                  key={index}
-                  className={`cursor-pointer ${
-                    index < recipe.rating ? "text-yellow-400" : "text-gray-300"
-                  }`}
-                />
-              ))}
+        <Link to="/detaipage?category=1010">
+          <img
+            src={recipe.image}
+            alt={recipe.name}
+            className="w-full h-48 object-cover"
+          />
+          <div className="p-4">
+            <h2 className="text-xl font-semibold mb-2">{recipe.name}</h2>
+            <p className="text-gray-600 mb-2">{recipe.price}</p>
+            <div className="flex items-center mb-2">
+              <Clock className="text-gray-500 mr-1" />
+              <span className="text-sm text-gray-500">{recipe.time}</span>
             </div>
-            <button
-              onClick={toggleFavorite}
-              className={`${
-                isFavorite ? "text-red-500" : "text-gray-400"
-              } transition-colors duration-300`}
-              aria-label={
-                isFavorite ? "Remove from favorites" : "Add to favorites"
-              }
-            >
+            <div className="flex items-center mb-2"></div>
+            <div className="mb-2">
+              <h3 className="text-sm font-semibold mb-1">{recipe.location}</h3>
+            </div>
+            <div className="flex items-center justify-between mb-2">
               <div className="flex">
-                {" "}
-                <Heart className="text-xl" />
-                <button
-                  className="text-gray-500 hover:text-gray-700 transition-colors duration-300"
-                  aria-label="Share recipe"
-                >
-                  <Share2 className="text-xl" />
-                </button>
+                {[...Array(5)].map((_, index) => (
+                  <Star
+                    key={index}
+                    className={`cursor-pointer ${
+                      index < recipe.rating
+                        ? "text-yellow-400"
+                        : "text-gray-300"
+                    }`}
+                  />
+                ))}
               </div>
-            </button>
+              <button
+                onClick={toggleFavorite}
+                className={`${
+                  isFavorite ? "text-red-500" : "text-gray-400"
+                } transition-colors duration-300`}
+                aria-label={
+                  isFavorite ? "Remove from favorites" : "Add to favorites"
+                }
+              >
+                <div className="flex">
+                  {" "}
+                  <Heart className="text-xl" />
+                  <button
+                    className="text-gray-500 hover:text-gray-700 transition-colors duration-300"
+                    aria-label="Share recipe"
+                  >
+                    <Share2 className="text-xl" />
+                  </button>
+                </div>
+              </button>
+            </div>
           </div>
-        </div>
+        </Link>
       </div>
     );
   };

@@ -6,6 +6,8 @@ import CategoryPage from "./pages/categories/[categoryId]";
 import ReviewPage from "./pages/preview/[preview].jsx";
 import PostPage from "./pages/post/[postpage].jsx";
 import PaidPage from "./pages/paid/[paid].jsx";
+import DetailPage from "./pages/detailproduct/[detailpage].jsx";
+import NhatotPage from "./pages/nhatot/index.jsx";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 function App() {
@@ -20,6 +22,9 @@ function App() {
             <Route path="/preview" element={<ReviewPage />} />
             <Route path="/post" element={<PostPage />} />
             <Route path="/paid" element={<PaidPage />} />
+            <Route path="/detaipage" element={<DetailPage />} />
+            <Route path="/nhatot" element={<NhatotPage />} />
+
             <Route path="*" element={<Navigate to="/auth" />} />
           </Routes>
         </Layout>

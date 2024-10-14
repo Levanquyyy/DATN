@@ -142,7 +142,9 @@ const Sidebar = () => {
                       <Building className="mr-2" /> Bất động sản
                     </MenubarSubTrigger>
                     <MenubarSubContent>
-                      <MenubarItem>Mua bán</MenubarItem>
+                      <Link to="/nhatot" className="w-full">
+                        <MenubarItem>Mua bán</MenubarItem>
+                      </Link>
                       <MenubarItem>Cho thuê</MenubarItem>
                       <MenubarItem>Dự án</MenubarItem>
                     </MenubarSubContent>
