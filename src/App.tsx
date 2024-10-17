@@ -8,7 +8,10 @@ import PostPage from "./pages/post/[postpage].jsx";
 import PaidPage from "./pages/paid/[paid].jsx";
 import DetailPage from "./pages/detailproduct/[detailpage].jsx";
 import NhatotPage from "./pages/nhatot/index.jsx";
+
+
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
 
 function App() {
   return (

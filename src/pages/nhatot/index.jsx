@@ -91,6 +91,36 @@ const FormSchemaForPrices = z.object({
 });
 
 const NhatotPage = () => {
+
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedUserType, setSelectedUserType] = useState('');
+  
+  //1
+  // Trạng thái cho việc lọc
+  const [filterType, setFilterType] = useState(''); // Trạng thái cho loại người dùng
+  const [showFeaturedList, setShowFeaturedList] = useState(false); // Trạng thái hiển thị danh sách nổi bật
+  const [properties, setProperties] = useState([]); // Định nghĩa một trạng thái cho properties
+
+  //2
+  // Lọc bất động sản theo loại hình
+    const featuredProperties = properties.filter(property => 
+    filterType === '' || property.type === filterType
+  );
+
+
+  //3
+  const handleFilterChange = (event) => {
+    setFilterType(event.target.value); // Cập nhật loại người dùng
+  };
+
+  //4
+  // Thay đổi state để lưu cả hai lựa chọn
+  const [selectedFilters, setSelectedFilters] = useState({
+    category: "",
+    userType: "",
+  });
+  
+
   const [cities, setCities] = useState([]);
   const [wards, setWards] = useState([]);
   const [districts, setDistricts] = useState([]);
@@ -110,6 +140,41 @@ const NhatotPage = () => {
   const [valueforprice, setValueforprice] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [forSale, setForSale] = useState(false);
+
+
+  //5
+  const handleCategoryClick = (category) => {
+    // Cập nhật cả hai lựa chọn
+    setSelectedFilters((prev) => ({
+      ...prev,
+      category,
+    }));
+
+    setSelectedCategory(category);
+    // console.log(`category: '${category}', userType: '${selectedUserType}'`);
+    console.log("object: ", { ...selectedFilters, category });
+  };
+
+  //6
+  const handleUserTypeClick = (userType) => {
+    setSelectedFilters((prev) => ({
+      ...prev,
+      userType, // Cập nhật trường userType trong selectedFilters
+    }));
+
+    //7
+    setSelectedUserType(userType);
+    console.log("object: ", { ...selectedFilters, userType });
+
+
+    setSelectedUserType(userType);
+    if (userType === "Tất cả") {
+        setShowFeaturedList(true); // Hiển thị danh sách nổi bật
+    } else {
+        setShowFeaturedList(false); // Ẩn nếu chọn loại khác
+    }
+};
+
   const [errors, setErrors] = useState({
     city: null,
     district: null,
@@ -131,6 +196,7 @@ const NhatotPage = () => {
 
     fetchData();
   }, []);
+
   useEffect(() => {
     if (selectedCity) {
       const city = cities.find((city) => city.Name === selectedCity);
@@ -426,6 +492,7 @@ const NhatotPage = () => {
   const parseCurrency = (value) => {
     return value.replace(/[^\d]/g, "");
   };
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <Sidebar />
@@ -443,6 +510,7 @@ const NhatotPage = () => {
               <h1 className="text-3xl font-bold mb-6 ">
                 Tìm kiếm Bất động sản
               </h1>
+
 
               {/* Main filters */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
@@ -1090,129 +1158,117 @@ const NhatotPage = () => {
 
               {/* Prominent property types */}
               <div className="mb-6">
-                <h2 className="text-xl font-semibold mb-2">
-                  Loại hình nổi bật
-                </h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {propertyCategories.map((category, index) => (
-                    <div
-                      key={index}
-                      className=" p-4 rounded-md shadow-md hover:shadow-lg transition-shadow"
-                    >
-                      {index === 0 && <FaHome className="text-blue-500 mb-2" />}
-                      {index === 1 && (
-                        <FaBuilding className="text-green-500 mb-2" />
-                      )}
-                      {index === 2 && (
-                        <FaLandmark className="text-yellow-500 mb-2" />
-                      )}
-                      {index === 3 && (
-                        <FaStore className="text-purple-500 mb-2" />
-                      )}
-                      <h3 className="font-semibold">{category}</h3>
-                    </div>
-                  ))}
+            <h2 className="text-xl font-semibold mb-2">Loại hình nổi bật</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {propertyCategories.map((category, index) => (
+                <div
+                  key={index}
+                  className="p-4 rounded-md shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() => handleCategoryClick(category)}
+                >
+                  {index === 0 && <FaHome className="text-blue-500 mb-2" />}
+                  {index === 1 && <FaBuilding className="text-green-500 mb-2" />}
+                  {index === 2 && <FaLandmark className="text-yellow-500 mb-2" />}
+                  {index === 3 && <FaStore className="text-purple-500 mb-2" />}
+                  <h3 className="font-semibold">{category}</h3>
                 </div>
-              </div>
+              ))}
+            </div>
+          </div>
 
-              {/* Amenities */}
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold mb-2">Tiện ích</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {amenities.map((amenity, index) => (
-                    <button
-                      key={index}
-                      className="p-2 border rounded-md hover:dark:bg-white hover:dark:text-black  focus:outline-none focus:ring-2 focus:ring-blue-300 hover:bg-black hover:text-white"
-                    >
-                      {amenity}
-                    </button>
-                  ))}
-                </div>
-              </div>
+               {/* Amenities */}
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">Tiện ích</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {amenities.map((amenity, index) => (
+                <button
+                  key={index}
+                  className="p-2 border rounded-md hover:dark:bg-white hover:dark:text-black focus:outline-none focus:ring-2 focus:ring-blue-300 hover:bg-black hover:text-white"
+                >
+                  {amenity}
+                </button>
+              ))}
+            </div>
+          </div>
 
               {/* User types */}
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold mb-2">Loại người dùng</h2>
-                <div className="flex justify-between">
-                  <div className="flex space-x-4  ">
-                    {userTypes.map((type, index) => (
-                      <button
-                        key={index}
-                        className="flex items-center p-2 border rounded-md hover:dark:bg-white hover:dark:text-black  focus:outline-none focus:ring-2 focus:ring-blue-300 hover:bg-black hover:text-white"
-                      >
-                        {index === 0 ? (
-                          <FaUser className="mr-2" />
-                        ) : (
-                          <FaUserTie className="mr-2" />
-                        )}
-                        {type}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="">
-                    <Form {...formFortransactionTypes}>
-                      <form>
-                        <FormField
-                          control={formFortransactionTypes.control}
-                          name="transactionTypes"
-                          render={({ field }) => (
-                            <Select
-                              onValueChange={(value) => {
-                                field.onChange(value);
-                                onChnagetransactionTypes(value);
-                              }}
-                            >
-                              <SelectTrigger className="">
-                                <SelectValue placeholder="Sắp xếp theo giá" />
-                              </SelectTrigger>
-
-                              <SelectContent>
-                                {filterbypricetag.map((type, index) => (
-                                  <SelectItem key={index} value={type.value}>
-                                    {type.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                      </form>
-                    </Form>
-                    <FaChevronDown className="absolute right-3 top-3 " />
-                  </div>
-                </div>
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">Loại người dùng</h2>
+            <div className="flex justify-between">
+              <div className="flex space-x-4">
+                {userTypes.map((type, index) => (
+                  <button
+                    key={index}
+                    className="flex items-center p-2 border rounded-md hover:dark:bg-white hover:dark:text-black focus:outline-none focus:ring-2 focus:ring-blue-300 hover:bg-black hover:text-white"
+                    onClick={() => handleUserTypeClick(type)}
+                  >
+                    {index === 0 ? <FaUser className="mr-2" /> : <FaUserTie className="mr-2" />}
+                    {type}
+                  </button>
+                ))}
               </div>
+              <div>
+                <Form {...formFortransactionTypes}>
+                  <form>
+                    <FormField
+                      control={formFortransactionTypes.control}
+                      name="transactionTypes"
+                      render={({ field }) => (
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            onChnagetransactionTypes(value);
+                          }}
+                        >
+                          <SelectTrigger className="">
+                            <SelectValue placeholder="Sắp xếp theo giá" />
+                          </SelectTrigger>
+                          
+                          <SelectContent>
+                            {filterbypricetag.map((type, index) => (
+                              <SelectItem key={index} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </form>
+                </Form>
+                <FaChevronDown className="absolute right-3 top-3 " />
+              </div>
+            </div>
+          </div>
 
               {/* Featured listings */}
+          {showFeaturedList && ( // Change from showFeaturedListings to showFeaturedList
               <div>
-                <h2 className="text-xl font-semibold mb-2">
-                  Danh sách nổi bật
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
-                  {[1, 2, 3].map((item) => (
-                    <Link to="/preview">
-                      <div
-                        key={item}
-                        className="dark:border-white p-4 rounded-md shadow-md hover:shadow-lg transition-shadow "
-                      >
-                        <img
-                          src={`https://images.unsplash.com/photo-1580587771525-78b9dba3b914?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1074&q=80`}
-                          alt="Property"
-                          className="w-full h-48 object-cover rounded-md mb-4"
-                        />
-                        <h3 className="font-semibold text-lg mb-2">
-                          Căn hộ cao cấp tại {prominentCities[item - 1]}
-                        </h3>
-                        <p className="">Loại: Chung cư</p>
-                        <p className=" font-semibold mb-2">Giá: 2.5 tỷ</p>
-                        <p className="text-sm text-gray-500">
-                          Căn hộ hiện đại với view panorama tuyệt đẹp...
-                        </p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
+                  <h2 className="text-xl font-semibold mb-2">Danh sách nổi bật</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
+                      {[1, 2, 3].map((item) => (
+                          <Link to={`/detaipage?nhadat=nhadat${item}`}>
+                              <div className="dark:border-white p-4 rounded-md shadow-md hover:shadow-lg transition-shadow ">
+                                  <img
+                                      src={`https://images.unsplash.com/photo-1580587771525-78b9dba3b914?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1074&q=80`}
+                                      alt="Property"
+                                      className="w-full h-48 object-cover rounded-md mb-4"
+                                  />
+                                  <h3 className="font-semibold text-lg mb-2">
+                                      Căn hộ cao cấp tại {prominentCities[item - 1]}
+                                  </h3>
+                                  <p className="">Loại: Chung cư</p>
+                                  <p className="font-semibold mb-2">Giá: 2.5 tỷ</p>
+                                  <p className="text-sm text-gray-500">
+                                      Căn hộ hiện đại với view panorama tuyệt đẹp...
+                                  </p>
+                              </div>
+                          </Link>
+                      ))}
+                    </div>
               </div>
+          )}
+          
             </div>
           </header>
         </main>
@@ -1220,4 +1276,6 @@ const NhatotPage = () => {
     </div>
   );
 };
+
 export default NhatotPage;
+

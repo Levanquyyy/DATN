@@ -3,6 +3,7 @@ import Sidebar from "@/components/ui/sidebar";
 import Header from "@/components/ui/header";
 import { Button } from "@/components/ui/button";
 
+
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -19,7 +20,13 @@ import {
 } from "react-icons/fa";
 import { useState } from "react";
 const DetailPage = () => {
-  const [searchParams] = useSearchParams();
+
+  const [searchParams] = useSearchParams(); // Lấy tham số URL từ searchParams
+
+  //1
+  const nhadatParam = searchParams.get("nhadat"); // Lấy giá trị của tham số 'nhadat'
+  
+
   console.log(searchParams.get("category"));
   const [activeImage, setActiveImage] = useState(0);
   const [showContact, setShowContact] = useState(false);
@@ -49,6 +56,7 @@ const DetailPage = () => {
       time: "3 weeks ago",
       location: "Quận Hải Châu",
     },
+
     {
       image:
         "https://images.unsplash.com/photo-1558981806-ec527fa84c39?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
@@ -63,8 +71,13 @@ const DetailPage = () => {
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <Sidebar />
-      <div className="flex flex-col">
+      <div className="flex flex-col"> 
         <Header />
+
+      {/* Hiển thị chữ Hello nếu có tham số nhadat */}
+      {nhadatParam ? (
+          <div className="text-center text-2xl font-bold mt-4">Hello</div>
+        ) : (
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
           <div
             className="flex  rounded-lg border border-dashed shadow-sm"
@@ -246,6 +259,7 @@ const DetailPage = () => {
             </div>
           </div>
         </main>
+      )}
       </div>
     </div>
   );
