@@ -6,6 +6,10 @@ import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import apiClient from "@/lib/api-client";
+import Cookies from "js-cookie";
+
+import { GET_DATA_PRODUCT_RENTHOUSE } from "@/utilities/constant";
 
 import {
   Select,
@@ -52,6 +56,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 const FormSchema = z.object({
   city: z.string().min(1, {
     message: "Vui lòng chọn tỉnh thành",
@@ -110,10 +115,39 @@ const NhatotPage = () => {
   const [valueforprice, setValueforprice] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [forSale, setForSale] = useState(false);
+  const [dataFromServer, setDataFromServer] = useState([]);
+  const [filterbyCategory, setFilterbyCategory] = useState({
+    category: null,
+    userType: null,
+  });
   const [errors, setErrors] = useState({
     city: null,
     district: null,
     ward: null,
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const accessToken = Cookies.get("access_token");
+        const response = await apiClient.get(GET_DATA_PRODUCT_RENTHOUSE, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        if (response.data.status === "error") {
+          throw new Error(response.data.message);
+        }
+        console.log(response);
+        setDataFromServer(response.data.data);
+      } catch (error) {
+        const errorMessage = error.message || "An unknown error occurred";
+        console.error("Signup error:", errorMessage);
+        toast.error(`Signup failed: ${errorMessage}`);
+      }
+    };
+
+    fetchData();
   });
 
   useEffect(() => {
@@ -305,17 +339,12 @@ const NhatotPage = () => {
   ];
   const prominentCities = ["Tp Hồ Chí Minh", "Hà Nội", "Đà Nẵng"];
   const propertyCategories = [
-    "Nhà đất",
-    "Chung cư",
-    "Đất",
-    "Văn phòng, Mặt bằng kinh doanh",
-  ];
-  const amenities = [
-    "Căn hộ/Chung cư",
     "Nhà ở",
+    "Căn hộ/Chung cư",
     "Đất",
     "Văn phòng, Mặt bằng kinh doanh",
   ];
+
   const userTypes = ["Tất cả", "Cá nhân", "Môi giới"];
   const typeofhouse = [
     { value: "can-ho-chung-cu", label: "Căn hộ/Chung cư" },
@@ -402,6 +431,20 @@ const NhatotPage = () => {
       // Proceed with form submission
       console.log(data);
     }
+  };
+  const onChageCategory = (category) => {
+    setFilterbyCategory((prevState) => ({
+      ...prevState,
+      category,
+    }));
+    console.log({ ...filterbyCategory, category });
+  };
+  const onChageUserType = (userType) => {
+    setFilterbyCategory((prevState) => ({
+      ...prevState,
+      userType,
+    }));
+    console.log({ ...filterbyCategory, userType });
   };
 
   const onSubmitForBed = (data) => {
@@ -1097,7 +1140,8 @@ const NhatotPage = () => {
                   {propertyCategories.map((category, index) => (
                     <div
                       key={index}
-                      className=" p-4 rounded-md shadow-md hover:shadow-lg transition-shadow"
+                      className="p-4 rounded-md shadow-md hover:shadow-lg transition-shadow"
+                      onClick={() => onChageCategory(category)}
                     >
                       {index === 0 && <FaHome className="text-blue-500 mb-2" />}
                       {index === 1 && (
@@ -1115,30 +1159,16 @@ const NhatotPage = () => {
                 </div>
               </div>
 
-              {/* Amenities */}
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold mb-2">Tiện ích</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {amenities.map((amenity, index) => (
-                    <button
-                      key={index}
-                      className="p-2 border rounded-md hover:dark:bg-white hover:dark:text-black  focus:outline-none focus:ring-2 focus:ring-blue-300 hover:bg-black hover:text-white"
-                    >
-                      {amenity}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* User types */}
               <div className="mb-6">
                 <h2 className="text-xl font-semibold mb-2">Loại người dùng</h2>
                 <div className="flex justify-between">
-                  <div className="flex space-x-4  ">
+                  <div className="flex space-x-4">
                     {userTypes.map((type, index) => (
                       <button
                         key={index}
-                        className="flex items-center p-2 border rounded-md hover:dark:bg-white hover:dark:text-black  focus:outline-none focus:ring-2 focus:ring-blue-300 hover:bg-black hover:text-white"
+                        className="flex items-center p-2 border rounded-md hover:dark:bg-white hover:dark:text-black focus:outline-none focus:ring-2 focus:ring-blue-300 hover:bg-black hover:text-white"
+                        onClick={() => onChageUserType(type)}
                       >
                         {index === 0 ? (
                           <FaUser className="mr-2" />
@@ -1149,7 +1179,7 @@ const NhatotPage = () => {
                       </button>
                     ))}
                   </div>
-                  <div className="">
+                  <div>
                     <Form {...formFortransactionTypes}>
                       <form>
                         <FormField
@@ -1162,10 +1192,9 @@ const NhatotPage = () => {
                                 onChnagetransactionTypes(value);
                               }}
                             >
-                              <SelectTrigger className="">
+                              <SelectTrigger>
                                 <SelectValue placeholder="Sắp xếp theo giá" />
                               </SelectTrigger>
-
                               <SelectContent>
                                 {filterbypricetag.map((type, index) => (
                                   <SelectItem key={index} value={type.value}>
@@ -1178,7 +1207,7 @@ const NhatotPage = () => {
                         />
                       </form>
                     </Form>
-                    <FaChevronDown className="absolute right-3 top-3 " />
+                    <FaChevronDown className="absolute right-3 top-3" />
                   </div>
                 </div>
               </div>
@@ -1188,30 +1217,35 @@ const NhatotPage = () => {
                 <h2 className="text-xl font-semibold mb-2">
                   Danh sách nổi bật
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
-                  {[1, 2, 3].map((item) => (
-                    <Link to="/preview">
-                      <div
-                        key={item}
-                        className="dark:border-white p-4 rounded-md shadow-md hover:shadow-lg transition-shadow "
-                      >
-                        <img
-                          src={`https://images.unsplash.com/photo-1580587771525-78b9dba3b914?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1074&q=80`}
-                          alt="Property"
-                          className="w-full h-48 object-cover rounded-md mb-4"
-                        />
-                        <h3 className="font-semibold text-lg mb-2">
-                          Căn hộ cao cấp tại {prominentCities[item - 1]}
-                        </h3>
-                        <p className="">Loại: Chung cư</p>
-                        <p className=" font-semibold mb-2">Giá: 2.5 tỷ</p>
-                        <p className="text-sm text-gray-500">
-                          Căn hộ hiện đại với view panorama tuyệt đẹp...
-                        </p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
+                {filterbyCategory.category === "Nhà ở" &&
+                  filterbyCategory.userType === "Tất cả" && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
+                      {dataFromServer.map((item) => (
+                        <Link to={`/detaipage?nhadat=nhadat${item.id}`}>
+                          <div
+                            key={item.id}
+                            className="dark:border-white p-4 rounded-md shadow-md hover:shadow-lg transition-shadow "
+                          >
+                            <img
+                              src={`https://images.unsplash.com/photo-1580587771525-78b9dba3b914?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1074&q=80`}
+                              alt="Property"
+                              className="w-full h-48 object-cover rounded-md mb-4"
+                            />
+                            <h3 className="font-semibold text-lg mb-2">
+                              {item.title}
+                            </h3>
+                            <p className="">Diện tích {item.land_area} m² </p>
+                            <p className=" font-semibold mb-2">
+                              Giá: {item.cost}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {item.content}
+                            </p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
               </div>
             </div>
           </header>

@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import Cookies from "js-cookie";
+import apiClient from "@/lib/api-client";
 
 import {
   Form,
@@ -54,198 +57,158 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAppStore } from "@/store";
 
-import { FaCheckCircle } from "react-icons/fa";
 const FormSchema = z.object({
   nameofbuilding: z.string().min(2, {
     message: "Vui lòng nhập tên tòa nhà",
   }),
-  funiture: z.string().min(2, {
+  condition_interior: z.string().min(1, {
     message: "Vui lòng nhập nội thất",
   }),
   namedistrict: z.string().min(2, {
     message: "Vui lòng nhâp tên đường",
   }),
 
-  liescene: z.string().min(2, {
+  legal_id: z.string().min(1, {
     message: "Vui lòng chọn giấy tờ pháp lý",
   }),
-  acreage: z.string().min(2, {
-    message: "Vui lòng nhập diện tích",
-  }),
-  price: z.string().min(2, {
-    message: "Vui lòng nhập giá tiền",
-  }),
-  title: z.string().min(2, {
-    message: "Vui lòng nhập tiêu đề tin đăng",
-  }),
-  describedetail: z.string().min(2, {
-    message: "Vui lòng nhập mô tả chi tiết",
-  }),
+
   city: z.string().min(1, {
     message: "Vui lòng chọn tỉnh thành",
   }),
-  district: z.string().min(1, {
-    message: "Vui lòng chọn quận",
-  }),
-  ward: z.string().min(1, {
-    message: "Vui lòng chọn huyện",
-  }),
+
   typeofhouse: z.string().min(1, {
     message: "Vui lòng chọn loại hình căn hộ",
   }),
-  numberofbedroom: z.string().min(1, {
+  bedroom_id: z.string().min(1, {
     message: "Vui lòng chọn số phòng ngủ",
   }),
-  acreaged: z.string().min(2, {
+
+  // fix
+
+  content: z.string().min(2, {
+    message: "Vui lòng nhập mô tả chi tiết",
+  }),
+  title: z.string().min(1, {
+    message: "Vui lòng nhập tiêu đề",
+  }),
+
+  province_code: z.string().min(1, {
+    message: "Vui lòng chọn quận",
+  }),
+  land_area: z.number().min(1, {
+    message: "Vui lòng nhập diện tích đất",
+  }),
+  usable_area: z.number().min(1, {
     message: "Vui lòng nhập diện tích sử dụng",
   }),
+
+  ward_code: z.string().min(1, {
+    message: "Vui lòng chọn phường ",
+  }),
+  cost: z.number().min(1, {
+    message: "Vui lòng nhập giá tiền",
+  }),
+  // fix
   numberofstreet: z.string().optional(),
   positionBDS: z.string().optional(),
   block: z.string().optional(),
-  numberoffloor: z.string().optional(),
-  numberofbath: z.string().optional(),
+  floor: z.string().min(1, {
+    message: "Vui lòng nhập số tầng",
+  }),
+  bathroom_id: z.string().optional(),
   viewbalcony: z.string().optional(),
-  viewmaindoor: z.string().optional(),
+  main_door_id: z.string().optional(),
 
-  sperate: z.string().optional(),
+  subdivision_code: z.string().optional(),
   propertyofhouse: z.string().optional(),
   horizontal: z.string().optional(),
-  vertical: z.string().optional(),
-});
-const FormSchemaForRent = z.object({
-  nameofbuilding: z.string().min(2, {
-    message: "Vui lòng nhập tên tòa nhà",
-  }),
-  city: z.string().min(1, {
-    message: "Vui lòng chọn tỉnh thành",
-  }),
-  district: z.string().min(1, {
-    message: "Vui lòng chọn quận",
-  }),
-  ward: z.string().min(1, {
-    message: "Vui lòng chọn huyện",
-  }),
-  namedistrictforrent: z.string().min(2, {
-    message: "Vui lòng nhâp tên đường",
-  }),
+  length: z.string().optional(),
+  images: z.string().optional(),
 
-  liesceneforrent: z.string().min(2, {
-    message: "Vui lòng chọn giấy tờ pháp lý",
+  category_id: z.number().optional(),
+  type_rental: z.number().optional(),
+  code: z.string().optional(),
+  type_product: z.number().optional(),
+  user_id: z.number().optional(),
+  video: z.string().optional(),
+
+  car_alley: z.boolean().default(false).optional(),
+  back_house: z.boolean().default(false).optional(),
+  blooming_house: z.boolean().default(false).optional(),
+  not_completed_yet: z.boolean().default(false).optional(),
+  land_not_changed_yet: z.boolean().default(false).optional(),
+  planning_or_road: z.boolean().default(false).optional(),
+  diff_situation: z.boolean().default(false).optional(),
+  approved: z.number().optional(),
+  // district_code: z.string().optional(),
+  // chothue
+  cost_deposit: z.string().min(1, {
+    message: "Vui lòng nhập giá tiền cọc",
   }),
-  acreageforrent: z.string().min(2, {
-    message: "Vui lòng nhập diện tích",
-  }),
-  priceforrent: z.string().min(2, {
-    message: "Vui lòng nhập giá tiền",
-  }),
-  titleforrent: z.string().min(2, {
-    message: "Vui lòng nhập tiêu đề tin đăng",
-  }),
-  describedetailforrent: z.string().min(2, {
-    message: "Vui lòng nhập mô tả chi tiết",
-  }),
-  funitureforrent: z.string().min(2, {
-    message: "Vui lòng nhập nội thất",
-  }),
-  typeofhouseforrent: z.string().min(1, {
-    message: "Vui lòng chọn loại hình căn hộ",
-  }),
-  numberofbedroomforrent: z.string().min(1, {
-    message: "Vui lòng chọn số phòng ngủ",
-  }),
-  acreagedforrent: z.string().min(2, {
-    message: "Vui lòng nhập diện tích sử dụng",
-  }),
-  numberofstreetforrent: z.string().optional(),
-  positionBDSforrent: z.string().optional(),
-  blockforrent: z.string().optional(),
-  numberoffloorforrent: z.string().optional(),
-  numberofbathforrent: z.string().optional(),
-  viewbalconyforrent: z.string().optional(),
-  viewmaindoorforrent: z.string().optional(),
-  deposit: z.string().optional(),
-  sperateforrent: z.string().optional(),
-  propertyofhouseforrent: z.string().optional(),
-  horizontalforrent: z.string().optional(),
-  verticalforrent: z.string().optional(),
+  type_user: z.boolean().default(false).optional(),
 });
-const options = [
-  "Hẻm xe hơi",
-  "Nhà nở hậu",
-  "Nhà tóp hậu",
-  "Nhà dính quy hoạch / lộ giới",
-  "Nhà chưa hoàn công",
-  "Nhà nát",
-  "Đất chưa chuyển thổ",
-  "Hiện trạng khác",
-];
+
 const CategoryPage1020 = () => {
   const setFormData = useAppStore((state) => state.setFormData);
+  const setisforsale = useAppStore((state) => state.setisforsale);
   const setpage1020 = useAppStore((state) => state.setpage1020);
   const form = useForm({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       nameofbuilding: "",
-      citi: "",
+      // citi: "",
       namedistrict: "",
-      funiture: "",
-      typeofhouse: "",
-      numberofbedroom: "",
-      liescene: "",
-      acreage: "",
-      price: "",
-      title: "",
-      describedetail: "",
-      city: "",
       district: "",
-      ward: "",
+      condition_interior: "",
+      typeofhouse: "",
+      bedroom_id: "",
+      legal_id: "",
+
+      content: "",
+      city: "",
       numberofstreet: "",
       positionBDS: "",
       block: "",
-      numberoffloor: "",
-      numberofbath: "",
+      floor: "",
+      bathroom_id: "",
       viewbalcony: "",
-      viewmaindoor: "",
-      sperate: "",
+      main_door_id: "",
+      subdivision_code: "",
       propertyofhouse: "",
       horizontal: "",
-      vertical: "",
-      acreaged: "",
+      length: "",
+      // fix
+      usable_area: "",
+      cost: "",
+
+      land_area: "",
+
+      ward_code: "",
+
+      code: `${Math.random().toString(36).substr(2, 9)}`,
+      user_id: 1,
+      type_product: 1,
+      type_rental: 3,
+      category_id: 1,
+      province_code: "",
+      images: "png2",
+      video: "1",
+      cost_deposit: "",
+      car_alley: false,
+      back_house: false,
+      blooming_house: false,
+      not_completed_yet: false,
+      land_not_changed_yet: false,
+      planning_or_road: false,
+      diff_situation: false,
+      approved: 2,
+      type_user: false,
+      // district_code: "hcm",
     },
   });
-  const formforrent = useForm({
-    resolver: zodResolver(FormSchemaForRent),
-    defaultValues: {
-      nameofbuilding: "",
-      city: "",
-      district: "",
-      ward: "",
-      namedistrictforrent: "",
-      liesceneforrent: "",
-      acreageforrent: "",
-      priceforrent: "",
-      titleforrent: "",
-      describedetailforrent: "",
-      typeofhouseforrent: "",
-      numberofbedroomforrent: "",
-      numberofstreetforrent: "",
-      positionBDSforrent: "",
-      blockforrent: "",
-      numberoffloorforrent: "",
-      numberofbathforrent: "",
-      viewbalconyforrent: "",
-      viewmaindoorforrent: "",
-      deposit: "",
-      funitureforrent: "",
-      sperateforrent: "",
-      propertyofhouseforrent: "",
-      horizontalforrent: "",
-      verticalforrent: "",
-      acreagedforrent: "",
-    },
-  });
+
   const navigate = useNavigate();
-  const [selectedOptions, setSelectedOptions] = useState([]);
+
   const [error, setError] = useState("");
   const [cities, setCities] = useState([]);
   const [districts, setDistricts] = useState([]);
@@ -256,39 +219,24 @@ const CategoryPage1020 = () => {
   const [opencity, setOpenCity] = useState(false);
   const [opendistrict, setOpenDistrict] = useState(false);
   const [openward, setOpenWard] = useState(false);
-  const [value, setValue] = useState("");
+  const [isChecked, setIsChecked] = useState(false);
   const [isFocus, setIsFocus] = useState(false);
   const [isFocusDescribeDetail, setIsFocusDescribeDetail] = useState(false);
+
   const [errors, setErrors] = useState({
     city: null,
     district: null,
     ward: null,
   });
-  const handleOptionClick = (option, isSale = false) => {
-    setError("");
-    const formToUse = isSale ? form : formforrent;
-    const fieldName = isSale ? "propertyofhouse" : "propertyofhouseforrent";
-
-    const currentOptions = formToUse
-      .getValues(fieldName)
-      .split(",")
-      .filter(Boolean);
-
-    if (currentOptions.includes(option)) {
-      const newOptions = currentOptions.filter((item) => item !== option);
-      formToUse.setValue(fieldName, newOptions.join(","));
-    } else {
-      if (option === "Hiện trạng khác" && currentOptions.length > 0) {
-        setError("Không thể chọn các tùy chọn khác với 'Hiện trạng khác'");
-        return;
-      }
-      if (currentOptions.includes("Hiện trạng khác")) {
-        setError("Không thể chọn các tùy chọn khác với 'Hiện trạng khác'");
-        return;
-      }
-      const newOptions = [...currentOptions, option];
-      formToUse.setValue(fieldName, newOptions.join(","));
-    }
+  const funitureOptions = [
+    { value: "1", label: "Nội thất cao cấp" },
+    { value: "2", label: "Nội thất đầy đủ" },
+    { value: "3", label: "Hoàn thiện cơ bản" },
+    { value: "4", label: "Bàn giao thô" },
+  ];
+  const handleCheckedChange = (checked) => {
+    setIsChecked(checked);
+    console.log(checked);
   };
   useEffect(() => {
     const fetchData = async () => {
@@ -340,9 +288,35 @@ const CategoryPage1020 = () => {
     setVideo(fileNames);
   };
 
-  const onSubmit = (data, isForRent = false) => {
-    console.log(data);
+  const postProduct = async (transformedData, forsale = false) => {
+    try {
+      const response = await apiClient.post(
+        `${import.meta.env.VITE_SERVER_URL}/api/auth/product/add-product-rent`,
+        transformedData
+      );
+      setFormData(response.data, imageNames, video, forsale);
+    } catch (error) {
+      console.error(
+        "Error posting product:",
+        error.response?.data || error.message
+      );
+    }
+  };
 
+  const onSubmit = async (data, isForRent = false) => {
+    // Chuyển đổi giá trị boolean thành số trước khi gửi dữ liệu
+    const transformedData = {
+      ...data,
+      car_alley: data.car_alley ? 1 : 0,
+      back_house: data.back_house ? 1 : 0,
+      blooming_house: data.blooming_house ? 1 : 0,
+      not_completed_yet: data.not_completed_yet ? 1 : 0,
+      land_not_changed_yet: data.land_not_changed_yet ? 1 : 0,
+      planning_or_road: data.planning_or_road ? 1 : 0,
+      diff_situation: data.diff_situation ? 1 : 0,
+      type_user: data.type_user ? 2 : 1,
+    };
+    console.log(transformedData);
     let hasError = false;
     const newErrors = { city: null, district: null, ward: null };
 
@@ -364,12 +338,15 @@ const CategoryPage1020 = () => {
     if (!hasError) {
       if (isForRent) {
         setpage1020(true);
-        setFormData(data, imageNames, video, false);
+        // setFormData(data, imageNames, video, false);
+        // setisforsale(false);
+        await postProduct(transformedData, false);
         navigate("/preview");
       } else {
         setpage1020(true);
-
-        setFormData(data, imageNames, video, true);
+        // setFormData(data, imageNames, video, true);
+        // setisforsale(true);
+        await postProduct(transformedData, true);
         navigate("/preview");
       }
     }
@@ -430,13 +407,14 @@ const CategoryPage1020 = () => {
             </div>
             <div className="flex-1">
               <Tabs
-                defaultValue="sale"
+                defaultValue="rent"
                 className="w-[400px] sm:w-full flex flex-col  gap-3"
               >
                 <TabsList>
                   <TabsTrigger value="sale">Cần bán</TabsTrigger>
                   <TabsTrigger value="rent">Cho thuê</TabsTrigger>
                 </TabsList>
+                {/* check sale */}
                 <Form {...form}>
                   <form
                     onSubmit={form.handleSubmit(handleSaleSubmit)}
@@ -542,7 +520,7 @@ const CategoryPage1020 = () => {
                       />
                       <FormField
                         control={form.control}
-                        name="district"
+                        name="province_code"
                         render={({ field }) => (
                           <FormItem className="flex items-center gap-4">
                             <FormControl>
@@ -623,7 +601,7 @@ const CategoryPage1020 = () => {
                       />
                       <FormField
                         control={form.control}
-                        name="ward"
+                        name="ward_code"
                         render={({ field }) => (
                           <FormItem className="flex items-center gap-4">
                             <FormControl>
@@ -744,7 +722,7 @@ const CategoryPage1020 = () => {
                       />
                       <FormField
                         control={form.control}
-                        name="sperate"
+                        name="subdivision_code"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Tên Phân Khu/lô</FormLabel>
@@ -810,7 +788,7 @@ const CategoryPage1020 = () => {
                       />
                       <FormField
                         control={form.control}
-                        name="numberofbedroom"
+                        name="bedroom_id"
                         render={({ field }) => (
                           <div className="mt-2 ">
                             <Select {...field} onValueChange={field.onChange}>
@@ -828,15 +806,15 @@ const CategoryPage1020 = () => {
                                   <SelectItem value="4">4</SelectItem>
                                   <SelectItem value="5">5</SelectItem>
                                   <SelectItem value="6">6</SelectItem>
-                                  <SelectItem value="Nhiều hơn 6">
+                                  <SelectItem value=">6">
                                     Nhiều hơn 6
                                   </SelectItem>
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
-                            {form.formState.errors.numberofbedroom && (
+                            {form.formState.errors.bedroom_id && (
                               <p className="text-red-600">
-                                {form.formState.errors.numberofbedroom.message}
+                                {form.formState.errors.bedroom_id.message}
                               </p>
                             )}
                           </div>
@@ -844,7 +822,7 @@ const CategoryPage1020 = () => {
                       />
                       <FormField
                         control={form.control}
-                        name="numberofbath"
+                        name="bathroom_id"
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
                             <FormLabel>Số phòng vệ sinh</FormLabel>
@@ -869,9 +847,9 @@ const CategoryPage1020 = () => {
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
-                            {form.formState.errors.numberofbath && (
+                            {form.formState.errors.bathroom_id && (
                               <p className="text-red-600">
-                                {form.formState.errors.numberofbath.message}
+                                {form.formState.errors.bathroom_id.message}
                               </p>
                             )}
                           </div>
@@ -915,7 +893,7 @@ const CategoryPage1020 = () => {
                       />
                       <FormField
                         control={form.control}
-                        name="viewmaindoor"
+                        name="main_door_id"
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
                             <FormLabel>Hướng cửa chính</FormLabel>
@@ -928,22 +906,18 @@ const CategoryPage1020 = () => {
                               <SelectContent>
                                 <SelectGroup>
                                   <SelectLabel>Hướng cửa chính</SelectLabel>
-                                  <SelectItem value="Đông">Đông</SelectItem>
-                                  <SelectItem value="Tây">Tây</SelectItem>
-                                  <SelectItem value="Nam">Nam</SelectItem>
-                                  <SelectItem value="Bắc">Bắc</SelectItem>
-                                  <SelectItem value="Đông Bắc">
-                                    Đông Bắc
-                                  </SelectItem>
-                                  <SelectItem value="Đông Nam">
-                                    Đông Nam
-                                  </SelectItem>
+                                  <SelectItem value="1">Đông</SelectItem>
+                                  <SelectItem value="2">Tây</SelectItem>
+                                  <SelectItem value="3">Nam</SelectItem>
+                                  <SelectItem value="4">Bắc</SelectItem>
+                                  <SelectItem value="5">Đông Bắc</SelectItem>
+                                  <SelectItem value="6">Đông Nam</SelectItem>
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
-                            {form.formState.errors.viewmaindoor && (
+                            {form.formState.errors.main_door_id && (
                               <p className="text-red-600">
-                                {form.formState.errors.viewmaindoor.message}
+                                {form.formState.errors.main_door_id.message}
                               </p>
                             )}
                           </div>
@@ -951,7 +925,7 @@ const CategoryPage1020 = () => {
                       />
                       <FormField
                         control={form.control}
-                        name="numberoffloor"
+                        name="floor"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Nhập Số tầng</FormLabel>
@@ -966,13 +940,20 @@ const CategoryPage1020 = () => {
                       {/* diện tích */}
                       <FormField
                         control={form.control}
-                        name="acreage"
+                        name="land_area"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Diện tích & giá</FormLabel>
 
                             <FormControl>
-                              <Input placeholder="Diện tích " {...field} />
+                              <Input
+                                type="number"
+                                placeholder="Diện tích "
+                                {...field}
+                                onChange={(e) =>
+                                  field.onChange(parseFloat(e.target.value))
+                                }
+                              />
                             </FormControl>
 
                             <FormMessage />
@@ -981,13 +962,20 @@ const CategoryPage1020 = () => {
                       />
                       <FormField
                         control={form.control}
-                        name="acreaged"
+                        name="usable_area"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Diện tích sử dụng</FormLabel>
 
                             <FormControl>
-                              <Input placeholder="Diện tích " {...field} />
+                              <Input
+                                type="number"
+                                placeholder="Diện tích "
+                                {...field}
+                                onChange={(e) =>
+                                  field.onChange(parseFloat(e.target.value))
+                                }
+                              />
                             </FormControl>
 
                             <FormMessage />
@@ -1011,7 +999,7 @@ const CategoryPage1020 = () => {
                       />
                       <FormField
                         control={form.control}
-                        name="vertical"
+                        name="length"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Chiều dài</FormLabel>
@@ -1026,22 +1014,30 @@ const CategoryPage1020 = () => {
                       />
                       <FormField
                         control={form.control}
-                        name="price"
+                        name="cost"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Giá bán</FormLabel>
 
                             <FormControl>
-                              <Input placeholder="Giá bán " {...field} />
+                              <Input
+                                type="number"
+                                placeholder="Giá thuê "
+                                {...field}
+                                onChange={(e) =>
+                                  field.onChange(parseFloat(e.target.value))
+                                }
+                              />
                             </FormControl>
 
                             <FormMessage />
                           </FormItem>
                         )}
                       />
+
                       <FormField
                         control={form.control}
-                        name="liescene"
+                        name="legal_id"
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
                             <FormLabel>Thông tin khác</FormLabel>
@@ -1054,27 +1050,21 @@ const CategoryPage1020 = () => {
                               <SelectContent>
                                 <SelectGroup>
                                   <SelectLabel>Giấy tờ pháp lý:</SelectLabel>
-                                  <SelectItem value="Đã có sổ">
-                                    Đã có sổ
-                                  </SelectItem>
-                                  <SelectItem value="Đang chờ sổ">
-                                    Đang chờ sổ
-                                  </SelectItem>
-                                  <SelectItem value="Không có sổ">
-                                    Không có sổ
-                                  </SelectItem>
-                                  <SelectItem value="Sổ chung / công chứng vi bằng">
+                                  <SelectItem value="1">Đã có sổ</SelectItem>
+                                  <SelectItem value="2">Đang chờ sổ</SelectItem>
+                                  <SelectItem value="3">Không có sổ</SelectItem>
+                                  <SelectItem value="4">
                                     Sổ chung / công chứng vi bằng
                                   </SelectItem>
-                                  <SelectItem value="Giấy tờ viết tay">
+                                  <SelectItem value="5">
                                     Giấy tờ viết tay
                                   </SelectItem>
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
-                            {form.formState.errors.liescene && (
+                            {form.formState.errors.legal_id && (
                               <p className="text-red-600">
-                                {form.formState.errors.liescene.message}
+                                {form.formState.errors.legal_id.message}
                               </p>
                             )}
                           </div>
@@ -1082,7 +1072,7 @@ const CategoryPage1020 = () => {
                       />
                       <FormField
                         control={form.control}
-                        name="funiture"
+                        name="condition_interior"
                         render={({ field }) => (
                           <Select {...field} onValueChange={field.onChange}>
                             <SelectTrigger className="w-full">
@@ -1093,103 +1083,144 @@ const CategoryPage1020 = () => {
                             <SelectContent>
                               <SelectGroup>
                                 <SelectLabel>Nội thất</SelectLabel>
-                                <SelectItem value="Nội thất cao cấp">
-                                  Nội thất cao cấp
-                                </SelectItem>
-                                <SelectItem value="Nội thất đầy đủ">
-                                  Nội thất đầy đủ
-                                </SelectItem>
-                                <SelectItem value="Hoàn thiện cơ bản">
-                                  Hoàn thiện cơ bản
-                                </SelectItem>
-                                <SelectItem value="Bàn giao thô">
-                                  Bàn giao thô
-                                </SelectItem>
+
+                                {funitureOptions.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
                               </SelectGroup>
                             </SelectContent>
                           </Select>
                         )}
                       />
-                      <FormField
-                        control={form.control}
-                        name="propertyofhouse"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Đặc điểm nhà/đất</FormLabel>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="car_alley"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex gap-3 p-1 h-12 items-center">
+                                <FormLabel>Hẻm xe hơi</FormLabel>
 
-                            <FormControl>
-                              <div className="container mx-auto">
-                                <h2 className="text-2xl font-bold mb-6 text-gray-800"></h2>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                                  {options.map((option, index) => (
-                                    <div
-                                      key={index}
-                                      whileHover={{ scale: 1.05 }}
-                                      whileTap={{ scale: 0.95 }}
-                                      className={`relative p-4 rounded-lg shadow-md cursor-pointer transition-colors duration-300 ${
-                                        field.value.split(",").includes(option)
-                                          ? "bg-blue-500 text-white"
-                                          : "bg-white text-gray-800 hover:bg-gray-100"
-                                      }`}
-                                      onClick={() =>
-                                        handleOptionClick(option, true)
-                                      }
-                                      role="checkbox"
-                                      aria-checked={field.value
-                                        .split(",")
-                                        .includes(option)}
-                                      tabIndex={0}
-                                    >
-                                      <span className="text-sm font-medium">
-                                        {option}
-                                      </span>
-                                      {field.value
-                                        .split(",")
-                                        .includes(option) && (
-                                        <div
-                                          initial={{ opacity: 0, scale: 0 }}
-                                          animate={{ opacity: 1, scale: 1 }}
-                                          className="absolute top-2 right-2"
-                                        >
-                                          <FaCheckCircle className="text-white" />
-                                        </div>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                                {error && (
-                                  <div
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="mt-4 p-3 bg-red-100 text-red-700 rounded-md"
-                                  >
-                                    {error}
-                                  </div>
-                                )}
-                                <div className="mt-6">
-                                  <h3 className="text-lg font-semibold mb-2 text-gray-800">
-                                    Selected Options:
-                                  </h3>
-                                  <ul className="list-disc list-inside text-gray-600">
-                                    {field.value
-                                      .split(",")
-                                      .map((option, index) => (
-                                        <li
-                                          key={index}
-                                          initial={{ opacity: 0, x: -10 }}
-                                          animate={{ opacity: 1, x: 0 }}
-                                          transition={{ delay: index * 0.1 }}
-                                        >
-                                          {option}
-                                        </li>
-                                      ))}
-                                  </ul>
-                                </div>
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
                               </div>
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="back_house"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex gap-3 p-1 h-12 items-center">
+                                <FormLabel>Nhà tóp hậu</FormLabel>
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="blooming_house"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex gap-3 p-1 h-12 items-center">
+                                <FormLabel>Nhà nở hậu</FormLabel>
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="not_completed_yet"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex gap-3 p-1 h-12 items-center">
+                                <FormLabel>Nhà chưa hoàn công</FormLabel>
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="land_not_changed_yet"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex gap-3 p-1 h-12 items-center">
+                                <FormLabel>Đất chưa chuyển thổ</FormLabel>
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="planning_or_road"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex gap-3 p-1 h-12 items-center">
+                                <FormLabel>
+                                  Nhà dính quy hoạch / lộ giới
+                                </FormLabel>
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="diff_situation"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex gap-3 p-1 h-12 items-center">
+                                <FormLabel>Hiện trạng khác</FormLabel>
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                       <FormField
                         control={form.control}
                         name="title"
@@ -1227,7 +1258,7 @@ const CategoryPage1020 = () => {
                       />
                       <FormField
                         control={form.control}
-                        name="describedetail"
+                        name="content"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Mô tả chi tiết</FormLabel>
@@ -1257,6 +1288,7 @@ const CategoryPage1020 = () => {
                         )}
                       />
 
+                      {/* fix */}
                       <FormField
                         control={form.control}
                         name="floor"
@@ -1266,7 +1298,10 @@ const CategoryPage1020 = () => {
 
                             <FormControl>
                               <div className="flex items-center space-x-2">
-                                <Switch id="broker" />
+                                <Switch
+                                  id="broker"
+                                  onCheckedChange={handleCheckedChange}
+                                />
                                 <Label htmlFor="broker" className="uppercase">
                                   Môi giới
                                 </Label>
@@ -1285,14 +1320,16 @@ const CategoryPage1020 = () => {
                     </TabsContent>
                   </form>
                 </Form>
-                <Form {...formforrent}>
+
+                {/* check rent */}
+                <Form {...form}>
                   <form
-                    onSubmit={formforrent.handleSubmit(handleRentSubmit)}
+                    onSubmit={form.handleSubmit(handleRentSubmit)}
                     className="space-y-8"
                   >
                     <TabsContent value="rent">
                       <FormField
-                        control={formforrent.control}
+                        control={form.control}
                         name="nameofbuilding"
                         render={({ field }) => (
                           <FormItem>
@@ -1312,7 +1349,7 @@ const CategoryPage1020 = () => {
                       />
                       <FormLabel>Địa chỉ </FormLabel>
                       <FormField
-                        control={formforrent.control}
+                        control={form.control}
                         name="city"
                         render={({ field }) => (
                           <FormItem className="flex items-center gap-4">
@@ -1378,9 +1415,9 @@ const CategoryPage1020 = () => {
                                     </Command>
                                   </PopoverContent>
                                 </Popover>
-                                {formforrent.formState.errors.city && (
+                                {form.formState.errors.city && (
                                   <p className="text-red-600">
-                                    {formforrent.formState.errors.city.message}
+                                    {form.formState.errors.city.message}
                                   </p>
                                 )}
                               </>
@@ -1389,8 +1426,8 @@ const CategoryPage1020 = () => {
                         )}
                       />
                       <FormField
-                        control={formforrent.control}
-                        name="district"
+                        control={form.control}
+                        name="province_code"
                         render={({ field }) => (
                           <FormItem className="flex items-center gap-4">
                             <FormControl>
@@ -1459,12 +1496,9 @@ const CategoryPage1020 = () => {
                                     </Command>
                                   </PopoverContent>
                                 </Popover>
-                                {formforrent.formState.errors.district && (
+                                {form.formState.errors.district && (
                                   <p className="text-red-600">
-                                    {
-                                      formforrent.formState.errors.district
-                                        .message
-                                    }
+                                    {form.formState.errors.district.message}
                                   </p>
                                 )}
                               </>
@@ -1473,8 +1507,8 @@ const CategoryPage1020 = () => {
                         )}
                       />
                       <FormField
-                        control={formforrent.control}
-                        name="ward"
+                        control={form.control}
+                        name="ward_code"
                         render={({ field }) => (
                           <FormItem className="flex items-center gap-4">
                             <FormControl>
@@ -1540,9 +1574,9 @@ const CategoryPage1020 = () => {
                                     </Command>
                                   </PopoverContent>
                                 </Popover>
-                                {formforrent.formState.errors.ward && (
+                                {form.formState.errors.ward && (
                                   <p className="text-red-600">
-                                    {formforrent.formState.errors.ward.message}
+                                    {form.formState.errors.ward.message}
                                   </p>
                                 )}
                               </>
@@ -1550,62 +1584,52 @@ const CategoryPage1020 = () => {
                           </FormItem>
                         )}
                       />
+
                       <FormField
-                        control={formforrent.control}
-                        name="namedistrictforrent"
+                        control={form.control}
+                        name="namedistrict"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Tên đường</FormLabel>
                             <FormControl>
                               <Input placeholder="Nhập tên đường" {...field} />
                             </FormControl>
+
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                       <FormField
-                        control={formforrent.control}
-                        name="numberofstreetforrent"
+                        control={form.control}
+                        name="numberofstreet"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Số nhà</FormLabel>
                             <FormControl>
                               <Input placeholder="Nhập Số nhà" {...field} />
                             </FormControl>
+
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                       <FormField
-                        control={formforrent.control}
-                        name="positionBDSforrent"
+                        control={form.control}
+                        name="positionBDS"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Vị trí BĐS</FormLabel>
                             <FormControl>
                               <Input placeholder="Nhập Mã căn" {...field} />
                             </FormControl>
+
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                       <FormField
-                        control={formforrent.control}
-                        name="blockforrent"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Block/Tháp</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      {/* add new  */}
-                      <FormField
-                        control={formforrent.control}
-                        name="sperateforrent"
+                        control={form.control}
+                        name="subdivision_code"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Tên Phân Khu/lô</FormLabel>
@@ -1617,148 +1641,24 @@ const CategoryPage1020 = () => {
                           </FormItem>
                         )}
                       />
-
                       <FormField
-                        control={formforrent.control}
-                        name="propertyofhouseforrent"
+                        control={form.control}
+                        name="block"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Đặc điểm nhà/đất</FormLabel>
-
+                            <FormLabel>Block/Tháp</FormLabel>
                             <FormControl>
-                              <div className="container mx-auto">
-                                <h2 className="text-2xl font-bold mb-6 text-gray-800"></h2>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                                  {options.map((option, index) => (
-                                    <div
-                                      key={index}
-                                      whileHover={{ scale: 1.05 }}
-                                      whileTap={{ scale: 0.95 }}
-                                      className={`relative p-4 rounded-lg shadow-md cursor-pointer transition-colors duration-300 ${
-                                        field.value.split(",").includes(option)
-                                          ? "bg-blue-500 text-white"
-                                          : "bg-white text-gray-800 hover:bg-gray-100"
-                                      }`}
-                                      onClick={() =>
-                                        handleOptionClick(option, false)
-                                      }
-                                      role="checkbox"
-                                      aria-checked={field.value
-                                        .split(",")
-                                        .includes(option)}
-                                      tabIndex={0}
-                                    >
-                                      <span className="text-sm font-medium">
-                                        {option}
-                                      </span>
-                                      {field.value
-                                        .split(",")
-                                        .includes(option) && (
-                                        <div
-                                          initial={{ opacity: 0, scale: 0 }}
-                                          animate={{ opacity: 1, scale: 1 }}
-                                          className="absolute top-2 right-2"
-                                        >
-                                          <FaCheckCircle className="text-white" />
-                                        </div>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                                {error && (
-                                  <div
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="mt-4 p-3 bg-red-100 text-red-700 rounded-md"
-                                  >
-                                    {error}
-                                  </div>
-                                )}
-                                <div className="mt-6">
-                                  <h3 className="text-lg font-semibold mb-2 text-gray-800">
-                                    Selected Options:
-                                  </h3>
-                                  <ul className="list-disc list-inside text-gray-600">
-                                    {field.value
-                                      .split(",")
-                                      .map((option, index) => (
-                                        <li
-                                          key={index}
-                                          initial={{ opacity: 0, x: -10 }}
-                                          animate={{ opacity: 1, x: 0 }}
-                                          transition={{ delay: index * 0.1 }}
-                                        >
-                                          {option}
-                                        </li>
-                                      ))}
-                                  </ul>
-                                </div>
-                              </div>
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={formforrent.control}
-                        name="acreagedforrent"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Diện tích sử dụng</FormLabel>
-
-                            <FormControl>
-                              <Input placeholder="Diện tích " {...field} />
+                              <Input {...field} />
                             </FormControl>
 
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      <FormField
-                        control={formforrent.control}
-                        name="horizontalforrent"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Chiều ngang</FormLabel>
 
-                            <FormControl>
-                              <Input placeholder="Chiều ngang " {...field} />
-                            </FormControl>
-
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
                       <FormField
-                        control={formforrent.control}
-                        name="verticalforrent"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Chiều dài</FormLabel>
-
-                            <FormControl>
-                              <Input placeholder="Chiều dài " {...field} />
-                            </FormControl>
-
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={formforrent.control}
-                        name="numberoffloorforrent"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Nhập Số tầng</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Nhập Số tầng" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={formforrent.control}
-                        name="typeofhouseforrent"
+                        control={form.control}
+                        name="typeofhouse"
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
                             <Select {...field} onValueChange={field.onChange}>
@@ -1794,8 +1694,8 @@ const CategoryPage1020 = () => {
                         )}
                       />
                       <FormField
-                        control={formforrent.control}
-                        name="numberofbedroomforrent"
+                        control={form.control}
+                        name="bedroom_id"
                         render={({ field }) => (
                           <div className="mt-2 ">
                             <Select {...field} onValueChange={field.onChange}>
@@ -1813,27 +1713,23 @@ const CategoryPage1020 = () => {
                                   <SelectItem value="4">4</SelectItem>
                                   <SelectItem value="5">5</SelectItem>
                                   <SelectItem value="6">6</SelectItem>
-                                  <SelectItem value="Nhiều hơn 6">
+                                  <SelectItem value=">6">
                                     Nhiều hơn 6
                                   </SelectItem>
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
-                            {formforrent.formState.errors
-                              .numberofbedroomforrent && (
+                            {form.formState.errors.bedroom_id && (
                               <p className="text-red-600">
-                                {
-                                  formforrent.formState.errors
-                                    .numberofbedroomforrent.message
-                                }
+                                {form.formState.errors.bedroom_id.message}
                               </p>
                             )}
                           </div>
                         )}
                       />
                       <FormField
-                        control={formforrent.control}
-                        name="numberofbathforrent"
+                        control={form.control}
+                        name="bathroom_id"
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
                             <FormLabel>Số phòng vệ sinh</FormLabel>
@@ -1858,21 +1754,17 @@ const CategoryPage1020 = () => {
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
-                            {formforrent.formState.errors
-                              .numberofbathforrent && (
+                            {form.formState.errors.bathroom_id && (
                               <p className="text-red-600">
-                                {
-                                  formforrent.formState.errors
-                                    .numberofbathforrent.message
-                                }
+                                {form.formState.errors.bathroom_id.message}
                               </p>
                             )}
                           </div>
                         )}
                       />
                       <FormField
-                        control={formforrent.control}
-                        name="viewbalconyforrent"
+                        control={form.control}
+                        name="viewbalcony"
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
                             <FormLabel>Hướng ban công</FormLabel>
@@ -1898,21 +1790,17 @@ const CategoryPage1020 = () => {
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
-                            {formforrent.formState.errors
-                              .viewbalconyforrent && (
+                            {form.formState.errors.viewbalcony && (
                               <p className="text-red-600">
-                                {
-                                  formforrent.formState.errors
-                                    .viewbalconyforrent.message
-                                }
+                                {form.formState.errors.viewbalcony.message}
                               </p>
                             )}
                           </div>
                         )}
                       />
                       <FormField
-                        control={formforrent.control}
-                        name="viewmaindoorforrent"
+                        control={form.control}
+                        name="main_door_id"
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
                             <FormLabel>Hướng cửa chính</FormLabel>
@@ -1925,73 +1813,157 @@ const CategoryPage1020 = () => {
                               <SelectContent>
                                 <SelectGroup>
                                   <SelectLabel>Hướng cửa chính</SelectLabel>
-                                  <SelectItem value="Đông">Đông</SelectItem>
-                                  <SelectItem value="Tây">Tây</SelectItem>
-                                  <SelectItem value="Nam">Nam</SelectItem>
-                                  <SelectItem value="Bắc">Bắc</SelectItem>
-                                  <SelectItem value="Đông Bắc">
-                                    Đông Bắc
-                                  </SelectItem>
-                                  <SelectItem value="Đông Nam">
-                                    Đông Nam
-                                  </SelectItem>
+                                  <SelectItem value="1">Đông</SelectItem>
+                                  <SelectItem value="2">Tây</SelectItem>
+                                  <SelectItem value="3">Nam</SelectItem>
+                                  <SelectItem value="4">Bắc</SelectItem>
+                                  <SelectItem value="5">Đông Bắc</SelectItem>
+                                  <SelectItem value="6">Đông Nam</SelectItem>
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
-                            {formforrent.formState.errors
-                              .viewmaindoorforrent && (
+                            {form.formState.errors.main_door_id && (
                               <p className="text-red-600">
-                                {
-                                  formforrent.formState.errors
-                                    .viewmaindoorforrent.message
-                                }
+                                {form.formState.errors.main_door_id.message}
                               </p>
                             )}
                           </div>
                         )}
                       />
                       <FormField
-                        control={formforrent.control}
-                        name="acreageforrent"
+                        control={form.control}
+                        name="floor"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nhập Số tầng</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Nhập Số tầng" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* diện tích */}
+                      <FormField
+                        control={form.control}
+                        name="land_area"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Diện tích & giá</FormLabel>
+
                             <FormControl>
-                              <Input placeholder="Diện tích " {...field} />
+                              <Input
+                                type="number"
+                                placeholder="Diện tích "
+                                {...field}
+                                onChange={(e) =>
+                                  field.onChange(parseFloat(e.target.value))
+                                }
+                              />
                             </FormControl>
+
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                       <FormField
-                        control={formforrent.control}
-                        name="priceforrent"
+                        control={form.control}
+                        name="usable_area"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Diện tích sử dụng</FormLabel>
+
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="Diện tích "
+                                {...field}
+                                onChange={(e) =>
+                                  field.onChange(parseFloat(e.target.value))
+                                }
+                              />
+                            </FormControl>
+
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="horizontal"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Chiều ngang</FormLabel>
+
+                            <FormControl>
+                              <Input placeholder="Chiều ngang " {...field} />
+                            </FormControl>
+
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="length"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Chiều dài</FormLabel>
+
+                            <FormControl>
+                              <Input placeholder="Chiều dài " {...field} />
+                            </FormControl>
+
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="cost"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Giá thuê</FormLabel>
+
                             <FormControl>
-                              <Input placeholder="Giá thuê " {...field} />
+                              <Input
+                                type="number"
+                                placeholder="Giá thuê "
+                                {...field}
+                                onChange={(e) =>
+                                  field.onChange(parseFloat(e.target.value))
+                                }
+                              />
                             </FormControl>
+
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                       <FormField
-                        control={formforrent.control}
-                        name="deposit"
+                        control={form.control}
+                        name="cost_deposit"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Tiền cọc </FormLabel>
+                            <FormLabel>Số tiền cọc</FormLabel>
+
                             <FormControl>
-                              <Input placeholder="Tiền cọc " {...field} />
+                              <Input
+                                type="number"
+                                placeholder="Số tiền cọc "
+                                {...field}
+                                onChange={(e) => field.onChange(e.target.value)}
+                              />
                             </FormControl>
+
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                       <FormField
-                        control={formforrent.control}
-                        name="liesceneforrent"
+                        control={form.control}
+                        name="legal_id"
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
                             <FormLabel>Thông tin khác</FormLabel>
@@ -2004,35 +1976,29 @@ const CategoryPage1020 = () => {
                               <SelectContent>
                                 <SelectGroup>
                                   <SelectLabel>Giấy tờ pháp lý:</SelectLabel>
-                                  <SelectItem value="Đã có sổ">
-                                    Đã có sổ
-                                  </SelectItem>
-                                  <SelectItem value="Đang chờ sổ">
-                                    Đang chờ sổ
-                                  </SelectItem>
-                                  <SelectItem value="Không có sổ">
-                                    Không có sổ
-                                  </SelectItem>
-                                  <SelectItem value="Sổ chung / công chứng vi bằng">
+                                  <SelectItem value="1">Đã có sổ</SelectItem>
+                                  <SelectItem value="2">Đang chờ sổ</SelectItem>
+                                  <SelectItem value="3">Không có sổ</SelectItem>
+                                  <SelectItem value="4">
                                     Sổ chung / công chứng vi bằng
                                   </SelectItem>
-                                  <SelectItem value="Giấy tờ viết tay">
+                                  <SelectItem value="5">
                                     Giấy tờ viết tay
                                   </SelectItem>
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
-                            {form.formState.errors.liescene && (
+                            {form.formState.errors.legal_id && (
                               <p className="text-red-600">
-                                {form.formState.errors.liescene.message}
+                                {form.formState.errors.legal_id.message}
                               </p>
                             )}
                           </div>
                         )}
                       />
                       <FormField
-                        control={formforrent.control}
-                        name="funitureforrent"
+                        control={form.control}
+                        name="condition_interior"
                         render={({ field }) => (
                           <Select {...field} onValueChange={field.onChange}>
                             <SelectTrigger className="w-full">
@@ -2043,31 +2009,153 @@ const CategoryPage1020 = () => {
                             <SelectContent>
                               <SelectGroup>
                                 <SelectLabel>Nội thất</SelectLabel>
-                                <SelectItem value="Nội thất cao cấp">
-                                  Nội thất cao cấp
-                                </SelectItem>
-                                <SelectItem value="Nội thất đầy đủ">
-                                  Nội thất đầy đủ
-                                </SelectItem>
-                                <SelectItem value="Hoàn thiện cơ bản">
-                                  Hoàn thiện cơ bản
-                                </SelectItem>
-                                <SelectItem value="Bàn giao thô">
-                                  Bàn giao thô
-                                </SelectItem>
+
+                                {funitureOptions.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
                               </SelectGroup>
                             </SelectContent>
                           </Select>
                         )}
                       />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="car_alley"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex gap-3 p-1 h-12 items-center">
+                                <FormLabel>Hẻm xe hơi</FormLabel>
+
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="back_house"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex gap-3 p-1 h-12 items-center">
+                                <FormLabel>Nhà tóp hậu</FormLabel>
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="blooming_house"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex gap-3 p-1 h-12 items-center">
+                                <FormLabel>Nhà nở hậu</FormLabel>
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="not_completed_yet"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex gap-3 p-1 h-12 items-center">
+                                <FormLabel>Nhà chưa hoàn công</FormLabel>
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="land_not_changed_yet"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex gap-3 p-1 h-12 items-center">
+                                <FormLabel>Đất chưa chuyển thổ</FormLabel>
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="planning_or_road"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex gap-3 p-1 h-12 items-center">
+                                <FormLabel>
+                                  Nhà dính quy hoạch / lộ giới
+                                </FormLabel>
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="diff_situation"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex gap-3 p-1 h-12 items-center">
+                                <FormLabel>Hiện trạng khác</FormLabel>
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                       <FormField
-                        control={formforrent.control}
-                        name="titleforrent"
+                        control={form.control}
+                        name="title"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>
                               Tiêu đề tin đăng và Mô tả chi tiết
                             </FormLabel>
+
                             <FormControl>
                               <Input
                                 placeholder="Tiêu đề tin đăng "
@@ -2095,8 +2183,8 @@ const CategoryPage1020 = () => {
                         )}
                       />
                       <FormField
-                        control={formforrent.control}
-                        name="describedetailforrent"
+                        control={form.control}
+                        name="content"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Mô tả chi tiết</FormLabel>
@@ -2126,16 +2214,21 @@ const CategoryPage1020 = () => {
                         )}
                       />
 
+                      {/* fix */}
                       <FormField
-                        control={formforrent.control}
-                        name="floor"
+                        control={form.control}
+                        name="type_user"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Bạn là:</FormLabel>
 
                             <FormControl>
                               <div className="flex items-center space-x-2">
-                                <Switch id="broker" />
+                                <Switch
+                                  id="broker"
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
                                 <Label htmlFor="broker" className="uppercase">
                                   Môi giới
                                 </Label>

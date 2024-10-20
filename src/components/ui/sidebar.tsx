@@ -19,7 +19,7 @@ const frameworks = [
     label: "Hope",
   },
   {
-    value: "Nhà Hope",
+    value: "nhatot",
     label: "Nhà Hope",
   },
   {
@@ -103,26 +103,28 @@ const Sidebar = () => {
                     <CommandEmpty>Không có sàn nào được chọn</CommandEmpty>
                     <CommandGroup>
                       {frameworks.map((framework) => (
-                        <CommandItem
-                          key={framework.value}
-                          value={framework.value}
-                          onSelect={(currentValue) => {
-                            setValue(
-                              currentValue === value ? "" : currentValue
-                            );
-                            setOpen(false);
-                          }}
-                        >
-                          {framework.label}
-                          <CheckIcon
-                            className={cn(
-                              "ml-auto h-4 w-4",
-                              value === framework.value
-                                ? "opacity-100"
-                                : "opacity-0"
-                            )}
-                          />
-                        </CommandItem>
+                        <Link to={`/${framework.value}`}>
+                          <CommandItem
+                            key={framework.value}
+                            value={framework.value}
+                            onSelect={(currentValue) => {
+                              setValue(
+                                currentValue === value ? "" : currentValue
+                              );
+                              setOpen(false);
+                            }}
+                          >
+                            {framework.label}
+                            <CheckIcon
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                value === framework.value
+                                  ? "opacity-100"
+                                  : "opacity-0"
+                              )}
+                            />
+                          </CommandItem>
+                        </Link>
                       ))}
                     </CommandGroup>
                   </CommandList>
