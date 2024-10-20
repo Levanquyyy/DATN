@@ -17,15 +17,20 @@ import { useState, useEffect } from "react";
 import { FaFacebookF } from "react-icons/fa6";
 import { useAppStore } from "@/store";
 import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
+import apiClient from "@/lib/api-client";
+import { SIGNUP_ROUTE, SIGNIN_ROUTE } from "@/utilities/constant";
+import { toast } from "sonner";
 const Auth = () => {
-  const [name, setName] = useState("Le Van Quy");
-  const [phone, setPhone] = useState("0922143002");
-  const [password, setPassword] = useState("123");
-  const [errorName, setErrorName] = useState("");
-  const [errorPhone, setErrorPhone] = useState("");
-  const [errorPassword, setErrorPassword] = useState("");
+  const [first, setFirst] = useState("");
+  const [last, setLast] = useState("");
+  const [phone, setPhone] = useState("");
+  const [emailForSignIn, setEmailForSignIn] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordForSignIn, setPasswordForpasswordForSignIn] = useState("");
+
   const [showPassword, setShowPassword] = useState(false);
-  const [isFormValid, setIsFormValid] = useState(false);
   const { setUserInfo } = useAppStore();
   const navigate = useNavigate();
 
@@ -33,57 +38,44 @@ const Auth = () => {
     setShowPassword(!showPassword);
   };
 
-  const validateName = (value) => {
-    if (!value) {
-      setErrorName("Họ tên không được để trống");
-    } else {
-      setErrorName("");
+  const validateSignUp = () => {
+    if (!first.length) {
+      toast.warning(" First Name is required");
+      return false;
     }
-  };
-
-  const validatePhone = (value) => {
-    const phonePattern = /^[0-9]{10}$/; // Example pattern for a 10-digit phone number
-    if (!phonePattern.test(value)) {
-      setErrorPhone("Số điện thoại không hợp lệ");
-    } else {
-      setErrorPhone("");
+    if (!last.length) {
+      toast.warning("Last Name is required");
+      return false;
     }
-  };
+    if (!phone.length) {
+      toast.warning("Phone is required");
+      return false;
+    }
+    if (!email.length) {
+      toast.warning("Email is required");
+      return false;
+    }
+    const emailCriteria = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailCriteria.test(email)) {
+      toast.warning("Email không hợp lệ");
+      return false;
+    }
+    if (!password.length) {
+      toast.warning("Password is required");
+      return false;
+    }
+    const passwordCriteria =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-  const validatePassword = (value) => {
-    const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z]).{6,}$/; // At least 6 characters, one uppercase, one lowercase
-    if (!passwordPattern.test(value)) {
-      setErrorPassword(
-        "Mật khẩu phải có ít nhất 6 ký tự, bao gồm chữ hoa và chữ thường"
+    if (!passwordCriteria.test(password)) {
+      toast.warning(
+        "Mật khẩu phải có viết hoa, thường, số, ký tự đặc biệt ít nhất 8 ký tự"
       );
-    } else {
-      setErrorPassword("");
+      return false;
     }
-  };
 
-  const handleNameChange = (e) => {
-    const value = e.target.value;
-    setName(value);
-    validateName(value);
+    return true;
   };
-
-  const handlePhoneChange = (e) => {
-    const value = e.target.value;
-    setPhone(value);
-    validatePhone(value);
-  };
-
-  const handlePasswordChange = (e) => {
-    const value = e.target.value;
-    setPassword(value);
-    validatePassword(value);
-  };
-
-  useEffect(() => {
-    setIsFormValid(
-      !errorName && !errorPhone && !errorPassword && name && phone && password
-    );
-  }, [errorName, errorPhone, errorPassword, name, phone, password]);
 
   const login = useFacebookLogin({
     onSuccess: (response) => {
@@ -91,13 +83,80 @@ const Auth = () => {
     },
   });
 
-  const handleSignIn = async () => {
+  const handleSignUp = async () => {
     setUserInfo({
-      name,
+      first,
+      last,
       phone,
+      email,
       password,
+      fullName: `${first} ${last}`,
     });
-    navigate("/home-page");
+    if (validateSignUp()) {
+      const data = {
+        username: first + last,
+        firstname: first,
+        lastname: last,
+        phone,
+        password,
+        email,
+      };
+
+      try {
+        const response = await apiClient.post(SIGNUP_ROUTE, data);
+        if (response.data.status === "error") {
+          throw new Error(response.data.message);
+        }
+        console.log(response);
+        toast.success("Đăng ký thành công!");
+
+        // Save the token in a cookie
+        const { access_token, expires_in } = response.data;
+        Cookies.set("access_token", access_token, {
+          expires: new Date(expires_in),
+          secure: true,
+          sameSite: "strict",
+        });
+      } catch (error) {
+        const errorMessage = error.message || "An unknown error occurred";
+        console.error("Signup error:", errorMessage);
+        toast.error(`Signup failed: ${errorMessage}`);
+      }
+    }
+  };
+  const handleSignIn = async () => {
+    const data = {
+      email: emailForSignIn,
+      password: passwordForSignIn,
+    };
+    try {
+      const response = await apiClient.post(SIGNIN_ROUTE, data);
+      if (response.data.status) {
+        // Save the token in a cookie
+        const { access_token, expires_in } = response.data;
+        Cookies.set("access_token", access_token, {
+          expires: new Date(expires_in),
+          secure: true,
+          sameSite: "strict",
+        });
+
+        // Set user info to Zustand
+        setUserInfo(response.data.user);
+
+        // Navigate based on response status
+        if (response.status === 200) {
+          navigate("/home-page");
+        } else {
+          navigate("/auth");
+        }
+      }
+      console.log(response);
+    } catch (error) {
+      console.error("Signin error:", error.response?.data || error.message);
+      toast.error(
+        `Signin failed: ${error.response?.data?.message || error.message}`
+      );
+    }
   };
 
   return (
@@ -118,14 +177,31 @@ const Auth = () => {
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="space-y-1">
-                <Label htmlFor="name">Họ tên</Label>
+                <Label htmlFor="first"> Họ</Label>
                 <Input
-                  id="name"
+                  id="first"
                   type="text"
-                  value={name}
-                  onChange={handleNameChange}
+                  value={first}
+                  onChange={(e) => setFirst(e.target.value)}
                 />
-                {errorName && <p className="text-red-500">{errorName}</p>}
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="last"> Tên</Label>
+                <Input
+                  id="last"
+                  type="text"
+                  value={last}
+                  onChange={(e) => setLast(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="email"> Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="phone">Số điện thoại</Label>
@@ -133,9 +209,8 @@ const Auth = () => {
                   id="phone"
                   type="number"
                   value={phone}
-                  onChange={handlePhoneChange}
+                  onChange={(e) => setPhone(e.target.value)}
                 />
-                {errorPhone && <p className="text-red-500">{errorPhone}</p>}
               </div>
               <div className="space-y-1">
                 <Label htmlFor="password">Mật Khẩu</Label>
@@ -144,7 +219,7 @@ const Auth = () => {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={handlePasswordChange}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="pr-10" // Add padding to the right to avoid overlap with the button
                   />
                   <button
@@ -155,9 +230,6 @@ const Auth = () => {
                     {showPassword ? "Hide" : "Show"}
                   </button>
                 </div>
-                {errorPassword && (
-                  <p className="text-red-500">{errorPassword}</p>
-                )}
               </div>
               <div className="space-y-1">
                 <p className="text-center my-2">Hoặc</p>
@@ -183,9 +255,7 @@ const Auth = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSignIn} disabled={!isFormValid}>
-                Save changes
-              </Button>
+              <Button onClick={handleSignUp}>Đăng ký</Button>
             </CardFooter>
           </Card>
         </TabsContent>
@@ -199,14 +269,13 @@ const Auth = () => {
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="space-y-1">
-                <Label htmlFor="current">Số điện thoại</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="phone"
-                  type="number"
-                  value={phone}
-                  onChange={handlePhoneChange}
+                  id="email"
+                  type="email"
+                  value={emailForSignIn}
+                  onChange={(e) => setEmailForSignIn(e.target.value)}
                 />
-                {errorPhone && <p className="text-red-500">{errorPhone}</p>}
               </div>
               <div className="space-y-1">
                 <Label htmlFor="password">Mật Khẩu</Label>
@@ -216,6 +285,9 @@ const Auth = () => {
                     type={showPassword ? "text" : "password"}
                     defaultValue="123"
                     className="pr-10" // Add padding to the right to avoid overlap with the button
+                    onChange={(e) =>
+                      setPasswordForpasswordForSignIn(e.target.value)
+                    }
                   />
                   <button
                     type="button"
@@ -251,7 +323,7 @@ const Auth = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button>Save password</Button>
+              <Button onClick={handleSignIn}>Đăng nhập</Button>
             </CardFooter>
           </Card>
         </TabsContent>

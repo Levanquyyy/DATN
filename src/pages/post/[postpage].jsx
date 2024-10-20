@@ -2,19 +2,24 @@ import { useState } from "react";
 import Sidebar from "@/components/ui/sidebar";
 import Header from "@/components/ui/header";
 import { Button } from "@/components/ui/button";
-
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   FaRegBuilding,
   FaBed,
   FaRulerCombined,
   FaMoneyBillWave,
-  FaRegClock,
-  FaCalendarAlt,
-  FaCheckCircle,
   FaAngleDown,
 } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useAppStore } from "@/store";
 
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 const ServiceOption = ({
   title,
   price,
@@ -22,18 +27,29 @@ const ServiceOption = ({
   selected,
   onSelect,
   highlight,
+  daysOptions,
+  discount,
 }) => {
   const [expanded, setExpanded] = useState(false);
+  const [selectedDays, setSelectedDays] = useState(daysOptions[0]);
 
   const toggleExpand = () => setExpanded(!expanded);
 
-  const options = [
-    { days: 7, price: 45000, oldPrice: 56000, discount: 20 },
-    { days: 14, price: 84000, oldPrice: 112000, discount: 25 },
-    { days: 30, price: 144000, oldPrice: 240000, discount: 40 },
-  ];
+  const handleDaysChange = (value) => {
+    const days = parseInt(value, 10);
+    setSelectedDays(days);
+    onSelect(selected, days);
+  };
 
-  const [selectedOption, setSelectedOption] = useState(null);
+  const calculatePrice = () => {
+    const basePrice = parseFloat(price.replace(/[^0-9.-]+/g, ""));
+    let totalPrice = basePrice * selectedDays;
+    if (discount && discount[selectedDays]) {
+      totalPrice -= totalPrice * discount[selectedDays];
+    }
+    totalPrice = Math.ceil(totalPrice / 1000) * 1000;
+    return totalPrice.toLocaleString();
+  };
 
   return (
     <div
@@ -46,44 +62,19 @@ const ServiceOption = ({
           type="checkbox"
           checked={selected}
           onChange={(e) => {
-            onSelect(e.target.checked);
+            onSelect(e.target.checked, selectedDays);
             if (e.target.checked) setExpanded(true);
-            else setSelectedOption(null);
+            else setExpanded(false);
           }}
           className="mt-1 mr-3"
         />
         <div className="flex-grow">
           <div className="flex justify-between items-center">
             <h4 className="font-semibold">{title}</h4>
-            {highlight && (
-              <span className="text-yellow-600 text-sm font-medium">
-                Combo tối ưu
-              </span>
-            )}
           </div>
           <p className="text-sm text-gray-600">{price}</p>
           {description && (
             <p className="text-sm text-gray-500 mt-1">{description}</p>
-          )}
-          {highlight && (
-            <div className="mt-2 text-sm text-gray-700">
-              <p>
-                <FaCheckCircle className="inline mr-1 text-green-500" /> Tin nổi
-                bật + Đẩy tin
-              </p>
-              <p>
-                <FaCheckCircle className="inline mr-1 text-green-500" /> Bao gồm
-                Tin nổi bật - Nhiều hình ảnh và Đẩy tin tự động mỗi ngày
-              </p>
-              <p className="mt-1">
-                <span className="line-through text-gray-500">
-                  23.000 đ/ngày
-                </span>{" "}
-                <span className="font-semibold text-green-600">
-                  16.666 đ/ngày
-                </span>
-              </p>
-            </div>
           )}
         </div>
         <button onClick={toggleExpand} className="ml-2 focus:outline-none">
@@ -96,31 +87,31 @@ const ServiceOption = ({
       </label>
       {selected && expanded && (
         <div className="mt-4 space-y-2">
-          {options.map((option, index) => (
-            <div
-              key={index}
-              className={`flex justify-between items-center p-2 rounded cursor-pointer ${
-                selectedOption === index ? "bg-blue-100" : "bg-gray-100"
-              }`}
-              onClick={() => setSelectedOption(index)}
-            >
-              <span>{option.days} ngày</span>
-              <div>
-                <span className="font-semibold">
-                  {option.price.toLocaleString()} đ
-                </span>
-                <span className="ml-2 line-through text-gray-500">
-                  {option.oldPrice.toLocaleString()} đ
-                </span>
-                <span className="ml-2 text-green-600">-{option.discount}%</span>
-              </div>
-            </div>
-          ))}
+          <Select
+            value={selectedDays.toString()}
+            onValueChange={handleDaysChange}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue>{selectedDays} ngày</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {daysOptions.map((days) => (
+                <SelectItem key={days} value={days.toString()}>
+                  {days} ngày
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="mt-2">
+            <span className="font-semibold">Total Price: </span>
+            <span>{calculatePrice()} VND</span>
+          </div>
         </div>
       )}
     </div>
   );
 };
+
 const InfoItem = ({ icon, label, value }) => (
   <div className="flex items-center">
     <div className="text-blue-500 mr-2">{icon}</div>
@@ -130,63 +121,91 @@ const InfoItem = ({ icon, label, value }) => (
     </div>
   </div>
 );
+const calculateTotalPrice = (selectedServices) => {
+  let total = 0;
+  Object.values(selectedServices).forEach((service) => {
+    if (service.selected && service.days && service.pricePerDay) {
+      total += service.days * service.pricePerDay;
+    }
+  });
+  return total;
+};
 
 const PropertyPost = () => {
   const navigate = useNavigate();
   const [selectedServices, setSelectedServices] = useState({
-    sponsoredPost: false,
-    featuredPost: null,
-    priorityPost: false,
-    comboOffer: false,
-    Pushmessagesontimer: false,
+    sponsoredPost: { selected: false, days: 1, pricePerDay: 13571 },
+    featuredPost: { selected: null, days: 1, pricePerDay: 30000 }, // Premium
+    comboOffer: { selected: false, days: 1, pricePerDay: 16666 },
   });
 
-  const handleServiceSelection = (service, value) => {
+  // Cập nhật giá và số ngày khi chọn dịch vụ
+  const handleServiceSelection = (
+    service,
+    selected,
+    days = 1,
+    pricePerDay = 0
+  ) => {
     setSelectedServices((prev) => ({
       ...prev,
-      [service]: value,
+      [service]: { selected, days, pricePerDay },
     }));
+  };
+
+  // Tổng tiền của các dịch vụ đã chọn
+  const totalPrice = calculateTotalPrice(selectedServices);
+  const data = useAppStore((state) => state.data);
+  const user = useAppStore((state) => state.userInfo);
+  const onSubmit = async () => {
+    console.log(data);
+    // const transformedData = {
+    //   vnp_txnref: "35",
+    //   username: data.fullName,
+    //   product_id: data.id,
+    //   content: data.content,
+    //   vnp_amount: Math.ceil(totalPrice / 1000) * 1000,
+    // };
+    // console.log(transformedData);
+    // try {
+    //   const res = await axios.post(
+    //     "http://127.0.0.1:8000/api/auth/product/add-posting-type",
+    //     transformedData,
+    //     {
+    //       headers: {
+    //         Authorization: `Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL2F1dGgvbG9naW4iLCJpYXQiOjE3MjkxMDgwNzIsImV4cCI6MTcyOTE5NDQ3MSwibmJmIjoxNzI5MTA4MDcyLCJqdGkiOiJjYlN6blNkWjB0TnQ5Z0hvIiwic3ViIjoiMSIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjcifQ.KgnaAleFnkWnaLqbdcZ8WCaL4N8OkZrIefDwMrDhFHo`,
+    //       },
+    //     }
+    //   );
+    //   console.log(res);
+    // } catch (error) {
+    //   console.log(error);
+    // }
   };
   return (
     <div className="max-w-4xl mx-auto p-4 font-sans">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="relative h-64 sm:h-80 md:h-96">
-          <img
-            src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80"
-            alt="Property"
-            className="w-full h-full object-cover"
-          />
-        </div>
+        {/* Nội dung các dịch vụ */}
 
         <div className="p-6">
-          <h1 className="text-3xl font-bold mb-4">Beautiful Apartment</h1>
+          <h1 className="text-3xl font-bold mb-4">Dịch vụ bán nhanh hơn</h1>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-            <InfoItem icon={<FaRegBuilding />} label="Quantity" value="1" />
-            <InfoItem icon={<FaBed />} label="Rooms" value="3" />
-            <InfoItem icon={<FaRulerCombined />} label="Area" value="120 m²" />
+            <InfoItem
+              icon={<FaRegBuilding />}
+              label="tiêu đề"
+              value={data.title}
+            />
+            <InfoItem icon={<FaBed />} label="phòng" value={data.bedroom_id} />
+            <InfoItem
+              icon={<FaRulerCombined />}
+              label="diện tích"
+              value={data.land_area + "m²"}
+            />
             <InfoItem
               icon={<FaMoneyBillWave />}
-              label="Price"
-              value="15,000,000 VND/month"
+              label="Giá"
+              value={data.cost + "triệu" + " /tháng"}
             />
-          </div>
-
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">Phương thức đăng tin</h2>
-            <div className="bg-gray-100 p-4 rounded-lg">
-              <h3 className="font-semibold">Regular Posting (Free)</h3>
-              <p>Displayed on Nhà Tốt as a regular listing for 60 days.</p>
-              <div className="mt-2">
-                <p className="flex items-center">
-                  <FaRegClock className="mr-2" /> Posting Duration: 60 days
-                </p>
-                <p className="flex items-center">
-                  <FaCalendarAlt className="mr-2" /> Posting Period: From
-                  02/10/2024 to 01/12/2024
-                </p>
-              </div>
-            </div>
           </div>
 
           <div className="mb-6">
@@ -200,10 +219,11 @@ const PropertyPost = () => {
                 title="Sponsored Post"
                 price="13,571 VND/day"
                 description="Increase selling efficiency"
-                selected={selectedServices.sponsoredPost}
-                onSelect={(value) =>
-                  handleServiceSelection("sponsoredPost", value)
+                selected={selectedServices.sponsoredPost.selected}
+                onSelect={(value, days) =>
+                  handleServiceSelection("sponsoredPost", value, days, 13571)
                 }
+                daysOptions={[1, 2, 3, 5, 7]}
               />
 
               <div>
@@ -212,48 +232,50 @@ const PropertyPost = () => {
                 </h3>
                 <div className="space-y-2">
                   <ServiceOption
-                    title="Basic"
-                    price="4,800 VND/day"
-                    selected={selectedServices.featuredPost === "basic"}
-                    onSelect={() =>
-                      handleServiceSelection("featuredPost", "basic")
-                    }
-                  />
-                  <ServiceOption
                     title="Premium"
-                    price="8,000 VND/day"
-                    selected={selectedServices.featuredPost === "premium"}
-                    onSelect={() =>
-                      handleServiceSelection("featuredPost", "premium")
+                    price="30,000 VND/day"
+                    selected={
+                      selectedServices.featuredPost.selected === "premium"
                     }
+                    onSelect={(value, days) =>
+                      handleServiceSelection(
+                        "featuredPost",
+                        "premium",
+                        days,
+                        30000
+                      )
+                    }
+                    daysOptions={[1, 2, 3, 5, 7]}
                   />
                 </div>
               </div>
 
               <ServiceOption
-                title="Priority Post"
-                price="115,000 VND/day"
-                selected={selectedServices.priorityPost}
-                onSelect={(value) =>
-                  handleServiceSelection("priorityPost", value)
-                }
-              />
-
-              <ServiceOption
                 title="Combo ưu đãi & tiện lợi"
-                price="16,666 đ/ngày"
+                price="16,666 VND/day"
                 description="Kết hợp các dịch vụ để tăng tối đa hiệu quả tin đăng, với mức giá ưu đãi cực tiết kiệm"
-                selected={selectedServices.comboOffer}
-                onSelect={(value) =>
-                  handleServiceSelection("comboOffer", value)
+                selected={selectedServices.comboOffer.selected}
+                onSelect={(value, days) =>
+                  handleServiceSelection("comboOffer", value, days, 16666)
                 }
                 highlight={true}
+                daysOptions={[1, 3, 7]}
+                discount={{ 3: 0.28, 7: 0.16 }}
               />
             </div>
           </div>
-        </div>
-        <div className="flex justify-end items-center gap-3 p-6">
-          <Button onClick={() => navigate("/paid")}>Thanh Toán</Button>
+
+          {/* Hiển thị tổng tiền */}
+          {/*  */}
+          <div className="flex justify-between items-center p-6">
+            <span className="text-xl font-semibold">
+              Tổng tiền:{" "}
+              {(Math.ceil(totalPrice / 1000) * 1000).toLocaleString()} VND
+            </span>
+
+            {/* fix */}
+            <Button onClick={() => onSubmit()}>Thanh Toán</Button>
+          </div>
         </div>
       </div>
     </div>

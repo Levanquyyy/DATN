@@ -4,6 +4,7 @@ export const createAuthSlice = (set) => ({
   imageNames: null,
   video: null,
   forsale: null,
+  setisforsale: (forsale) => set({ forsale }),
   forrent: null,
 
   page1020: null,
