@@ -55,7 +55,8 @@ import {
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { useAppStore } from "@/store";
+import { useAppStore, useStore } from "@/store";
+import { setEncryptedCookie } from "@/store/cookies/cookies.js";
 
 const FormSchema = z.object({
   nameofbuilding: z.string().min(2, {
@@ -129,7 +130,6 @@ const FormSchema = z.object({
   type_rental: z.number().optional(),
   code: z.string().optional(),
   type_product: z.number().optional(),
-  user_id: z.number().optional(),
   video: z.string().optional(),
 
   car_alley: z.boolean().default(false).optional(),
@@ -152,6 +152,7 @@ const CategoryPage1020 = () => {
   const setFormData = useAppStore((state) => state.setFormData);
   const setisforsale = useAppStore((state) => state.setisforsale);
   const setpage1020 = useAppStore((state) => state.setpage1020);
+
   const form = useForm({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -186,7 +187,6 @@ const CategoryPage1020 = () => {
       ward_code: "",
 
       code: `${Math.random().toString(36).substr(2, 9)}`,
-      user_id: 1,
       type_product: 1,
       type_rental: 3,
       category_id: 1,
@@ -222,7 +222,7 @@ const CategoryPage1020 = () => {
   const [isChecked, setIsChecked] = useState(false);
   const [isFocus, setIsFocus] = useState(false);
   const [isFocusDescribeDetail, setIsFocusDescribeDetail] = useState(false);
-
+  const [user_id, setUserId] = useState(null);
   const [errors, setErrors] = useState({
     city: null,
     district: null,
@@ -294,7 +294,11 @@ const CategoryPage1020 = () => {
         `${import.meta.env.VITE_SERVER_URL}/api/auth/product/add-product-rent`,
         transformedData
       );
-      setFormData(response.data, imageNames, video, forsale);
+      // setEncryptedCookie("productData", response.data.data.id);
+      console.log(response.data.data.id);
+
+      setFormData(response.data.data, imageNames, video, forsale);
+      console.log(response.data);
     } catch (error) {
       console.error(
         "Error posting product:",
@@ -302,9 +306,36 @@ const CategoryPage1020 = () => {
       );
     }
   };
+  const fetchUserInfo = async () => {
+    const access_token = Cookies.get("access_token");
 
+    if (access_token) {
+      try {
+        const response = await apiClient.get(
+          `${import.meta.env.VITE_SERVER_URL}/api/auth/user`
+        );
+        return response.data;
+      } catch (error) {
+        console.error(
+          "Error fetching user info:",
+          error.response?.data || error.message
+        );
+        return null;
+      }
+    } else {
+      console.error("No access token found");
+      return null;
+    }
+  };
   const onSubmit = async (data, isForRent = false) => {
-    // Chuyển đổi giá trị boolean thành số trước khi gửi dữ liệu
+    const userInfo = await fetchUserInfo();
+
+    if (!userInfo) {
+      console.error("Failed to fetch user info");
+      return;
+    }
+    const user_id = userInfo.id;
+
     const transformedData = {
       ...data,
       car_alley: data.car_alley ? 1 : 0,
@@ -315,8 +346,9 @@ const CategoryPage1020 = () => {
       planning_or_road: data.planning_or_road ? 1 : 0,
       diff_situation: data.diff_situation ? 1 : 0,
       type_user: data.type_user ? 2 : 1,
+      user_id: user_id,
     };
-    console.log(transformedData);
+    // console.log(transformedData);
     let hasError = false;
     const newErrors = { city: null, district: null, ward: null };
 

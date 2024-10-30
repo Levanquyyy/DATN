@@ -15,7 +15,7 @@ import { useFacebookLogin } from "@kazion/react-facebook-login";
 import { jwtDecode } from "jwt-decode";
 import { useState, useEffect } from "react";
 import { FaFacebookF } from "react-icons/fa6";
-import { useAppStore } from "@/store";
+import { useAppStore, useStore } from "@/store";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import apiClient from "@/lib/api-client";
@@ -32,6 +32,8 @@ const Auth = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const { setUserInfo } = useAppStore();
+  const { user_id, setUserId, clearUserId } = useStore();
+
   const navigate = useNavigate();
 
   const togglePasswordVisibility = () => {
@@ -129,6 +131,7 @@ const Auth = () => {
       email: emailForSignIn,
       password: passwordForSignIn,
     };
+
     try {
       const response = await apiClient.post(SIGNIN_ROUTE, data);
       if (response.data.status) {
@@ -139,9 +142,6 @@ const Auth = () => {
           secure: true,
           sameSite: "strict",
         });
-
-        // Set user info to Zustand
-        setUserInfo(response.data.user);
 
         // Navigate based on response status
         if (response.status === 200) {

@@ -19,6 +19,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 import { Button } from "@/components/ui/button";
 const frameworks = [
@@ -302,11 +310,20 @@ const Header = () => {
           <MessageCircle className="h-4 w-4" />
         </Link>
       </Button>
-      <Button variant="outline" size="icon" className="ml-auto h-8 w-8  ">
-        <Link to="/myads">
-          <PackagePlus className="h-4 w-4" />
-        </Link>
-      </Button>
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <PackagePlus className="h-4 w-4" />
+            <BreadcrumbLink href="/myads">Quản lý tin đăng</BreadcrumbLink>
+            <Button
+              variant="outline"
+              size="icon"
+              className="ml-auto h-8 w-8  "
+            ></Button>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       <Button variant="outline" size="icon" className="ml-auto 8 rounded-full">
         <Bell className="h-4 w-4" />
         <DropdownMenu>

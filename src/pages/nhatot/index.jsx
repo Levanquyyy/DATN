@@ -7,10 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import apiClient from "@/lib/api-client";
-import Cookies from "js-cookie";
-
 import { GET_DATA_PRODUCT_RENTHOUSE } from "@/utilities/constant";
-
 import {
   Select,
   SelectContent,
@@ -129,26 +126,20 @@ const NhatotPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const accessToken = Cookies.get("access_token");
-        const response = await apiClient.get(GET_DATA_PRODUCT_RENTHOUSE, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-        if (response.data.status === "error") {
-          throw new Error(response.data.message);
-        }
-        console.log(response);
+        const response = await apiClient.get(
+          `${import.meta.env.VITE_SERVER_URL}/${GET_DATA_PRODUCT_RENTHOUSE}`
+        );
         setDataFromServer(response.data.data);
       } catch (error) {
-        const errorMessage = error.message || "An unknown error occurred";
-        console.error("Signup error:", errorMessage);
-        toast.error(`Signup failed: ${errorMessage}`);
+        console.error("Signin error:", error.response?.data || error.message);
+        toast.error(
+          `Signin failed: ${error.response?.data?.message || error.message}`
+        );
       }
     };
 
     fetchData();
-  });
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {

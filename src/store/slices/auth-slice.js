@@ -1,12 +1,14 @@
 export const createAuthSlice = (set) => ({
   userInfo: undefined,
   data: null,
+  setData: (data) => set({ data }),
   imageNames: null,
   video: null,
   forsale: null,
   setisforsale: (forsale) => set({ forsale }),
   forrent: null,
-
+  email: null,
+  setisemail: (email) => set({ email }),
   page1020: null,
   setpage1020: (page1020) => set({ page1020 }),
   page1060: null,

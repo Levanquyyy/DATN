@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "@/components/ui/sidebar";
 import Header from "@/components/ui/header";
 import { Button } from "@/components/ui/button";
+import Cookies from "js-cookie";
+
 import {
   Select,
   SelectContent,
@@ -10,16 +12,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  FaRegBuilding,
-  FaBed,
-  FaRulerCombined,
-  FaMoneyBillWave,
   FaAngleDown,
+  FaBed,
+  FaMoneyBillWave,
+  FaRegBuilding,
+  FaRulerCombined,
 } from "react-icons/fa";
-import { useAppStore } from "@/store";
 
+import { v4 as uuidv4 } from "uuid";
+
+import apiClient from "@/lib/api-client";
+import { GET_DATA_POSTINGTYPE } from "@/utilities/constant";
+import { getDecryptedCookie } from "@/store/cookies/cookies.js";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 const ServiceOption = ({
   title,
   price,
@@ -44,18 +50,21 @@ const ServiceOption = ({
   const calculatePrice = () => {
     const basePrice = parseFloat(price.replace(/[^0-9.-]+/g, ""));
     let totalPrice = basePrice * selectedDays;
+
     if (discount && discount[selectedDays]) {
       totalPrice -= totalPrice * discount[selectedDays];
     }
-    totalPrice = Math.ceil(totalPrice / 1000) * 1000;
+
     return totalPrice.toLocaleString();
   };
 
   return (
     <div
       className={`p-4 border rounded-lg transition-colors ${
-        selected ? "border-blue-500 bg-blue-50" : "border-gray-200"
-      } ${highlight ? "border-yellow-500 bg-yellow-50" : ""}`}
+        selected ? "border-blue-500 " : "border-gray-200"
+      } ${
+        highlight ? "border-yellow-500 bg-yellow-50 dark:text-blue-500" : ""
+      }`}
     >
       <label className="flex items-start cursor-pointer">
         <input
@@ -70,11 +79,13 @@ const ServiceOption = ({
         />
         <div className="flex-grow">
           <div className="flex justify-between items-center">
-            <h4 className="font-semibold">{title}</h4>
+            <h4 className="font-semibold ">{title}</h4>
           </div>
-          <p className="text-sm text-gray-600">{price}</p>
+          <p className="text-sm ">{price}</p>
           {description && (
-            <p className="text-sm text-gray-500 mt-1">{description}</p>
+            <p className="text-sm text-blue-500 mt-1 dark:text-yellow-500">
+              {description}
+            </p>
           )}
         </div>
         <button onClick={toggleExpand} className="ml-2 focus:outline-none">
@@ -135,79 +146,190 @@ const PropertyPost = () => {
   const navigate = useNavigate();
   const [selectedServices, setSelectedServices] = useState({
     sponsoredPost: { selected: false, days: 1, pricePerDay: 13571 },
-    featuredPost: { selected: null, days: 1, pricePerDay: 30000 }, // Premium
+    featuredPost: { selected: false, days: 1, pricePerDay: 30000 }, // Premium
     comboOffer: { selected: false, days: 1, pricePerDay: 16666 },
   });
+  const [postingType, setPostingType] = useState([]);
+  const [totalPrice, setTotalPrice] = useState(0);
+  const [daysOptions, setDaysOptions] = useState();
+  const [selectedServiceUnder, setSelectedServiceUnder] = useState();
+  useEffect(() => {
+    const getPostingType = async () => {
+      try {
+        const response = await apiClient.get(
+          `${import.meta.env.VITE_SERVER_URL}/${GET_DATA_POSTINGTYPE}`
+        );
+        setPostingType(response.data.data);
+        const updatedServices = {
+          sponsoredPost: {
+            selected: response.data.data.some(
+              (item) => item.name === "sponsoredPost"
+            ),
+            days:
+              response.data.data.find((item) => item.name === "sponsoredPost")
+                ?.rule_day || 1,
+            pricePerDay:
+              response.data.data.find((item) => item.name === "sponsoredPost")
+                ?.cost || 13571,
+          },
+          featuredPost: {
+            selected: response.data.data.some(
+              (item) => item.name === "featuredPost"
+            ),
+            days:
+              response.data.data.find((item) => item.name === "featuredPost")
+                ?.rule_day || 1,
+            pricePerDay:
+              response.data.data.find((item) => item.name === "featuredPost")
+                ?.cost || 30000,
+          },
+          comboOffer: {
+            selected: response.data.data.some(
+              (item) => item.name === "comboOffer"
+            ),
+            days:
+              response.data.data.find((item) => item.name === "comboOffer")
+                ?.rule_day || 1,
+            pricePerDay:
+              response.data.data.find((item) => item.name === "comboOffer")
+                ?.cost || 16666,
+          },
+        };
+        setSelectedServices(updatedServices);
+      } catch (error) {
+        console.error("Signin error:", error.response?.data || error.message);
+        toast.error(
+          `Signin failed: ${error.response?.data?.message || error.message}`
+        );
+      }
+    };
 
-  // Cập nhật giá và số ngày khi chọn dịch vụ
+    getPostingType();
+  }, []);
+
+  useEffect(() => {
+    setTotalPrice(calculateTotalPrice(selectedServices));
+  }, [selectedServices]);
+
   const handleServiceSelection = (
     service,
     selected,
     days = 1,
     pricePerDay = 0
   ) => {
-    setSelectedServices((prev) => ({
-      ...prev,
-      [service]: { selected, days, pricePerDay },
-    }));
+    setSelectedServices((prevSelectedServices) => {
+      setDaysOptions(days);
+      setSelectedServiceUnder(service);
+      const updatedServices = Object.keys(prevSelectedServices).reduce(
+        (acc, key) => {
+          acc[key] = { ...prevSelectedServices[key], selected: false };
+          return acc;
+        },
+        {}
+      );
+      return {
+        ...updatedServices,
+        [service]: { selected, days, pricePerDay },
+      };
+    });
+  };
+  const getUserData = async () => {
+    try {
+      const response = await apiClient.get(
+        `${import.meta.env.VITE_SERVER_URL}/api/auth/user`
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Error fetching user info:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  };
+  const createTransformedData = (userData, product_id, totalPrice) => {
+    const vnp_txnref = uuidv4();
+    if (userData && product_id && totalPrice) {
+      return {
+        vnp_txnref: vnp_txnref,
+        username: userData.lastname,
+        product_id: getDecryptedCookie(product_id),
+        vnp_amount: Math.ceil(totalPrice / 1000) * 1000,
+        user_id: userData.id,
+        day: daysOptions,
+        type_posting_id:
+          selectedServiceUnder === "sponsoredPost"
+            ? 1
+            : selectedServiceUnder === "comboOffer"
+            ? 2
+            : selectedServiceUnder === "featuredPost"
+            ? 3
+            : 0,
+      };
+    } else {
+      return;
+    }
   };
 
-  // Tổng tiền của các dịch vụ đã chọn
-  const totalPrice = calculateTotalPrice(selectedServices);
-  const data = useAppStore((state) => state.data);
-  const user = useAppStore((state) => state.userInfo);
+  const postPayment = async (transformedData) => {
+    try {
+      const response = await apiClient.post(
+        "http://localhost:8000/api/zalopay/payment",
+        transformedData
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Error posting payment:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  };
+
   const onSubmit = async () => {
-    console.log(data);
-    // const transformedData = {
-    //   vnp_txnref: "35",
-    //   username: data.fullName,
-    //   product_id: data.id,
-    //   content: data.content,
-    //   vnp_amount: Math.ceil(totalPrice / 1000) * 1000,
-    // };
-    // console.log(transformedData);
-    // try {
-    //   const res = await axios.post(
-    //     "http://127.0.0.1:8000/api/auth/product/add-posting-type",
-    //     transformedData,
-    //     {
-    //       headers: {
-    //         Authorization: `Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL2F1dGgvbG9naW4iLCJpYXQiOjE3MjkxMDgwNzIsImV4cCI6MTcyOTE5NDQ3MSwibmJmIjoxNzI5MTA4MDcyLCJqdGkiOiJjYlN6blNkWjB0TnQ5Z0hvIiwic3ViIjoiMSIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjcifQ.KgnaAleFnkWnaLqbdcZ8WCaL4N8OkZrIefDwMrDhFHo`,
-    //       },
-    //     }
-    //   );
-    //   console.log(res);
-    // } catch (error) {
-    //   console.log(error);
-    // }
+    const access_token = Cookies.get("access_token");
+    // const product_id = Cookies.get("productData");
+    const product_id = "productData";
+    if (!access_token || !product_id) {
+      console.error("No access token or product id not found");
+      toast.error("No access token or product id not found");
+      return;
+    }
+
+    try {
+      const userData = await getUserData();
+      const transformedData = createTransformedData(
+        userData,
+        product_id,
+        totalPrice
+      );
+
+      if (transformedData === undefined) {
+        navigate("/myads");
+      } else {
+        const paymentResponse = await postPayment(transformedData);
+        console.log(paymentResponse);
+
+        if (paymentResponse.message === "success") {
+          console.log(paymentResponse.data);
+
+          window.open(paymentResponse.data, "_blank");
+          toast.success("Payment successful!");
+        }
+      }
+    } catch (error) {
+      toast.error(
+        `Payment failed: ${error.response?.data?.message || error.message}`
+      );
+    }
   };
   return (
     <div className="max-w-4xl mx-auto p-4 font-sans">
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        {/* Nội dung các dịch vụ */}
-
+      <div className="rounded-lg shadow-lg overflow-hidden">
         <div className="p-6">
           <h1 className="text-3xl font-bold mb-4">Dịch vụ bán nhanh hơn</h1>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-            <InfoItem
-              icon={<FaRegBuilding />}
-              label="tiêu đề"
-              value={data.title}
-            />
-            <InfoItem icon={<FaBed />} label="phòng" value={data.bedroom_id} />
-            <InfoItem
-              icon={<FaRulerCombined />}
-              label="diện tích"
-              value={data.land_area + "m²"}
-            />
-            <InfoItem
-              icon={<FaMoneyBillWave />}
-              label="Giá"
-              value={data.cost + "triệu" + " /tháng"}
-            />
-          </div>
-
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6"></div>
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-4">Service Options</h2>
             <p className="mb-4">
@@ -215,65 +337,33 @@ const PropertyPost = () => {
             </p>
 
             <div className="space-y-4">
-              <ServiceOption
-                title="Sponsored Post"
-                price="13,571 VND/day"
-                description="Increase selling efficiency"
-                selected={selectedServices.sponsoredPost.selected}
-                onSelect={(value, days) =>
-                  handleServiceSelection("sponsoredPost", value, days, 13571)
-                }
-                daysOptions={[1, 2, 3, 5, 7]}
-              />
-
-              <div>
-                <h3 className="font-semibold mb-2">
-                  Featured Post - Multiple images
-                </h3>
-                <div className="space-y-2">
-                  <ServiceOption
-                    title="Premium"
-                    price="30,000 VND/day"
-                    selected={
-                      selectedServices.featuredPost.selected === "premium"
-                    }
-                    onSelect={(value, days) =>
-                      handleServiceSelection(
-                        "featuredPost",
-                        "premium",
-                        days,
-                        30000
-                      )
-                    }
-                    daysOptions={[1, 2, 3, 5, 7]}
-                  />
-                </div>
-              </div>
-
-              <ServiceOption
-                title="Combo ưu đãi & tiện lợi"
-                price="16,666 VND/day"
-                description="Kết hợp các dịch vụ để tăng tối đa hiệu quả tin đăng, với mức giá ưu đãi cực tiết kiệm"
-                selected={selectedServices.comboOffer.selected}
-                onSelect={(value, days) =>
-                  handleServiceSelection("comboOffer", value, days, 16666)
-                }
-                highlight={true}
-                daysOptions={[1, 3, 7]}
-                discount={{ 3: 0.28, 7: 0.16 }}
-              />
+              {postingType.map((service) => (
+                <ServiceOption
+                  key={service.id}
+                  title={service.name}
+                  price={`${service.cost} VND/days`}
+                  description={service.title}
+                  selected={selectedServices[service.name]?.selected}
+                  onSelect={(selected, days) =>
+                    handleServiceSelection(
+                      service.name,
+                      selected,
+                      days,
+                      service.cost
+                    )
+                  }
+                  daysOptions={service.rule_day
+                    .split(",")
+                    .map((day) => parseInt(day))}
+                />
+              ))}
             </div>
           </div>
 
-          {/* Hiển thị tổng tiền */}
-          {/*  */}
           <div className="flex justify-between items-center p-6">
             <span className="text-xl font-semibold">
-              Tổng tiền:{" "}
-              {(Math.ceil(totalPrice / 1000) * 1000).toLocaleString()} VND
+              Tổng tiền: {totalPrice.toLocaleString()} VND
             </span>
-
-            {/* fix */}
             <Button onClick={() => onSubmit()}>Thanh Toán</Button>
           </div>
         </div>
@@ -281,6 +371,7 @@ const PropertyPost = () => {
     </div>
   );
 };
+
 const PostPage = () => {
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
