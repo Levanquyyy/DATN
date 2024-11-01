@@ -138,7 +138,7 @@ const FormSchema = z.object({
   not_completed_yet: z.boolean().default(false).optional(),
   land_not_changed_yet: z.boolean().default(false).optional(),
   planning_or_road: z.boolean().default(false).optional(),
-  diff_situation: z.boolean().default(false).optional(),
+  diff_situation: z.boolean().default(true).optional(),
   approved: z.number().optional(),
   // district_code: z.string().optional(),
   // chothue
