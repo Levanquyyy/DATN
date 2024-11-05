@@ -59,6 +59,8 @@ import { useAppStore, useStore } from "@/store";
 import { setEncryptedCookie } from "@/store/cookies/cookies.js";
 
 const FormSchema = z.object({
+  
+
   nameofbuilding: z.string().min(2, {
     message: "Vui lòng nhập tên tòa nhà",
   }),
@@ -106,7 +108,7 @@ const FormSchema = z.object({
   ward_code: z.string().min(1, {
     message: "Vui lòng chọn phường ",
   }),
-  cost: z.number().min(1, {
+  cost: z.string().min(1, {
     message: "Vui lòng nhập giá tiền",
   }),
   // fix
@@ -155,6 +157,9 @@ const CategoryPage1020 = () => {
 
   const form = useForm({
     resolver: zodResolver(FormSchema),
+    mode: "onChange", // Add this line
+    defaultValues: { /* your default values */ },
+
     defaultValues: {
       nameofbuilding: "",
       // citi: "",
@@ -390,6 +395,42 @@ const CategoryPage1020 = () => {
   const handleRentSubmit = (data) => {
     onSubmit(data, true);
   };
+
+  const formatCurrency = (value) => {
+    if (!value) return '';
+    // Remove any non-numeric characters (except for periods)
+    const numericValue = value.replace(/[^0-9]/g, '');
+    // Format the number with commas and append "đ"
+    const formattedValue = parseInt(numericValue, 10).toLocaleString();
+    return `${formattedValue}`;
+  };
+  
+  // Function to parse the input for storing in state
+  const parseCurrency = (value) => {
+    if (!value) return '';
+    return value.replace(/[^0-9]/g, '');
+  };
+  
+
+  useEffect(() => {
+    const usableArea = form.watch("usable_area");
+    const horizontal = form.watch("horizontal");
+    const length = form.watch("length");
+  
+    if (usableArea && horizontal && length) {
+      const calculatedArea = horizontal * length;
+      if (calculatedArea !== usableArea) {
+        form.setError("usable_area", {
+          type: "manual",
+          message: "Diện tích không khớp với chiều dài và chiều ngang!",
+        });
+      } else {
+        form.clearErrors("usable_area");
+      }
+    }
+  }, [form.watch("usable_area"), form.watch("horizontal"), form.watch("length")]);
+  
+  
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -766,6 +807,7 @@ const CategoryPage1020 = () => {
                           </FormItem>
                         )}
                       />
+
                       <FormField
                         control={form.control}
                         name="block"
@@ -794,10 +836,12 @@ const CategoryPage1020 = () => {
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectGroup>
+                                  
                                   <SelectLabel>Loại hình nhà ở:</SelectLabel>
                                   <SelectItem value="Nhà mặt phố/ mặt tiền">
                                     Nhà mặt phố/ mặt tiền
                                   </SelectItem>
+
                                   <SelectItem value="Nhà ngõ, hẻm">
                                     Nhà ngõ, hẻm
                                   </SelectItem>
@@ -1673,6 +1717,7 @@ const CategoryPage1020 = () => {
                           </FormItem>
                         )}
                       />
+
                       <FormField
                         control={form.control}
                         name="block"
@@ -1693,6 +1738,7 @@ const CategoryPage1020 = () => {
                         name="typeofhouse"
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
+                            <FormLabel>Loại hình nhà ở</FormLabel>
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
@@ -1731,6 +1777,7 @@ const CategoryPage1020 = () => {
                         render={({ field }) => (
                           <div className="mt-2 ">
                             <Select {...field} onValueChange={field.onChange}>
+                            <FormLabel>Số phòng ngủ</FormLabel>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
                                   {field.value || "Số phòng ngủ"}
@@ -1909,11 +1956,13 @@ const CategoryPage1020 = () => {
                             <FormControl>
                               <Input
                                 type="number"
-                                placeholder="Diện tích "
+                                placeholder="Diện tích 1"
                                 {...field}
-                                onChange={(e) =>
-                                  field.onChange(parseFloat(e.target.value))
-                                }
+                                onChange={(e) => {
+                                  const value = parseFloat(e.target.value);
+                                  field.onChange(value);
+                                  console.log("Usable Area Changed to:", value); // Xử lý giá trị thay đổi ở đây
+                                }}
                               />
                             </FormControl>
 
@@ -1921,6 +1970,7 @@ const CategoryPage1020 = () => {
                           </FormItem>
                         )}
                       />
+
                       <FormField
                         control={form.control}
                         name="horizontal"
@@ -1929,13 +1979,22 @@ const CategoryPage1020 = () => {
                             <FormLabel>Chiều ngang</FormLabel>
 
                             <FormControl>
-                              <Input placeholder="Chiều ngang " {...field} />
+                              <Input
+                                placeholder="Chiều ngang 1"
+                                {...field}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  field.onChange(value);
+                                  console.log("Horizontal Changed to:", value); // Xử lý giá trị thay đổi ở đây
+                                }}
+                              />
                             </FormControl>
 
                             <FormMessage />
                           </FormItem>
                         )}
                       />
+
                       <FormField
                         control={form.control}
                         name="length"
@@ -1944,28 +2003,14 @@ const CategoryPage1020 = () => {
                             <FormLabel>Chiều dài</FormLabel>
 
                             <FormControl>
-                              <Input placeholder="Chiều dài " {...field} />
-                            </FormControl>
-
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="cost"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Giá thuê</FormLabel>
-
-                            <FormControl>
                               <Input
-                                type="number"
-                                placeholder="Giá thuê "
+                                placeholder="Chiều dài 1"
                                 {...field}
-                                onChange={(e) =>
-                                  field.onChange(parseFloat(e.target.value))
-                                }
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  field.onChange(value);
+                                  console.log("Length Changed to:", value); // Xử lý giá trị thay đổi ở đây
+                                }}
                               />
                             </FormControl>
 
@@ -1973,26 +2018,54 @@ const CategoryPage1020 = () => {
                           </FormItem>
                         )}
                       />
+
+
+                      <FormField
+                        control={form.control}
+                        name="cost"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Giá bán</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="text" // Change type to text to handle formatting
+                                placeholder="Giá thuê 1"
+                                {...field}
+                                value={formatCurrency(field.value)} // Format as currency
+                                onChange={(e) => {
+                                  const originalValue = e.target.value;
+                                  field.onChange(parseCurrency(originalValue)); // Store as numeric value
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                                            
                       <FormField
                         control={form.control}
                         name="cost_deposit"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Số tiền cọc</FormLabel>
-
                             <FormControl>
                               <Input
-                                type="number"
-                                placeholder="Số tiền cọc "
+                                type="text" // Change type to text to handle formatting
+                                placeholder="Số tiền cọc 1"
                                 {...field}
-                                onChange={(e) => field.onChange(e.target.value)}
+                                value={formatCurrency(field.value)} // Format as currency
+                                onChange={(e) => {
+                                  const originalValue = e.target.value;
+                                  field.onChange(parseCurrency(originalValue)); // Store as numeric value
+                                }}
                               />
                             </FormControl>
-
                             <FormMessage />
                           </FormItem>
                         )}
                       />
+
                       <FormField
                         control={form.control}
                         name="legal_id"
@@ -2273,9 +2346,12 @@ const CategoryPage1020 = () => {
                       />
 
                       <div className="flex gap-3 mt-3">
-                        <Button variant="outline">Xem trước</Button>
-                        <Button type="submit">Đăng tin</Button>
-                      </div>
+  <Button variant="outline">Xem trước</Button>
+  <Button type="submit" disabled={!form.formState.isValid || form.formState.isSubmitting}>
+    Đăng tin
+  </Button>
+</div>
+
                     </TabsContent>
                   </form>
                 </Form>
