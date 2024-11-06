@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/ui/sidebar";
 import Header from "@/components/ui/header";
+import { MultiSelect } from "@/components/ui/multiselect";
 import { Button } from "@/components/ui/button";
 import Cookies from "js-cookie";
 
@@ -22,7 +23,10 @@ import {
 import { v4 as uuidv4 } from "uuid";
 
 import apiClient from "@/lib/api-client";
-import { GET_DATA_POSTINGTYPE } from "@/utilities/constant";
+import {
+  GET_DATA_POSTINGTYPE1,
+  GET_DATA_POSTINGTYPE2,
+} from "@/utilities/constant";
 import { getDecryptedCookie } from "@/store/cookies/cookies.js";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -35,9 +39,35 @@ const ServiceOption = ({
   highlight,
   daysOptions,
   discount,
+  setTotalPrice, // Nhận setTotalPrice từ props
 }) => {
   const [expanded, setExpanded] = useState(false);
-  const [selectedDays, setSelectedDays] = useState(daysOptions[0]);
+  const [selectedDays, setSelectedDays] = useState(daysOptions);
+  const [selectedOption, setSelectedOption] = useState();
+  const [optionsDataType, setOptionsDataType] = useState();
+  useEffect(() => {
+    const getOptionsDataType = async () => {
+      try {
+        const response = await apiClient.get(
+          `${import.meta.env.VITE_SERVER_URL}/${GET_DATA_POSTINGTYPE2}`
+        );
+
+        // setSelectedServices(updatedServices);
+        console.log(response.data.data);
+
+        setOptionsDataType(response.data.data);
+      } catch (error) {
+        console.error("Signin error:", error.response?.data || error.message);
+        toast.error(
+          `Signin failed: ${error.response?.data?.message || error.message}`
+        );
+      }
+    };
+
+    getOptionsDataType();
+  }, []);
+  // console.log(selectedDays);
+  // console.log(daysOptions[0]);
 
   const toggleExpand = () => setExpanded(!expanded);
 
@@ -45,8 +75,28 @@ const ServiceOption = ({
     const days = parseInt(value, 10);
     setSelectedDays(days);
     onSelect(selected, days);
+    console.log(value);
   };
 
+  const handleOptionsChange = (value) => {
+    // const selectedOption = optionsDataType.find(
+    //   (item) => item.id.toString() === value
+    // );
+    // if (selectedOption) {
+    //   setSelectedOption(selectedOption);
+    //   onSelect(selected, selectedOption);
+    //   console.log(selectedOption.name);
+    // }
+
+    const basePrice = parseFloat(price.replace(" VND/days", "")); // Lọc giá
+    const selectedItemsCount = value.length; // Độ dài mảng đã chọn
+    const updatedTotalPrice = basePrice * selectedItemsCount; // Tính tổng giá mới
+
+    setTotalPrice(updatedTotalPrice); // Cập nhật totalPrice
+    console.log("Giá mỗi ngày:", basePrice);
+    console.log("Số lượng đã chọn:", selectedItemsCount);
+    console.log("Tổng giá:", updatedTotalPrice);
+  };
   const calculatePrice = () => {
     const basePrice = parseFloat(price.replace(/[^0-9.-]+/g, ""));
     let totalPrice = basePrice * selectedDays;
@@ -99,20 +149,42 @@ const ServiceOption = ({
       {selected && expanded && (
         <div className="mt-4 space-y-2">
           <Select
-            value={selectedDays.toString()}
-            onValueChange={handleDaysChange}
+            value={
+              selectedDays
+                ? selectedDays.toString()
+                : selectedOption
+                ? selectedOption.id.toString()
+                : "1"
+            }
+            onValueChange={daysOptions ? handleDaysChange : handleOptionsChange}
           >
             <SelectTrigger className="w-[180px]">
-              <SelectValue>{selectedDays} ngày</SelectValue>
+              <SelectValue>
+                {daysOptions
+                  ? `${selectedDays} ngày`
+                  : selectedOption
+                  ? `${selectedOption.name} ngày`
+                  : "1 ngày"}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {daysOptions.map((days) => (
-                <SelectItem key={days} value={days.toString()}>
-                  {days} ngày
-                </SelectItem>
-              ))}
+              {daysOptions ? (
+                daysOptions.map((days) => (
+                  <SelectItem key={days} value={days.toString()}>
+                    {days} ngày
+                  </SelectItem>
+                ))
+              ) : optionsDataType ? (
+                <MultiSelect
+                  data={optionsDataType}
+                  onChange={handleOptionsChange}
+                />
+              ) : (
+                <div>Loading...</div>
+              )}
             </SelectContent>
           </Select>
+
           <div className="mt-2">
             <span className="font-semibold">Total Price: </span>
             <span>{calculatePrice()} VND</span>
@@ -149,15 +221,17 @@ const PropertyPost = () => {
     featuredPost: { selected: false, days: 1, pricePerDay: 30000 }, // Premium
     comboOffer: { selected: false, days: 1, pricePerDay: 16666 },
   });
+
   const [postingType, setPostingType] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
-  const [daysOptions, setDaysOptions] = useState();
   const [selectedServiceUnder, setSelectedServiceUnder] = useState();
+  const [daysOptions, setDaysOptions] = useState();
+
   useEffect(() => {
     const getPostingType = async () => {
       try {
         const response = await apiClient.get(
-          `${import.meta.env.VITE_SERVER_URL}/${GET_DATA_POSTINGTYPE}`
+          `${import.meta.env.VITE_SERVER_URL}/${GET_DATA_POSTINGTYPE1}`
         );
         setPostingType(response.data.data);
         const updatedServices = {
@@ -289,8 +363,8 @@ const PropertyPost = () => {
 
   const onSubmit = async () => {
     const access_token = Cookies.get("access_token");
-    // const product_id = Cookies.get("productData");
-    const product_id = "productData";
+    const product_id = Cookies.get("productData");
+    // const product_id = "productData";
     if (!access_token || !product_id) {
       console.error("No access token or product id not found");
       toast.error("No access token or product id not found");
@@ -352,9 +426,11 @@ const PropertyPost = () => {
                       service.cost
                     )
                   }
-                  daysOptions={service.rule_day
-                    .split(",")
+                  daysOptions={JSON.parse(service.rule_day)
+                    ?.replace(/[\[\]]/g, "")
+                    ?.split(",")
                     .map((day) => parseInt(day))}
+                  setTotalPrice={setTotalPrice} // Truyền setTotalPrice
                 />
               ))}
             </div>

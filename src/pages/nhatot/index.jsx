@@ -46,13 +46,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-
+import PropertyListings from "@/components/ui/property-listing";
 import { Button } from "@/components/ui/button";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import axios from "axios";
-import { Link } from "react-router-dom";
 import { toast } from "sonner";
 const FormSchema = z.object({
   city: z.string().min(1, {
@@ -109,13 +108,12 @@ const NhatotPage = () => {
   const [openforPrice, setOpenforPrice] = useState(false);
   const [value, setValue] = useState("");
   const [valueforbed, setValueforbed] = useState("");
-  const [valueforprice, setValueforprice] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [forSale, setForSale] = useState(false);
   const [dataFromServer, setDataFromServer] = useState([]);
   const [filterbyCategory, setFilterbyCategory] = useState({
-    category: null,
-    userType: null,
+    category: "Nhà ở",
+    userType: "Tất cả",
   });
   const [errors, setErrors] = useState({
     city: null,
@@ -292,12 +290,7 @@ const NhatotPage = () => {
     { value: "an-dan-residence", label: "An Dân Residence" },
     { value: "an-gia-garden", label: "An Gia Garden" },
   ];
-  const priceRanges = [
-    "Giá dưới 1 tỷ",
-    "Giá 1-2 tỷ",
-    "Giá 2-3 tỷ",
-    "Giá trên 30 tỷ",
-  ];
+
   const options = [
     {
       id: "1",
@@ -328,7 +321,7 @@ const NhatotPage = () => {
       label: "More than 6",
     },
   ];
-  const prominentCities = ["Tp Hồ Chí Minh", "Hà Nội", "Đà Nẵng"];
+
   const propertyCategories = [
     "Nhà ở",
     "Căn hộ/Chung cư",
@@ -1210,32 +1203,9 @@ const NhatotPage = () => {
                 </h2>
                 {filterbyCategory.category === "Nhà ở" &&
                   filterbyCategory.userType === "Tất cả" && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
-                      {dataFromServer.map((item) => (
-                        <Link to={`/detaipage?nhadat=nhadat${item.id}`}>
-                          <div
-                            key={item.id}
-                            className="dark:border-white p-4 rounded-md shadow-md hover:shadow-lg transition-shadow "
-                          >
-                            <img
-                              src={`https://images.unsplash.com/photo-1580587771525-78b9dba3b914?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1074&q=80`}
-                              alt="Property"
-                              className="w-full h-48 object-cover rounded-md mb-4"
-                            />
-                            <h3 className="font-semibold text-lg mb-2">
-                              {item.title}
-                            </h3>
-                            <p className="">Diện tích {item.land_area} m² </p>
-                            <p className=" font-semibold mb-2">
-                              Giá: {item.cost}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {item.content}
-                            </p>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
+                    <>
+                      <PropertyListings dataFromServer={dataFromServer} />
+                    </>
                   )}
               </div>
             </div>

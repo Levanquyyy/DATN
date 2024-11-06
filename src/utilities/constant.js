@@ -9,9 +9,13 @@ export const UPDATE_DATA_PRODUCT_RENTHOUSE = (id) =>
 
 // get postingtype
 export const GET_PROUCT = "api/auth/product";
-export const GET_DATA_POSTINGTYPE = `${GET_PROUCT}/get-data-posting-type`;
+
+export const GET_DATA_POSTINGTYPE1 = `${GET_PROUCT}/get-data-posting-type?type=1`;
+export const GET_DATA_POSTINGTYPE2 = `${GET_PROUCT}/get-data-posting-type?type=2`;
 export const GET_DATA_BY_USERID = `${HOST}/${GET_PROUCT}/get-product-rent-user-id`;
 
 // get USER
 
 export const GET_USER = `${HOST}/api/auth/user`;
+
+// get option by type
