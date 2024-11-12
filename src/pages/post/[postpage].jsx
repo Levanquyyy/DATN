@@ -1,14 +1,18 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/ui/sidebar";
 import Header from "@/components/ui/header";
-import { MultiSelect } from "@/components/ui/multiselect";
+
 import { Button } from "@/components/ui/button";
 import Cookies from "js-cookie";
-
+import { SmartDatetimeInput } from "@/components/core/dateTime-input";
+import { useAppStore } from "@/store";
+import { MultiSelect } from "@/components/core/multi-selector";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -30,98 +34,83 @@ import {
 import { getDecryptedCookie } from "@/store/cookies/cookies.js";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-const ServiceOption = ({
-  title,
-  price,
-  description,
-  selected,
-  onSelect,
-  highlight,
-  daysOptions,
-  discount,
-  setTotalPrice, // Nhận setTotalPrice từ props
-}) => {
+
+const ServiceOption = ({ data, isSelected, onSelect }) => {
+  const { name, cost, title, description, rule_day } = data;
   const [expanded, setExpanded] = useState(false);
-  const [selectedDays, setSelectedDays] = useState(daysOptions);
-  const [selectedOption, setSelectedOption] = useState();
-  const [optionsDataType, setOptionsDataType] = useState();
-  useEffect(() => {
-    const getOptionsDataType = async () => {
-      try {
-        const response = await apiClient.get(
-          `${import.meta.env.VITE_SERVER_URL}/${GET_DATA_POSTINGTYPE2}`
-        );
+  const [selectedDate, setSelectedDate] = useState(undefined);
+  const [save_day, setSaveDay] = useState(0);
+  const days = useAppStore((state) => state.days);
 
-        // setSelectedServices(updatedServices);
-        console.log(response.data.data);
-
-        setOptionsDataType(response.data.data);
-      } catch (error) {
-        console.error("Signin error:", error.response?.data || error.message);
-        toast.error(
-          `Signin failed: ${error.response?.data?.message || error.message}`
-        );
-      }
-    };
-
-    getOptionsDataType();
-  }, []);
-  // console.log(selectedDays);
-  // console.log(daysOptions[0]);
+  const handleDateChange = (date) => {
+    setSelectedDate(date);
+  };
 
   const toggleExpand = () => setExpanded(!expanded);
 
-  const handleDaysChange = (value) => {
-    const days = parseInt(value, 10);
-    setSelectedDays(days);
-    onSelect(selected, days);
-    console.log(value);
-  };
-
-  const handleOptionsChange = (value) => {
-    // const selectedOption = optionsDataType.find(
-    //   (item) => item.id.toString() === value
-    // );
-    // if (selectedOption) {
-    //   setSelectedOption(selectedOption);
-    //   onSelect(selected, selectedOption);
-    //   console.log(selectedOption.name);
-    // }
-
-    const basePrice = parseFloat(price.replace(" VND/days", "")); // Lọc giá
-    const selectedItemsCount = value.length; // Độ dài mảng đã chọn
-    const updatedTotalPrice = basePrice * selectedItemsCount; // Tính tổng giá mới
-
-    setTotalPrice(updatedTotalPrice); // Cập nhật totalPrice
-    console.log("Giá mỗi ngày:", basePrice);
-    console.log("Số lượng đã chọn:", selectedItemsCount);
-    console.log("Tổng giá:", updatedTotalPrice);
-  };
   const calculatePrice = () => {
-    const basePrice = parseFloat(price.replace(/[^0-9.-]+/g, ""));
-    let totalPrice = basePrice * selectedDays;
+    const numericPrice = parseFloat(cost.replace(/[^0-9.-]+/g, ""));
+    console.log(
+      "name",
+      name,
+      "rule_day",
+      save_day,
+      "numericPrice",
+      numericPrice
+    );
 
-    if (discount && discount[selectedDays]) {
-      totalPrice -= totalPrice * discount[selectedDays];
+    if (isNaN(numericPrice)) {
+      console.error("Invalid price:", cost);
+      return "Invalid price";
     }
 
-    return totalPrice.toLocaleString();
+    let totalPrice;
+    if (name === "Tin thường") {
+      totalPrice = numericPrice * save_day;
+    } else {
+      const daysLength = Array.isArray(days) ? days.length : 0;
+      if (isNaN(daysLength)) {
+        console.error("Invalid days length:", daysLength);
+        return "Invalid days length";
+      }
+      totalPrice = numericPrice * daysLength;
+    }
+
+    const formattedPrice = new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(totalPrice);
+
+    return formattedPrice;
   };
+
+  // Parse rule_day into an array and format it for Select
+  const parsedRuleDays = rule_day
+    ? JSON.parse(rule_day.replace(/'/g, '"').replace(/^"|"$/g, "")).map(
+        (day) => ({
+          label: `${day} ngày`,
+          value: day.toString(),
+        })
+      )
+    : [];
+
+  if (!Array.isArray(parsedRuleDays)) {
+    console.error("Invalid rule_day format:", rule_day);
+    return null;
+  }
 
   return (
     <div
       className={`p-4 border rounded-lg transition-colors ${
-        selected ? "border-blue-500 " : "border-gray-200"
-      } ${
-        highlight ? "border-yellow-500 bg-yellow-50 dark:text-blue-500" : ""
-      }`}
+        isSelected ? "border-blue-500 " : "border-gray-200"
+      } ${expanded ? "border-yellow-500 bg-yellow-50 dark:text-blue-500" : ""}`}
     >
       <label className="flex items-start cursor-pointer">
         <input
           type="checkbox"
-          checked={selected}
+          checked={isSelected}
           onChange={(e) => {
-            onSelect(e.target.checked, selectedDays);
+            onSelect(isSelected ? null : data);
             if (e.target.checked) setExpanded(true);
             else setExpanded(false);
           }}
@@ -131,11 +120,50 @@ const ServiceOption = ({
           <div className="flex justify-between items-center">
             <h4 className="font-semibold ">{title}</h4>
           </div>
-          <p className="text-sm ">{price}</p>
+          <p className="text-sm ">{cost}</p>
           {description && (
             <p className="text-sm text-blue-500 mt-1 dark:text-yellow-500">
               {description}
             </p>
+          )}
+          {name === "Tin thường" ? (
+            <div className="pt-8 pb-16 w-96 mx-auto">
+              <Select onValueChange={(value) => setSaveDay(parseInt(value))}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Chọn số ngày" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Số ngày</SelectLabel>
+                    {parsedRuleDays.map((day) => (
+                      <SelectItem key={day.value} value={day.value}>
+                        {day.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <div className="pt-8 pb-16 w-96 mx-auto">
+              <SmartDatetimeInput
+                value={selectedDate}
+                onValueChange={handleDateChange}
+                placeholder="Enter a date and time"
+              />
+              {selectedDate && (
+                <p className="mt-4">
+                  Selected Date: {selectedDate.toLocaleString()}
+                </p>
+              )}
+              <ul>
+                {[...new Set(days)]?.map((time, index) => (
+                  <li key={index} className="text-sm">
+                    {time}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
         <button onClick={toggleExpand} className="ml-2 focus:outline-none">
@@ -146,49 +174,10 @@ const ServiceOption = ({
           />
         </button>
       </label>
-      {selected && expanded && (
-        <div className="mt-4 space-y-2">
-          <Select
-            value={
-              selectedDays
-                ? selectedDays.toString()
-                : selectedOption
-                ? selectedOption.id.toString()
-                : "1"
-            }
-            onValueChange={daysOptions ? handleDaysChange : handleOptionsChange}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue>
-                {daysOptions
-                  ? `${selectedDays} ngày`
-                  : selectedOption
-                  ? `${selectedOption.name} ngày`
-                  : "1 ngày"}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {daysOptions ? (
-                daysOptions.map((days) => (
-                  <SelectItem key={days} value={days.toString()}>
-                    {days} ngày
-                  </SelectItem>
-                ))
-              ) : optionsDataType ? (
-                <MultiSelect
-                  data={optionsDataType}
-                  onChange={handleOptionsChange}
-                />
-              ) : (
-                <div>Loading...</div>
-              )}
-            </SelectContent>
-          </Select>
-
-          <div className="mt-2">
-            <span className="font-semibold">Total Price: </span>
-            <span>{calculatePrice()} VND</span>
-          </div>
+      {isSelected && expanded && (
+        <div className="mt-2">
+          <span className="font-semibold">Total Price: </span>
+          <span>{calculatePrice()}</span>
         </div>
       )}
     </div>
@@ -204,28 +193,12 @@ const InfoItem = ({ icon, label, value }) => (
     </div>
   </div>
 );
-const calculateTotalPrice = (selectedServices) => {
-  let total = 0;
-  Object.values(selectedServices).forEach((service) => {
-    if (service.selected && service.days && service.pricePerDay) {
-      total += service.days * service.pricePerDay;
-    }
-  });
-  return total;
-};
 
 const PropertyPost = () => {
   const navigate = useNavigate();
-  const [selectedServices, setSelectedServices] = useState({
-    sponsoredPost: { selected: false, days: 1, pricePerDay: 13571 },
-    featuredPost: { selected: false, days: 1, pricePerDay: 30000 }, // Premium
-    comboOffer: { selected: false, days: 1, pricePerDay: 16666 },
-  });
-
   const [postingType, setPostingType] = useState([]);
+  const [selectedService, setSelectedService] = useState(null);
   const [totalPrice, setTotalPrice] = useState(0);
-  const [selectedServiceUnder, setSelectedServiceUnder] = useState();
-  const [daysOptions, setDaysOptions] = useState();
 
   useEffect(() => {
     const getPostingType = async () => {
@@ -234,42 +207,7 @@ const PropertyPost = () => {
           `${import.meta.env.VITE_SERVER_URL}/${GET_DATA_POSTINGTYPE1}`
         );
         setPostingType(response.data.data);
-        const updatedServices = {
-          sponsoredPost: {
-            selected: response.data.data.some(
-              (item) => item.name === "sponsoredPost"
-            ),
-            days:
-              response.data.data.find((item) => item.name === "sponsoredPost")
-                ?.rule_day || 1,
-            pricePerDay:
-              response.data.data.find((item) => item.name === "sponsoredPost")
-                ?.cost || 13571,
-          },
-          featuredPost: {
-            selected: response.data.data.some(
-              (item) => item.name === "featuredPost"
-            ),
-            days:
-              response.data.data.find((item) => item.name === "featuredPost")
-                ?.rule_day || 1,
-            pricePerDay:
-              response.data.data.find((item) => item.name === "featuredPost")
-                ?.cost || 30000,
-          },
-          comboOffer: {
-            selected: response.data.data.some(
-              (item) => item.name === "comboOffer"
-            ),
-            days:
-              response.data.data.find((item) => item.name === "comboOffer")
-                ?.rule_day || 1,
-            pricePerDay:
-              response.data.data.find((item) => item.name === "comboOffer")
-                ?.cost || 16666,
-          },
-        };
-        setSelectedServices(updatedServices);
+        console.log(response.data.data);
       } catch (error) {
         console.error("Signin error:", error.response?.data || error.message);
         toast.error(
@@ -281,45 +219,8 @@ const PropertyPost = () => {
     getPostingType();
   }, []);
 
-  useEffect(() => {
-    setTotalPrice(calculateTotalPrice(selectedServices));
-  }, [selectedServices]);
-
-  const handleServiceSelection = (
-    service,
-    selected,
-    days = 1,
-    pricePerDay = 0
-  ) => {
-    setSelectedServices((prevSelectedServices) => {
-      setDaysOptions(days);
-      setSelectedServiceUnder(service);
-      const updatedServices = Object.keys(prevSelectedServices).reduce(
-        (acc, key) => {
-          acc[key] = { ...prevSelectedServices[key], selected: false };
-          return acc;
-        },
-        {}
-      );
-      return {
-        ...updatedServices,
-        [service]: { selected, days, pricePerDay },
-      };
-    });
-  };
-  const getUserData = async () => {
-    try {
-      const response = await apiClient.get(
-        `${import.meta.env.VITE_SERVER_URL}/api/auth/user`
-      );
-      return response.data;
-    } catch (error) {
-      console.error(
-        "Error fetching user info:",
-        error.response?.data || error.message
-      );
-      throw error;
-    }
+  const handleSelectService = (service) => {
+    setSelectedService(service);
   };
   const createTransformedData = (userData, product_id, totalPrice) => {
     const vnp_txnref = uuidv4();
@@ -331,14 +232,14 @@ const PropertyPost = () => {
         vnp_amount: Math.ceil(totalPrice / 1000) * 1000,
         user_id: userData.id,
         day: daysOptions,
-        type_posting_id:
-          selectedServiceUnder === "sponsoredPost"
-            ? 1
-            : selectedServiceUnder === "comboOffer"
-            ? 2
-            : selectedServiceUnder === "featuredPost"
-            ? 3
-            : 0,
+        // type_posting_id:
+        //   selectedServiceUnder === "sponsoredPost"
+        //     ? 1
+        //     : selectedServiceUnder === "comboOffer"
+        //     ? 2
+        //     : selectedServiceUnder === "featuredPost"
+        //     ? 3
+        //     : 0,
       };
     } else {
       return;
@@ -360,11 +261,23 @@ const PropertyPost = () => {
       throw error;
     }
   };
-
+  const getUserData = async () => {
+    try {
+      const response = await apiClient.get(
+        `${import.meta.env.VITE_SERVER_URL}/api/auth/user`
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Error fetching user info:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  };
   const onSubmit = async () => {
     const access_token = Cookies.get("access_token");
     const product_id = Cookies.get("productData");
-    // const product_id = "productData";
     if (!access_token || !product_id) {
       console.error("No access token or product id not found");
       toast.error("No access token or product id not found");
@@ -383,11 +296,8 @@ const PropertyPost = () => {
         navigate("/myads");
       } else {
         const paymentResponse = await postPayment(transformedData);
-        console.log(paymentResponse);
 
         if (paymentResponse.message === "success") {
-          console.log(paymentResponse.data);
-
           window.open(paymentResponse.data, "_blank");
           toast.success("Payment successful!");
         }
@@ -398,6 +308,7 @@ const PropertyPost = () => {
       );
     }
   };
+
   return (
     <div className="max-w-4xl mx-auto p-4 font-sans">
       <div className="rounded-lg shadow-lg overflow-hidden">
@@ -414,32 +325,15 @@ const PropertyPost = () => {
               {postingType.map((service) => (
                 <ServiceOption
                   key={service.id}
-                  title={service.name}
-                  price={`${service.cost} VND/days`}
-                  description={service.title}
-                  selected={selectedServices[service.name]?.selected}
-                  onSelect={(selected, days) =>
-                    handleServiceSelection(
-                      service.name,
-                      selected,
-                      days,
-                      service.cost
-                    )
-                  }
-                  daysOptions={JSON.parse(service.rule_day)
-                    ?.replace(/[\[\]]/g, "")
-                    ?.split(",")
-                    .map((day) => parseInt(day))}
-                  setTotalPrice={setTotalPrice} // Truyền setTotalPrice
+                  data={service}
+                  isSelected={selectedService?.id === service.id}
+                  onSelect={handleSelectService}
                 />
               ))}
             </div>
           </div>
 
-          <div className="flex justify-between items-center p-6">
-            <span className="text-xl font-semibold">
-              Tổng tiền: {totalPrice.toLocaleString()} VND
-            </span>
+          <div className="flex justify-end items-center p-6">
             <Button onClick={() => onSubmit()}>Thanh Toán</Button>
           </div>
         </div>

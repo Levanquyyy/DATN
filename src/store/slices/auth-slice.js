@@ -1,4 +1,6 @@
 export const createAuthSlice = (set) => ({
+  days: null,
+  setdays: (days) => set({ days }),
   userInfo: undefined,
   data: null,
   setData: (data) => set({ data }),

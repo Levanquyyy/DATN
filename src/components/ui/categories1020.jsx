@@ -1,18 +1,24 @@
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import Sidebar from "@/components/ui/sidebar";
-import Header from "@/components/ui/header";
-
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import Cookies from "js-cookie";
-import apiClient from "@/lib/api-client";
-
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import Sidebar from '@/components/ui/sidebar';
+import Header from '@/components/ui/header';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import Cookies from 'js-cookie';
+import apiClient from '@/lib/api-client';
+import { CaretSortIcon, CheckIcon } from '@radix-ui/react-icons';
+import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import axios from 'axios';
+import { useAppStore } from '@/store';
+import { setEncryptedCookie } from '@/store/cookies/cookies.js';
 import {
   Form,
   FormControl,
@@ -21,10 +27,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from '@/components/ui/form';
 
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -33,11 +37,8 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 // select city ward district
-import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
-
-import { cn } from "@/lib/utils";
 
 import {
   Command,
@@ -46,75 +47,70 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
+} from '@/components/ui/command';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { useAppStore, useStore } from "@/store";
-import { setEncryptedCookie } from "@/store/cookies/cookies.js";
+} from '@/components/ui/popover';
 
 const FormSchema = z.object({
   nameofbuilding: z.string().min(2, {
-    message: "Vui lòng nhập tên tòa nhà",
+    message: 'Vui lòng nhập tên tòa nhà',
   }),
   condition_interior: z.string().min(1, {
-    message: "Vui lòng nhập nội thất",
+    message: 'Vui lòng nhập nội thất',
   }),
   namedistrict: z.string().min(2, {
-    message: "Vui lòng nhâp tên đường",
+    message: 'Vui lòng nhâp tên đường',
   }),
 
   legal_id: z.string().min(1, {
-    message: "Vui lòng chọn giấy tờ pháp lý",
+    message: 'Vui lòng chọn giấy tờ pháp lý',
   }),
 
   city: z.string().min(1, {
-    message: "Vui lòng chọn tỉnh thành",
+    message: 'Vui lòng chọn tỉnh thành',
   }),
 
   typeofhouse: z.string().min(1, {
-    message: "Vui lòng chọn loại hình căn hộ",
+    message: 'Vui lòng chọn loại hình căn hộ',
   }),
   bedroom_id: z.string().min(1, {
-    message: "Vui lòng chọn số phòng ngủ",
+    message: 'Vui lòng chọn số phòng ngủ',
   }),
 
   // fix
 
   content: z.string().min(2, {
-    message: "Vui lòng nhập mô tả chi tiết",
+    message: 'Vui lòng nhập mô tả chi tiết',
   }),
   title: z.string().min(1, {
-    message: "Vui lòng nhập tiêu đề",
+    message: 'Vui lòng nhập tiêu đề',
   }),
 
   province_code: z.string().min(1, {
-    message: "Vui lòng chọn quận",
+    message: 'Vui lòng chọn quận',
   }),
   land_area: z.number().min(1, {
-    message: "Vui lòng nhập diện tích đất",
+    message: 'Vui lòng nhập diện tích đất',
   }),
   usable_area: z.number().min(1, {
-    message: "Vui lòng nhập diện tích sử dụng",
+    message: 'Vui lòng nhập diện tích sử dụng',
   }),
 
   ward_code: z.string().min(1, {
-    message: "Vui lòng chọn phường ",
+    message: 'Vui lòng chọn phường ',
   }),
   cost: z.number().min(1, {
-    message: "Vui lòng nhập giá tiền",
+    message: 'Vui lòng nhập giá tiền',
   }),
   // fix
   numberofstreet: z.string().optional(),
   positionBDS: z.string().optional(),
   block: z.string().optional(),
   floor: z.string().min(1, {
-    message: "Vui lòng nhập số tầng",
+    message: 'Vui lòng nhập số tầng',
   }),
   bathroom_id: z.string().optional(),
   viewbalcony: z.string().optional(),
@@ -140,60 +136,58 @@ const FormSchema = z.object({
   planning_or_road: z.boolean().default(false).optional(),
   diff_situation: z.boolean().default(false).optional(),
   approved: z.number().optional(),
-  // district_code: z.string().optional(),
-  // chothue
+
   cost_deposit: z.string().min(1, {
-    message: "Vui lòng nhập giá tiền cọc",
+    message: 'Vui lòng nhập giá tiền cọc',
   }),
   type_user: z.boolean().default(false).optional(),
 });
 
 const CategoryPage1020 = () => {
   const setFormData = useAppStore((state) => state.setFormData);
-  const setisforsale = useAppStore((state) => state.setisforsale);
   const setpage1020 = useAppStore((state) => state.setpage1020);
 
   const form = useForm({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      nameofbuilding: "",
+      nameofbuilding: '',
       // citi: "",
-      namedistrict: "",
-      district: "",
-      condition_interior: "",
-      typeofhouse: "",
-      bedroom_id: "",
-      legal_id: "",
+      namedistrict: '',
+      district: '',
+      condition_interior: '',
+      typeofhouse: '',
+      bedroom_id: '',
+      legal_id: '',
 
-      content: "",
-      city: "",
-      numberofstreet: "",
-      positionBDS: "",
-      block: "",
-      floor: "",
-      bathroom_id: "",
-      viewbalcony: "",
-      main_door_id: "",
-      subdivision_code: "",
-      propertyofhouse: "",
-      horizontal: "",
-      length: "",
+      content: '',
+      city: '',
+      numberofstreet: '',
+      positionBDS: '',
+      block: '',
+      floor: '',
+      bathroom_id: '',
+      viewbalcony: '',
+      main_door_id: '',
+      subdivision_code: '',
+      propertyofhouse: '',
+      horizontal: '',
+      length: '',
       // fix
-      usable_area: "",
-      cost: "",
+      usable_area: '',
+      cost: '',
 
-      land_area: "",
+      land_area: '',
 
-      ward_code: "",
+      ward_code: '',
 
       code: `${Math.random().toString(36).substr(2, 9)}`,
       type_product: 1,
       type_rental: 3,
       category_id: 1,
-      province_code: "",
-      images: "png2",
-      video: "1",
-      cost_deposit: "",
+      province_code: '',
+      images: 'png2',
+      video: '1',
+      cost_deposit: '',
       car_alley: false,
       back_house: false,
       blooming_house: false,
@@ -206,10 +200,7 @@ const CategoryPage1020 = () => {
       // district_code: "hcm",
     },
   });
-
   const navigate = useNavigate();
-
-  const [error, setError] = useState("");
   const [cities, setCities] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [wards, setWards] = useState([]);
@@ -219,40 +210,35 @@ const CategoryPage1020 = () => {
   const [opencity, setOpenCity] = useState(false);
   const [opendistrict, setOpenDistrict] = useState(false);
   const [openward, setOpenWard] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
   const [isFocus, setIsFocus] = useState(false);
   const [isFocusDescribeDetail, setIsFocusDescribeDetail] = useState(false);
-  const [user_id, setUserId] = useState(null);
   const [errors, setErrors] = useState({
     city: null,
     district: null,
     ward: null,
   });
   const funitureOptions = [
-    { value: "1", label: "Nội thất cao cấp" },
-    { value: "2", label: "Nội thất đầy đủ" },
-    { value: "3", label: "Hoàn thiện cơ bản" },
-    { value: "4", label: "Bàn giao thô" },
+    { value: '1', label: 'Nội thất cao cấp' },
+    { value: '2', label: 'Nội thất đầy đủ' },
+    { value: '3', label: 'Hoàn thiện cơ bản' },
+    { value: '4', label: 'Bàn giao thô' },
   ];
-  const handleCheckedChange = (checked) => {
-    setIsChecked(checked);
-    console.log(checked);
-  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await axios.get(
-          "https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json"
+          'https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json'
         );
         setCities(res.data);
-        // console.log(res.data);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error('Error fetching data:', error);
       }
     };
 
     fetchData();
-  }, []);
+  }, []); // Only run once on mount
+
   useEffect(() => {
     if (selectedCity) {
       const city = cities.find((city) => city.Name === selectedCity);
@@ -261,7 +247,7 @@ const CategoryPage1020 = () => {
       setWards([]);
       setSelectedWard(null);
     }
-  }, [selectedCity, cities]);
+  }, [selectedCity, cities]); // Run when selectedCity or cities change
 
   useEffect(() => {
     if (selectedDistrict) {
@@ -271,9 +257,8 @@ const CategoryPage1020 = () => {
       setWards(district?.Wards || []);
       setSelectedWard(null);
     }
-  }, [selectedDistrict, districts]);
-  const [searchParams] = useSearchParams();
-  const categoryId = searchParams.get("category");
+  }, [selectedDistrict, districts]); // Run when selectedDistrict or districts change
+
   const [imageNames, setImageNames] = useState([]);
   const [video, setVideo] = useState([]);
 
@@ -294,20 +279,20 @@ const CategoryPage1020 = () => {
         `${import.meta.env.VITE_SERVER_URL}/api/auth/product/add-product-rent`,
         transformedData
       );
-      // setEncryptedCookie("productData", response.data.data.id);
-      console.log(response.data.data.id);
+
+      setEncryptedCookie('productData', response.data.data.id);
 
       setFormData(response.data.data, imageNames, video, forsale);
       console.log(response.data);
     } catch (error) {
       console.error(
-        "Error posting product:",
+        'Error posting product:',
         error.response?.data || error.message
       );
     }
   };
   const fetchUserInfo = async () => {
-    const access_token = Cookies.get("access_token");
+    const access_token = Cookies.get('access_token');
 
     if (access_token) {
       try {
@@ -317,13 +302,13 @@ const CategoryPage1020 = () => {
         return response.data;
       } catch (error) {
         console.error(
-          "Error fetching user info:",
+          'Error fetching user info:',
           error.response?.data || error.message
         );
         return null;
       }
     } else {
-      console.error("No access token found");
+      console.error('No access token found');
       return null;
     }
   };
@@ -331,7 +316,7 @@ const CategoryPage1020 = () => {
     const userInfo = await fetchUserInfo();
 
     if (!userInfo) {
-      console.error("Failed to fetch user info");
+      console.error('Failed to fetch user info');
       return;
     }
     const user_id = userInfo.id;
@@ -353,15 +338,15 @@ const CategoryPage1020 = () => {
     const newErrors = { city: null, district: null, ward: null };
 
     if (!selectedCity) {
-      newErrors.city = "Vui lòng chọn tỉnh thành.";
+      newErrors.city = 'Vui lòng chọn tỉnh thành.';
       hasError = true;
     }
     if (!selectedDistrict) {
-      newErrors.district = "Vui lòng chọn quận.";
+      newErrors.district = 'Vui lòng chọn quận.';
       hasError = true;
     }
     if (!selectedWard) {
-      newErrors.ward = "Vui lòng chọn huyện.";
+      newErrors.ward = 'Vui lòng chọn huyện.';
       hasError = true;
     }
 
@@ -373,13 +358,13 @@ const CategoryPage1020 = () => {
         // setFormData(data, imageNames, video, false);
         // setisforsale(false);
         await postProduct(transformedData, false);
-        navigate("/preview");
+        navigate('/preview');
       } else {
         setpage1020(true);
         // setFormData(data, imageNames, video, true);
         // setisforsale(true);
         await postProduct(transformedData, true);
-        navigate("/preview");
+        // navigate("/preview");
       }
     }
   };
@@ -410,31 +395,13 @@ const CategoryPage1020 = () => {
                 <label class="text-base text-gray-500 font-semibold mb-2 block">
                   ĐĂNG TỪ 03 ĐẾN 12 HÌNH
                 </label>
-                <input
-                  type="file"
-                  class="w-full text-gray-400 font-semibold text-sm bg-white border file:cursor-pointer cursor-pointer file:border-0 file:py-3 file:px-4 file:mr-4 file:bg-gray-100 file:hover:bg-gray-200 file:text-gray-500 rounded"
-                  onChange={handleFileChange}
-                  multiple
-                  accept="image/*"
-                />
-                <p class="text-xs text-gray-400 mt-2">
-                  PNG, JPG SVG, WEBP, and GIF are Allowed.
-                </p>
+                <Label htmlFor="picture">Picture</Label>
+                <Input id="picture" type="file" />
               </div>
 
               <div class="font-[sans-serif] max-w-md ">
-                <label class="text-base text-gray-500 font-semibold mb-2 block">
-                  ĐĂNG TỐI ĐA 01 VIDEO
-                </label>
-                <input
-                  type="file"
-                  class="w-full text-gray-400 font-semibold text-sm bg-white border file:cursor-pointer cursor-pointer file:border-0 file:py-3 file:px-4 file:mr-4 file:bg-gray-100 file:hover:bg-gray-200 file:text-gray-500 rounded"
-                  onChange={handleVideoChange}
-                  accept="video/*"
-                />
-                <p class="text-xs text-gray-400 mt-2">
-                  MP4, AVI, MOV, and other video formats are allowed.
-                </p>
+                <Label htmlFor="video">Video</Label>
+                <Input id="video" type="file" accept="video/*" />
               </div>
             </div>
             <div className="flex-1">
@@ -495,7 +462,7 @@ const CategoryPage1020 = () => {
                                         ? cities.find(
                                             (city) => city.Name === selectedCity
                                           )?.Name
-                                        : "Chọn tỉnh thành"}
+                                        : 'Chọn tỉnh thành'}
                                       <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
                                   </PopoverTrigger>
@@ -527,10 +494,10 @@ const CategoryPage1020 = () => {
                                               {city.Name}
                                               <CheckIcon
                                                 className={cn(
-                                                  "ml-auto h-4 w-4",
+                                                  'ml-auto h-4 w-4',
                                                   selectedCity === city.Id
-                                                    ? "opacity-100"
-                                                    : "opacity-0"
+                                                    ? 'opacity-100'
+                                                    : 'opacity-0'
                                                 )}
                                               />
                                             </CommandItem>
@@ -574,7 +541,7 @@ const CategoryPage1020 = () => {
                                             (district) =>
                                               district.Name === selectedDistrict
                                           )?.Name
-                                        : "Chọn quận"}
+                                        : 'Chọn quận'}
                                       <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
                                   </PopoverTrigger>
@@ -607,11 +574,11 @@ const CategoryPage1020 = () => {
                                               {district.Name}
                                               <CheckIcon
                                                 className={cn(
-                                                  "ml-auto h-4 w-4",
+                                                  'ml-auto h-4 w-4',
                                                   selectedDistrict ===
                                                     district.Id
-                                                    ? "opacity-100"
-                                                    : "opacity-0"
+                                                    ? 'opacity-100'
+                                                    : 'opacity-0'
                                                 )}
                                               />
                                             </CommandItem>
@@ -654,7 +621,7 @@ const CategoryPage1020 = () => {
                                         ? wards.find(
                                             (ward) => ward.Name === selectedWard
                                           )?.Name
-                                        : "Chọn huyện"}
+                                        : 'Chọn huyện'}
                                       <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
                                   </PopoverTrigger>
@@ -686,10 +653,10 @@ const CategoryPage1020 = () => {
                                               {ward.Name}
                                               <CheckIcon
                                                 className={cn(
-                                                  "ml-auto h-4 w-4",
+                                                  'ml-auto h-4 w-4',
                                                   selectedWard === ward.Id
-                                                    ? "opacity-100"
-                                                    : "opacity-0"
+                                                    ? 'opacity-100'
+                                                    : 'opacity-0'
                                                 )}
                                               />
                                             </CommandItem>
@@ -789,7 +756,7 @@ const CategoryPage1020 = () => {
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || "Loại hình căn hộ"}
+                                  {field.value || 'Loại hình căn hộ'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -826,7 +793,7 @@ const CategoryPage1020 = () => {
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || "Số phòng ngủ"}
+                                  {field.value || 'Số phòng ngủ'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -861,7 +828,7 @@ const CategoryPage1020 = () => {
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || "Số phòng vệ sinh"}
+                                  {field.value || 'Số phòng vệ sinh'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -896,7 +863,7 @@ const CategoryPage1020 = () => {
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || "Hướng ban công:"}
+                                  {field.value || 'Hướng ban công:'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -932,7 +899,7 @@ const CategoryPage1020 = () => {
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || "Hướng cửa chính:"}
+                                  {field.value || 'Hướng cửa chính:'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -1076,7 +1043,7 @@ const CategoryPage1020 = () => {
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || "Giấy tờ pháp lý"}
+                                  {field.value || 'Giấy tờ pháp lý'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -1109,7 +1076,7 @@ const CategoryPage1020 = () => {
                           <Select {...field} onValueChange={field.onChange}>
                             <SelectTrigger className="w-full">
                               <SelectValue>
-                                {field.value || "Nội thất"}
+                                {field.value || 'Nội thất'}
                               </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
@@ -1274,7 +1241,7 @@ const CategoryPage1020 = () => {
                             <FormDescription>
                               {isFocus && (
                                 <h1 className="text-base">
-                                  {" "}
+                                  {' '}
                                   Nếu bạn cung cấp thêm một số thông tin chi
                                   tiết như:Phong cách thiết kế: Hiện đại, cổ
                                   điển, tối giản,...Màu sắc chủ đạo: Trắng,
@@ -1306,7 +1273,7 @@ const CategoryPage1020 = () => {
                             <FormDescription>
                               {isFocusDescribeDetail && (
                                 <h1 className="text-base">
-                                  {" "}
+                                  {' '}
                                   Nên có: Loại căn hộ chung cư, vị trí, tiện
                                   ích, diện tích, số phòng, thông tin pháp lý,
                                   tình trạng nội thất, v.v. Ví dụ: Tọa lạc tại
@@ -1402,7 +1369,7 @@ const CategoryPage1020 = () => {
                                         ? cities.find(
                                             (city) => city.Name === selectedCity
                                           )?.Name
-                                        : "Chọn tỉnh thành"}
+                                        : 'Chọn tỉnh thành'}
                                       <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
                                   </PopoverTrigger>
@@ -1434,10 +1401,10 @@ const CategoryPage1020 = () => {
                                               {city.Name}
                                               <CheckIcon
                                                 className={cn(
-                                                  "ml-auto h-4 w-4",
+                                                  'ml-auto h-4 w-4',
                                                   selectedCity === city.Id
-                                                    ? "opacity-100"
-                                                    : "opacity-0"
+                                                    ? 'opacity-100'
+                                                    : 'opacity-0'
                                                 )}
                                               />
                                             </CommandItem>
@@ -1481,7 +1448,7 @@ const CategoryPage1020 = () => {
                                             (district) =>
                                               district.Name === selectedDistrict
                                           )?.Name
-                                        : "Chọn quận"}
+                                        : 'Chọn quận'}
                                       <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
                                   </PopoverTrigger>
@@ -1514,11 +1481,11 @@ const CategoryPage1020 = () => {
                                               {district.Name}
                                               <CheckIcon
                                                 className={cn(
-                                                  "ml-auto h-4 w-4",
+                                                  'ml-auto h-4 w-4',
                                                   selectedDistrict ===
                                                     district.Id
-                                                    ? "opacity-100"
-                                                    : "opacity-0"
+                                                    ? 'opacity-100'
+                                                    : 'opacity-0'
                                                 )}
                                               />
                                             </CommandItem>
@@ -1561,7 +1528,7 @@ const CategoryPage1020 = () => {
                                         ? wards.find(
                                             (ward) => ward.Name === selectedWard
                                           )?.Name
-                                        : "Chọn huyện"}
+                                        : 'Chọn huyện'}
                                       <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
                                   </PopoverTrigger>
@@ -1593,10 +1560,10 @@ const CategoryPage1020 = () => {
                                               {ward.Name}
                                               <CheckIcon
                                                 className={cn(
-                                                  "ml-auto h-4 w-4",
+                                                  'ml-auto h-4 w-4',
                                                   selectedWard === ward.Id
-                                                    ? "opacity-100"
-                                                    : "opacity-0"
+                                                    ? 'opacity-100'
+                                                    : 'opacity-0'
                                                 )}
                                               />
                                             </CommandItem>
@@ -1693,10 +1660,11 @@ const CategoryPage1020 = () => {
                         name="typeofhouse"
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
+                            <FormLabel>Loại hình nhà ở:</FormLabel>
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || "Loại hình căn hộ"}
+                                  {field.value || 'Loại hình căn hộ'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -1730,10 +1698,11 @@ const CategoryPage1020 = () => {
                         name="bedroom_id"
                         render={({ field }) => (
                           <div className="mt-2 ">
+                            <FormLabel>Số phòng ngủ: </FormLabel>
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || "Số phòng ngủ"}
+                                  {field.value || 'Số phòng ngủ'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -1768,7 +1737,7 @@ const CategoryPage1020 = () => {
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || "Số phòng vệ sinh"}
+                                  {field.value || 'Số phòng vệ sinh'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -1803,7 +1772,7 @@ const CategoryPage1020 = () => {
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || "Hướng ban công:"}
+                                  {field.value || 'Hướng ban công:'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -1839,7 +1808,7 @@ const CategoryPage1020 = () => {
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || "Hướng cửa chính:"}
+                                  {field.value || 'Hướng cửa chính:'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -1999,10 +1968,11 @@ const CategoryPage1020 = () => {
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
                             <FormLabel>Thông tin khác</FormLabel>
+
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || "Giấy tờ pháp lý"}
+                                  {field.value || 'Giấy tờ pháp lý'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -2032,27 +2002,30 @@ const CategoryPage1020 = () => {
                         control={form.control}
                         name="condition_interior"
                         render={({ field }) => (
-                          <Select {...field} onValueChange={field.onChange}>
-                            <SelectTrigger className="w-full">
-                              <SelectValue>
-                                {field.value || "Nội thất"}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                <SelectLabel>Nội thất</SelectLabel>
+                          <div className="mt-2 flex flex-col gap-3">
+                            <FormLabel>Nội thất</FormLabel>
+                            <Select {...field} onValueChange={field.onChange}>
+                              <SelectTrigger className="w-full">
+                                <SelectValue>
+                                  {field.value || 'Nội thất'}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectLabel>Nội thất</SelectLabel>
 
-                                {funitureOptions.map((option) => (
-                                  <SelectItem
-                                    key={option.value}
-                                    value={option.value}
-                                  >
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
+                                  {funitureOptions.map((option) => (
+                                    <SelectItem
+                                      key={option.value}
+                                      value={option.value}
+                                    >
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         )}
                       />
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -2200,7 +2173,7 @@ const CategoryPage1020 = () => {
                             <FormDescription>
                               {isFocus && (
                                 <h1 className="text-base">
-                                  {" "}
+                                  {' '}
                                   Nếu bạn cung cấp thêm một số thông tin chi
                                   tiết như:Phong cách thiết kế: Hiện đại, cổ
                                   điển, tối giản,...Màu sắc chủ đạo: Trắng,
@@ -2232,7 +2205,7 @@ const CategoryPage1020 = () => {
                             <FormDescription>
                               {isFocusDescribeDetail && (
                                 <h1 className="text-base">
-                                  {" "}
+                                  {' '}
                                   Nên có: Loại căn hộ chung cư, vị trí, tiện
                                   ích, diện tích, số phòng, thông tin pháp lý,
                                   tình trạng nội thất, v.v. Ví dụ: Tọa lạc tại

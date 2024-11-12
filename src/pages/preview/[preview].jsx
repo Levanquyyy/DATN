@@ -141,6 +141,7 @@ const PropertyDetails = ({
   } else if (page1020) {
     console.log(forsale);
     console.log(data);
+    console.log(page1020);
 
     content = (
       <div className="p-6">
