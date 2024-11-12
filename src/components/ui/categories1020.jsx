@@ -223,7 +223,12 @@ const CategoryPage1020 = () => {
     { value: '3', label: 'Hoàn thiện cơ bản' },
     { value: '4', label: 'Bàn giao thô' },
   ];
-
+  useEffect(() => {
+    const access_token = Cookies.get('access_token');
+    if (!access_token) {
+      navigate('/auth');
+    }
+  }, []);
   useEffect(() => {
     const fetchData = async () => {
       try {

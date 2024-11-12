@@ -1,25 +1,39 @@
-import { ThemeProvider } from "@/components/theme-provider";
-import Layout from "@/components/Layout";
-import Auth from "./pages/auth/index.jsx";
-import HomePage from "./pages/home/index.jsx";
-import CategoryPage from "./pages/categories/[categoryId].jsx";
-import ReviewPage from "./pages/preview/[preview].jsx";
-import PostPage from "./pages/post/[postpage].jsx";
-import PaidPage from "./pages/paid/[paid].jsx";
-import DetailPage from "./pages/detailproduct/[detailpage].jsx";
-import NhatotPage from "./pages/nhatot/index.jsx";
-import BillPage from "./pages/bill/[bill].jsx";
-import { useAppStore } from "./store/index.js";
-import Cookies from "js-cookie";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-const PrivateRoutes = ({ children }) => {
-  const { userInfo } = useAppStore();
-  const authenticated = !!userInfo;
-  return authenticated ? children : <Navigate to="/auth" />;
-};
+import { ThemeProvider } from '@/components/theme-provider';
+import Layout from '@/components/Layout';
+import Auth from './pages/auth/index.jsx';
+import HomePage from './pages/home/index.jsx';
+import CategoryPage from './pages/categories/[categoryId].jsx';
+import ReviewPage from './pages/preview/[preview].jsx';
+import PostPage from './pages/post/[postpage].jsx';
+import PaidPage from './pages/paid/[paid].jsx';
+import DetailPage from './pages/detailproduct/[detailpage].jsx';
+import NhatotPage from './pages/nhatot/index.jsx';
+import BillPage from './pages/bill/[bill].jsx';
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+} from 'react-router-dom';
+import Cookies from 'js-cookie';
+import { useAppStore } from './store/index.js';
+import { useEffect, useState } from 'react';
+
 const AuthRoutes = ({ children }) => {
-  const access_token = Cookies.get("access_token");
-  const authenticated = !!access_token;
+  const [authenticated, setAuthenticated] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const access_token = Cookies.get('access_token');
+    if (access_token) {
+      setAuthenticated(true);
+      navigate('/home-page');
+    } else {
+      setAuthenticated(false);
+    }
+  }, [navigate]);
+
   return authenticated ? <Navigate to="/home-page" /> : children;
 };
 function App() {
@@ -44,7 +58,6 @@ function App() {
             <Route path="/detaipage" element={<DetailPage />} />
             <Route path="/nhatot" element={<NhatotPage />} />
             <Route path="/myads" element={<BillPage />} />
-
             <Route path="*" element={<Navigate to="/auth" />} />
           </Routes>
         </Layout>
