@@ -1,6 +1,6 @@
-import Sidebar from "@/components/ui/sidebar";
-import Header from "@/components/ui/header";
-import { useEffect, useState } from "react";
+import Sidebar from '@/components/ui/sidebar';
+import Header from '@/components/ui/header.tsx';
+import { useEffect, useState } from 'react';
 import {
   FaEye,
   FaMapMarkerAlt,
@@ -10,49 +10,110 @@ import {
   FaPlus,
   FaStore,
   FaCoins,
-} from "react-icons/fa";
-import apiClient from "@/lib/api-client";
+} from 'react-icons/fa';
+import apiClient from '@/lib/api-client';
 
-import { GET_DATA_BY_USERID, GET_USER } from "@/utilities/constant";
-import { toast } from "sonner";
-import Cookies from "js-cookie";
-import { format, addDays } from "date-fns";
+import { GET_DATA_BY_USERID, GET_USER } from '@/utilities/constant';
+import { toast } from 'sonner';
+import { format, addDays } from 'date-fns';
+import {
+  hiddenPost,
+  loadPost,
+  showHiddenPost,
+} from '@/routes/apiforRentHouse.jsx';
+import { fetchUserInfo } from '@/routes/apiforUser.jsx';
+import { PostBoostPurchase } from '@/components/website/ui/PostBoostPurchase.tsx';
+import { PostItem } from '@/components/website/ui/PostItem.tsx';
+import { v4 as uuidv4 } from 'uuid';
+import { postPayment } from '@/routes/apiforpayment.jsx';
 const initialTabs = [
-  { name: "ĐANG HIỂN THỊ", count: 0 },
-  { name: "HẾT HẠN", count: 0 },
-  { name: "BỊ TỪ CHỐI", count: 0 },
-  { name: "CẦN THANH TOÁN", count: 0 },
-  { name: "TIN NHẬP", count: 0 },
-  { name: "CHỜ DUYỆT", count: 0 },
-  { name: "ĐÃ ĂN", count: 0 },
+  { name: 'ĐANG HIỂN THỊ', count: 0 },
+  { name: 'HẾT HẠN', count: 0 },
+  { name: 'BỊ TỪ CHỐI', count: 0 },
+  { name: 'CẦN THANH TOÁN', count: 0 },
+  { name: 'TIN NHẬP', count: 0 },
+  { name: 'CHỜ DUYỆT', count: 0 },
+  { name: 'ĐÃ ẨN', count: 0 },
 ];
-const fetchUserInfo = async () => {
-  const access_token = Cookies.get("access_token");
-
-  if (access_token) {
-    try {
-      const response = await apiClient.get(`${GET_USER}`);
-      return response.data;
-    } catch (error) {
-      console.error(
-        "Error fetching user info:",
-        error.response?.data || error.message
-      );
-      return null;
-    }
-  } else {
-    console.error("No access token found");
-    return null;
-  }
-};
 
 const BillPage = () => {
   const [isLiked, setIsLiked] = useState(false);
-  const [activeTab, setActiveTab] = useState("ĐANG HIỂN THỊ");
+  const [activeTab, setActiveTab] = useState('ĐANG HIỂN THỊ');
   const [user, setUser] = useState(null);
   const [tabs, setTabs] = useState(initialTabs);
   const [dataByUserId, setDataByUserId] = useState({});
+  const [flagged, setFlagged] = useState(false);
+  const [id, setId] = useState(0);
   // const currentProduct = productData[activeTab];
+  const checkLoadBtn = async (id) => {
+    try {
+      const res = await loadPost(id);
+      if (res === 'error') {
+        toast.error('Đã hết lượt đẩy tin');
+        setFlagged(true);
+        setId(id);
+      } else {
+        // Handle successful post boost
+        toast.success('Đẩy tin thành công');
+        // Update your UI or state as needed
+      }
+    } catch (error) {
+      console.error('Error loading post:', error);
+      toast.error('Có lỗi xảy ra khi đẩy tin');
+    }
+  };
+
+  const handlePurchase = async (amount) => {
+    try {
+      // Simulating an API call
+      // await new Promise((resolve) => setTimeout(resolve, 1000));
+      // toast.success(`Đã mua thành công ${amount} lượt đẩy tin`);
+      const vnp_txnref = uuidv4();
+      const userInfo = await fetchUserInfo();
+
+      const data = {
+        vnp_txnref: vnp_txnref,
+        product_id: id,
+        vnp_amount: 30000 * amount, // Hardcoded value
+        user_id: userInfo.id,
+        load_key_post: amount,
+      };
+      const paymentResponse = await postPayment(data);
+      if (paymentResponse.message === 'success') {
+        window.open(paymentResponse.data, '_blank');
+        toast.success('Payment successful!');
+      }
+      setFlagged(false);
+      // Update your UI or state as needed after successful purchase
+    } catch (error) {
+      console.error('Error purchasing boosts:', error);
+      toast.error('Có lỗi xảy ra khi mua lượt đẩy tin');
+    }
+  };
+  const handleHiddenToggle = async (id, isHidden) => {
+    try {
+      let response;
+      const status = isHidden ? 1 : 0; // Convert isHidden to 1 or 0
+      if (isHidden) {
+        // Gỡ bỏ ẩn tin
+        response = await showHiddenPost(id, status);
+        localStorage.setItem(id, 'false'); // Lưu trạng thái "không ẩn" vào localStorage
+      } else {
+        // Ẩn tin
+        response = await hiddenPost(id, status);
+        localStorage.setItem(id, 'true'); // Lưu trạng thái "ẩn" vào localStorage
+      }
+      return {
+        ...response,
+      };
+    } catch (error) {
+      console.error('Error toggling post visibility:', error);
+      return {
+        status: 'error',
+        message: 'Có lỗi xảy ra khi thực hiện thao tác',
+      };
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,29 +126,46 @@ const BillPage = () => {
             `${GET_DATA_BY_USERID}/${userInfo.id}`
           );
           const fetchedData = response.data.data;
+
+          // Lưu trạng thái "ẩn" từ localStorage vào dữ liệu bài đăng
+          const updatedData = fetchedData.map((item) => {
+            const isHidden = localStorage.getItem(item.id) === 'true';
+            return { ...item, isHidden };
+          });
+
           const formattedData = {
-            "ĐANG HIỂN THỊ": fetchedData.filter((item) => item.approved === 1),
-            "HẾT HẠN": fetchedData.filter((item) => item.status === "HẾT HẠN"),
-            "BỊ TỪ CHỐI": fetchedData.filter(
-              (item) => item.status === "BỊ TỪ CHỐI"
+            'ĐANG HIỂN THỊ': updatedData.filter(
+              (item) => item.approved === 1 && item.status === 1
             ),
-            "CẦN THANH TOÁN": fetchedData.filter(
-              (item) => item.status === "CẦN THANH TOÁN"
+            'HẾT HẠN': updatedData.filter(
+              (item) => item.status === 'HẾT HẠN' && !item.isHidden
             ),
-            "TIN NHẬP": fetchedData.filter(
-              (item) => item.status === "TIN NHẬP"
+            'BỊ TỪ CHỐI': updatedData.filter(
+              (item) => item.status === 'BỊ TỪ CHỐI' && !item.isHidden
             ),
-            "CHỜ DUYỆT": fetchedData.filter((item) => item.approved === 2),
-            "ĐÃ ĂN": fetchedData.filter((item) => item.status === "ĐÃ ĂN"),
+            'CẦN THANH TOÁN': updatedData.filter(
+              (item) => item.status === 'CẦN THANH TOÁN' && !item.isHidden
+            ),
+            'TIN NHẬP': updatedData.filter(
+              (item) => item.status === 'TIN NHẬP' && !item.isHidden
+            ),
+            'CHỜ DUYỆT': updatedData.filter(
+              (item) => item.approved === 2 && !item.isHidden
+            ),
+            'ĐÃ ẨN': updatedData.filter(
+              (item) => item.status === 0 && item.approved === 1
+            ),
           };
+
           const updatedTabs = tabs.map((tab) => ({
             ...tab,
             count: formattedData[tab.name] ? formattedData[tab.name].length : 0,
           }));
+
           setDataByUserId(formattedData);
           setTabs(updatedTabs);
         } catch (error) {
-          console.error("Signin error:", error.response?.data || error.message);
+          console.error('Signin error:', error.response?.data || error.message);
           toast.error(
             `Signin failed: ${error.response?.data?.message || error.message}`
           );
@@ -98,12 +176,6 @@ const BillPage = () => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    console.log("dataByUserId", dataByUserId);
-  }, [dataByUserId]);
-  // const currentProduct = dataByUserId[activeTab]
-  //   ? dataByUserId[activeTab][0]
-  //   : null;
   const currentProducts = dataByUserId[activeTab] || [];
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -122,7 +194,7 @@ const BillPage = () => {
                     className="w-12 h-12 rounded-full object-cover"
                   />
                   <span className="font-semibold text-lg">
-                    {user?.firstname + " " + user?.lastname}
+                    {user?.firstname + ' ' + user?.lastname}
                   </span>
                 </div>
                 <div className="flex items-center space-x-4">
@@ -144,8 +216,8 @@ const BillPage = () => {
                     onClick={() => setActiveTab(tab.name)}
                     className={`whitespace-nowrap px-4 py-2 rounded-lg mr-2 ${
                       activeTab === tab.name
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-600 hover:bg-gray-100"
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-100'
                     }`}
                   >
                     {tab.name} ({tab.count})
@@ -175,7 +247,7 @@ const BillPage = () => {
                       <button
                         onClick={() => setIsLiked(!isLiked)}
                         className={`p-2 rounded-full ${
-                          isLiked ? "text-red-500" : "text-gray-400"
+                          isLiked ? 'text-red-500' : 'text-gray-400'
                         }`}
                       >
                         <FaHeart className="text-xl" />
@@ -193,29 +265,15 @@ const BillPage = () => {
                       <div className="flex items-center text-gray-600">
                         <FaMapMarkerAlt className="mr-2" />
                         <span>
-                          {item.province_code + " - " + item.ward_code}
+                          {item.province_code + ' - ' + item.ward_code}
                         </span>
                       </div>
 
                       <div className="flex items-center text-gray-600">
                         <FaCalendarAlt className="mr-2" />
                         <span>
-                          Ngày đăng tin:{" "}
-                          {format(new Date(item.updated_at), "dd/MM/yyyy")}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center text-gray-600">
-                        <FaClock className="mr-2" />
-                        <span>
-                          Hết hạn:{" "}
-                          {format(
-                            addDays(
-                              new Date(item.updated_at),
-                              item.day_package_expirition
-                            ),
-                            "dd/MM/yyyy"
-                          )}
+                          Ngày đăng tin:{' '}
+                          {format(new Date(item.updated_at), 'dd/MM/yyyy')}
                         </span>
                       </div>
 
@@ -229,12 +287,22 @@ const BillPage = () => {
                       <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
                         Xem chi tiết
                       </button>
-                      <button className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
-                        Gia hạn tin
+                      <PostItem
+                        key={item.id}
+                        id={item.id}
+                        onHiddenToggle={handleHiddenToggle}
+                      />
+                      <button
+                        className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                        onClick={() => checkLoadBtn(item.id)}
+                      >
+                        Đẩy tin ({item.load_btn_post})
                       </button>
-                      <button className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors">
-                        Đẩy tin
-                      </button>
+                      <PostBoostPurchase
+                        isOpen={flagged}
+                        onClose={() => setFlagged(false)}
+                        onPurchase={handlePurchase}
+                      />
                     </div>
 
                     <div className="mt-6">
@@ -243,12 +311,12 @@ const BillPage = () => {
                       </h2>
                       <p className="text-gray-500 mt-1">
                         {item.type_posting_id === 1
-                          ? "đăng tin thường"
+                          ? 'đăng tin thường'
                           : item.type_posting_id === 2
-                          ? "đăng tin VIP"
-                          : item.type_posting_id === 3
-                          ? "đăng tin ưu tiên"
-                          : "Chưa mua gói"}
+                            ? 'đăng tin VIP'
+                            : item.type_posting_id === 3
+                              ? 'đăng tin ưu tiên'
+                              : 'Chưa mua gói'}
                       </p>
                     </div>
                   </div>

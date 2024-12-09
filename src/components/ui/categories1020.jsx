@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Sidebar from '@/components/ui/sidebar';
-import Header from '@/components/ui/header';
+import Header from '@/components/ui/header.tsx';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -18,7 +18,6 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import axios from 'axios';
 import { useAppStore } from '@/store';
-import { setEncryptedCookie } from '@/store/cookies/cookies.js';
 import {
   Form,
   FormControl,
@@ -53,6 +52,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { fetchUserInfo } from '@/routes/apiforUser.jsx';
+import { postProduct } from '@/routes/apiforRentHouse.jsx';
 
 const FormSchema = z.object({
   nameofbuilding: z.string().min(2, {
@@ -137,46 +138,53 @@ const FormSchema = z.object({
   diff_situation: z.boolean().default(false).optional(),
   approved: z.number().optional(),
 
-  cost_deposit: z.string().min(1, {
+  cost_deposit: z.number().min(1, {
     message: 'Vui lòng nhập giá tiền cọc',
   }),
   type_user: z.boolean().default(false).optional(),
 });
-
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+};
 const CategoryPage1020 = () => {
-  const setFormData = useAppStore((state) => state.setFormData);
+  const setisforsale = useAppStore((state) => state.setisforsale);
   const setpage1020 = useAppStore((state) => state.setpage1020);
 
   const form = useForm({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      nameofbuilding: '',
+      nameofbuilding: 'Wuys 1',
       // citi: "",
-      namedistrict: '',
+      namedistrict: 'Levanquy',
       district: '',
       condition_interior: '',
       typeofhouse: '',
       bedroom_id: '',
       legal_id: '',
 
-      content: '',
+      content: 'dsadasd',
       city: '',
-      numberofstreet: '',
-      positionBDS: '',
-      block: '',
-      floor: '',
+      numberofstreet: '123165',
+      positionBDS: '23/20',
+      block: '5',
+      floor: '6',
       bathroom_id: '',
       viewbalcony: '',
       main_door_id: '',
-      subdivision_code: '',
+      subdivision_code: 'phan khu 1',
       propertyofhouse: '',
       horizontal: '',
       length: '',
       // fix
-      usable_area: '',
+      usable_area: 0,
       cost: '',
 
-      land_area: '',
+      land_area: 0,
 
       ward_code: '',
 
@@ -197,7 +205,7 @@ const CategoryPage1020 = () => {
       diff_situation: false,
       approved: 2,
       type_user: false,
-      // district_code: "hcm",
+      district_code: 'hcm',
     },
   });
   const navigate = useNavigate();
@@ -212,6 +220,67 @@ const CategoryPage1020 = () => {
   const [openward, setOpenWard] = useState(false);
   const [isFocus, setIsFocus] = useState(false);
   const [isFocusDescribeDetail, setIsFocusDescribeDetail] = useState(false);
+  const [displayValue, setDisplayValue] = useState('');
+  const [numericValue, setNumericValue] = useState(null);
+  useEffect(() => {
+    if (numericValue !== null) {
+      // Chỉ cập nhật giá trị trong form mà không có VND
+      form.setValue('cost', numericValue);
+    }
+  }, [numericValue, form]);
+
+  const CurrencyInput = ({ form, name, placeholder }) => {
+    const [numericValue, setNumericValue] = useState(null);
+    const [displayValue, setDisplayValue] = useState('');
+
+    useEffect(() => {
+      if (numericValue !== null) {
+        form.setValue(name, numericValue);
+      }
+    }, [numericValue, form, name]);
+
+    const handleInputChange = (e) => {
+      const value = e.target.value;
+
+      if (value === '') {
+        setDisplayValue('');
+        setNumericValue(null);
+      } else {
+        // Loại bỏ các ký tự không phải số
+        const number = parseInt(value.replace(/[^0-9]/g, ''), 10);
+        if (!isNaN(number)) {
+          setNumericValue(number);
+          setDisplayValue(formatCurrency(number));
+        }
+      }
+    };
+
+    // Hàm định dạng tiền tệ
+    const formatCurrency = (value) => {
+      return new Intl.NumberFormat('vi-VN').format(value);
+    };
+
+    return (
+      <FormField
+        control={form.control}
+        name={name}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{placeholder}</FormLabel>
+            <FormControl>
+              <Input
+                type="text" // Sử dụng type="text" để có thể xử lý định dạng số mà không gây lỗi
+                placeholder={placeholder}
+                value={displayValue}
+                onChange={handleInputChange}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    );
+  };
   const [errors, setErrors] = useState({
     city: null,
     district: null,
@@ -278,45 +347,6 @@ const CategoryPage1020 = () => {
     setVideo(fileNames);
   };
 
-  const postProduct = async (transformedData, forsale = false) => {
-    try {
-      const response = await apiClient.post(
-        `${import.meta.env.VITE_SERVER_URL}/api/auth/product/add-product-rent`,
-        transformedData
-      );
-
-      setEncryptedCookie('productData', response.data.data.id);
-
-      setFormData(response.data.data, imageNames, video, forsale);
-      console.log(response.data);
-    } catch (error) {
-      console.error(
-        'Error posting product:',
-        error.response?.data || error.message
-      );
-    }
-  };
-  const fetchUserInfo = async () => {
-    const access_token = Cookies.get('access_token');
-
-    if (access_token) {
-      try {
-        const response = await apiClient.get(
-          `${import.meta.env.VITE_SERVER_URL}/api/auth/user`
-        );
-        return response.data;
-      } catch (error) {
-        console.error(
-          'Error fetching user info:',
-          error.response?.data || error.message
-        );
-        return null;
-      }
-    } else {
-      console.error('No access token found');
-      return null;
-    }
-  };
   const onSubmit = async (data, isForRent = false) => {
     const userInfo = await fetchUserInfo();
 
@@ -328,6 +358,11 @@ const CategoryPage1020 = () => {
 
     const transformedData = {
       ...data,
+      district_code: 'le van quy',
+      cost: Number(data.cost).toFixed(2).padStart(10, '0'),
+      cost_deposit: Number(data.cost_deposit).toFixed(2).padStart(10, '0'),
+      land_area: Number(data.land_area).toFixed(2).padStart(10, '0'),
+      usable_area: Number(data.usable_area).toFixed(2).padStart(10, '0'),
       car_alley: data.car_alley ? 1 : 0,
       back_house: data.back_house ? 1 : 0,
       blooming_house: data.blooming_house ? 1 : 0,
@@ -338,7 +373,7 @@ const CategoryPage1020 = () => {
       type_user: data.type_user ? 2 : 1,
       user_id: user_id,
     };
-    // console.log(transformedData);
+
     let hasError = false;
     const newErrors = { city: null, district: null, ward: null };
 
@@ -359,23 +394,23 @@ const CategoryPage1020 = () => {
 
     if (!hasError) {
       if (isForRent) {
-        setpage1020(true);
+        // setpage1020(true);
         // setFormData(data, imageNames, video, false);
         // setisforsale(false);
-        await postProduct(transformedData, false);
-        navigate('/preview');
+        const id = await postProduct(transformedData);
+        navigate(`/preview/${id}`);
       } else {
-        setpage1020(true);
+        // setpage1020(true);
         // setFormData(data, imageNames, video, true);
         // setisforsale(true);
-        await postProduct(transformedData, true);
+        // await postProduct(transformedData, true);
         // navigate("/preview");
       }
     }
   };
-  const handleSaleSubmit = (data) => {
-    onSubmit(data, false);
-  };
+  // const handleSaleSubmit = (data) => {
+  //   onSubmit(data, false);
+  // };
 
   const handleRentSubmit = (data) => {
     onSubmit(data, true);
@@ -419,911 +454,911 @@ const CategoryPage1020 = () => {
                   <TabsTrigger value="rent">Cho thuê</TabsTrigger>
                 </TabsList>
                 {/* check sale */}
-                <Form {...form}>
-                  <form
-                    onSubmit={form.handleSubmit(handleSaleSubmit)}
-                    className="space-y-8"
-                  >
-                    <TabsContent value="sale">
-                      <FormField
-                        control={form.control}
-                        name="nameofbuilding"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Địa chỉ BĐS và Hình ảnh</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Tên toà nhà" {...field} />
-                            </FormControl>
-                            <FormDescription>
-                              Không tìm thấy dự án cần đăng tin?
-                              <Link to="/" className="text-blue-600">
-                                Yêu cầu thêm dự án
-                              </Link>
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormLabel>Địa chỉ </FormLabel>
-                      <FormField
-                        control={form.control}
-                        name="city"
-                        render={({ field }) => (
-                          <FormItem className="flex items-center gap-4">
-                            <FormControl>
-                              <>
-                                <Popover
-                                  open={opencity}
-                                  onOpenChange={setOpenCity}
-                                >
-                                  <PopoverTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      role="combobox"
-                                      aria-expanded={opencity}
-                                      className="w-full justify-between"
-                                    >
-                                      {selectedCity
-                                        ? cities.find(
-                                            (city) => city.Name === selectedCity
-                                          )?.Name
-                                        : 'Chọn tỉnh thành'}
-                                      <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-[200px] p-0">
-                                    <Command>
-                                      <CommandInput
-                                        placeholder="Search city..."
-                                        className="h-9"
-                                      />
-                                      <CommandList>
-                                        <CommandEmpty>
-                                          No city found.
-                                        </CommandEmpty>
-                                        <CommandGroup>
-                                          {cities.map((city) => (
-                                            <CommandItem
-                                              key={city.Id}
-                                              value={city.Name}
-                                              onSelect={(currentValue) => {
-                                                setSelectedCity(
-                                                  currentValue === selectedCity
-                                                    ? null
-                                                    : currentValue
-                                                );
-                                                setOpenCity(false);
-                                                field.onChange(currentValue); // Update form field value
-                                              }}
-                                            >
-                                              {city.Name}
-                                              <CheckIcon
-                                                className={cn(
-                                                  'ml-auto h-4 w-4',
-                                                  selectedCity === city.Id
-                                                    ? 'opacity-100'
-                                                    : 'opacity-0'
-                                                )}
-                                              />
-                                            </CommandItem>
-                                          ))}
-                                        </CommandGroup>
-                                      </CommandList>
-                                    </Command>
-                                  </PopoverContent>
-                                </Popover>
-                                {form.formState.errors.city && (
-                                  <p className="text-red-600">
-                                    {form.formState.errors.city.message}
-                                  </p>
-                                )}
-                              </>
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="province_code"
-                        render={({ field }) => (
-                          <FormItem className="flex items-center gap-4">
-                            <FormControl>
-                              <>
-                                <Popover
-                                  open={opendistrict}
-                                  onOpenChange={setOpenDistrict}
-                                >
-                                  <PopoverTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      role="combobox"
-                                      aria-expanded={opendistrict}
-                                      className="w-full justify-between"
-                                      disabled={!selectedCity}
-                                    >
-                                      {selectedDistrict
-                                        ? districts.find(
-                                            (district) =>
-                                              district.Name === selectedDistrict
-                                          )?.Name
-                                        : 'Chọn quận'}
-                                      <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-full p-0">
-                                    <Command>
-                                      <CommandInput
-                                        placeholder="Search district..."
-                                        className="h-9"
-                                      />
-                                      <CommandList>
-                                        <CommandEmpty>
-                                          No district found.
-                                        </CommandEmpty>
-                                        <CommandGroup>
-                                          {districts.map((district) => (
-                                            <CommandItem
-                                              key={district.Id}
-                                              value={district.Name}
-                                              onSelect={(currentValue) => {
-                                                setSelectedDistrict(
-                                                  currentValue ===
-                                                    selectedDistrict
-                                                    ? null
-                                                    : currentValue
-                                                );
-                                                setOpenDistrict(false);
-                                                field.onChange(currentValue); // Update form field value
-                                              }}
-                                            >
-                                              {district.Name}
-                                              <CheckIcon
-                                                className={cn(
-                                                  'ml-auto h-4 w-4',
-                                                  selectedDistrict ===
-                                                    district.Id
-                                                    ? 'opacity-100'
-                                                    : 'opacity-0'
-                                                )}
-                                              />
-                                            </CommandItem>
-                                          ))}
-                                        </CommandGroup>
-                                      </CommandList>
-                                    </Command>
-                                  </PopoverContent>
-                                </Popover>
-                                {form.formState.errors.district && (
-                                  <p className="text-red-600">
-                                    {form.formState.errors.district.message}
-                                  </p>
-                                )}
-                              </>
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="ward_code"
-                        render={({ field }) => (
-                          <FormItem className="flex items-center gap-4">
-                            <FormControl>
-                              <>
-                                <Popover
-                                  open={openward}
-                                  onOpenChange={setOpenWard}
-                                >
-                                  <PopoverTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      role="combobox"
-                                      aria-expanded={openward}
-                                      className="w-full justify-between"
-                                      disabled={!selectedDistrict}
-                                    >
-                                      {selectedWard
-                                        ? wards.find(
-                                            (ward) => ward.Name === selectedWard
-                                          )?.Name
-                                        : 'Chọn huyện'}
-                                      <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-full p-0">
-                                    <Command>
-                                      <CommandInput
-                                        placeholder="Search ward..."
-                                        className="h-9"
-                                      />
-                                      <CommandList>
-                                        <CommandEmpty>
-                                          No ward found.
-                                        </CommandEmpty>
-                                        <CommandGroup>
-                                          {wards.map((ward) => (
-                                            <CommandItem
-                                              key={ward.Id}
-                                              value={ward.Name}
-                                              onSelect={(currentValue) => {
-                                                setSelectedWard(
-                                                  currentValue === selectedWard
-                                                    ? null
-                                                    : currentValue
-                                                );
-                                                setOpenWard(false);
-                                                field.onChange(currentValue); // Update form field value
-                                              }}
-                                            >
-                                              {ward.Name}
-                                              <CheckIcon
-                                                className={cn(
-                                                  'ml-auto h-4 w-4',
-                                                  selectedWard === ward.Id
-                                                    ? 'opacity-100'
-                                                    : 'opacity-0'
-                                                )}
-                                              />
-                                            </CommandItem>
-                                          ))}
-                                        </CommandGroup>
-                                      </CommandList>
-                                    </Command>
-                                  </PopoverContent>
-                                </Popover>
-                                {form.formState.errors.ward && (
-                                  <p className="text-red-600">
-                                    {form.formState.errors.ward.message}
-                                  </p>
-                                )}
-                              </>
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
+                {/*<Form {...form}>*/}
+                {/*  <form*/}
+                {/*    onSubmit={form.handleSubmit(handleSaleSubmit)}*/}
+                {/*    className="space-y-8"*/}
+                {/*  >*/}
+                {/*    <TabsContent value="sale">*/}
+                {/*      <FormField*/}
+                {/*        control={form.control}*/}
+                {/*        name="nameofbuilding"*/}
+                {/*        render={({ field }) => (*/}
+                {/*          <FormItem>*/}
+                {/*            <FormLabel>Địa chỉ BĐS và Hình ảnh</FormLabel>*/}
+                {/*            <FormControl>*/}
+                {/*              <Input placeholder="Tên toà nhà" {...field} />*/}
+                {/*            </FormControl>*/}
+                {/*            <FormDescription>*/}
+                {/*              Không tìm thấy dự án cần đăng tin?*/}
+                {/*              <Link to="/" className="text-blue-600">*/}
+                {/*                Yêu cầu thêm dự án*/}
+                {/*              </Link>*/}
+                {/*            </FormDescription>*/}
+                {/*            <FormMessage />*/}
+                {/*          </FormItem>*/}
+                {/*        )}*/}
+                {/*      />*/}
+                {/*      <FormLabel>Địa chỉ </FormLabel>*/}
+                {/*      <FormField*/}
+                {/*        control={form.control}*/}
+                {/*        name="city"*/}
+                {/*        render={({ field }) => (*/}
+                {/*          <FormItem className="flex items-center gap-4">*/}
+                {/*            <FormControl>*/}
+                {/*              <>*/}
+                {/*                <Popover*/}
+                {/*                  open={opencity}*/}
+                {/*                  onOpenChange={setOpenCity}*/}
+                {/*                >*/}
+                {/*                  <PopoverTrigger asChild>*/}
+                {/*                    <Button*/}
+                {/*                      variant="outline"*/}
+                {/*                      role="combobox"*/}
+                {/*                      aria-expanded={opencity}*/}
+                {/*                      className="w-full justify-between"*/}
+                {/*                    >*/}
+                {/*                      {selectedCity*/}
+                {/*                        ? cities.find(*/}
+                {/*                            (city) => city.Name === selectedCity*/}
+                {/*                          )?.Name*/}
+                {/*                        : 'Chọn tỉnh thành'}*/}
+                {/*                      <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />*/}
+                {/*                    </Button>*/}
+                {/*                  </PopoverTrigger>*/}
+                {/*                  <PopoverContent className="w-[200px] p-0">*/}
+                {/*                    <Command>*/}
+                {/*                      <CommandInput*/}
+                {/*                        placeholder="Search city..."*/}
+                {/*                        className="h-9"*/}
+                {/*                      />*/}
+                {/*                      <CommandList>*/}
+                {/*                        <CommandEmpty>*/}
+                {/*                          No city found.*/}
+                {/*                        </CommandEmpty>*/}
+                {/*                        <CommandGroup>*/}
+                {/*                          {cities.map((city) => (*/}
+                {/*                            <CommandItem*/}
+                {/*                              key={city.Id}*/}
+                {/*                              value={city.Name}*/}
+                {/*                              onSelect={(currentValue) => {*/}
+                {/*                                setSelectedCity(*/}
+                {/*                                  currentValue === selectedCity*/}
+                {/*                                    ? null*/}
+                {/*                                    : currentValue*/}
+                {/*                                );*/}
+                {/*                                setOpenCity(false);*/}
+                {/*                                field.onChange(currentValue); // Update form field value*/}
+                {/*                              }}*/}
+                {/*                            >*/}
+                {/*                              {city.Name}*/}
+                {/*                              <CheckIcon*/}
+                {/*                                className={cn(*/}
+                {/*                                  'ml-auto h-4 w-4',*/}
+                {/*                                  selectedCity === city.Id*/}
+                {/*                                    ? 'opacity-100'*/}
+                {/*                                    : 'opacity-0'*/}
+                {/*                                )}*/}
+                {/*                              />*/}
+                {/*                            </CommandItem>*/}
+                {/*                          ))}*/}
+                {/*                        </CommandGroup>*/}
+                {/*                      </CommandList>*/}
+                {/*                    </Command>*/}
+                {/*                  </PopoverContent>*/}
+                {/*                </Popover>*/}
+                {/*                {form.formState.errors.city && (*/}
+                {/*                  <p className="text-red-600">*/}
+                {/*                    {form.formState.errors.city.message}*/}
+                {/*                  </p>*/}
+                {/*                )}*/}
+                {/*              </>*/}
+                {/*            </FormControl>*/}
+                {/*          </FormItem>*/}
+                {/*        )}*/}
+                {/*      />*/}
+                {/*      <FormField*/}
+                {/*        control={form.control}*/}
+                {/*        name="province_code"*/}
+                {/*        render={({ field }) => (*/}
+                {/*          <FormItem className="flex items-center gap-4">*/}
+                {/*            <FormControl>*/}
+                {/*              <>*/}
+                {/*                <Popover*/}
+                {/*                  open={opendistrict}*/}
+                {/*                  onOpenChange={setOpenDistrict}*/}
+                {/*                >*/}
+                {/*                  <PopoverTrigger asChild>*/}
+                {/*                    <Button*/}
+                {/*                      variant="outline"*/}
+                {/*                      role="combobox"*/}
+                {/*                      aria-expanded={opendistrict}*/}
+                {/*                      className="w-full justify-between"*/}
+                {/*                      disabled={!selectedCity}*/}
+                {/*                    >*/}
+                {/*                      {selectedDistrict*/}
+                {/*                        ? districts.find(*/}
+                {/*                            (district) =>*/}
+                {/*                              district.Name === selectedDistrict*/}
+                {/*                          )?.Name*/}
+                {/*                        : 'Chọn quận'}*/}
+                {/*                      <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />*/}
+                {/*                    </Button>*/}
+                {/*                  </PopoverTrigger>*/}
+                {/*                  <PopoverContent className="w-full p-0">*/}
+                {/*                    <Command>*/}
+                {/*                      <CommandInput*/}
+                {/*                        placeholder="Search district..."*/}
+                {/*                        className="h-9"*/}
+                {/*                      />*/}
+                {/*                      <CommandList>*/}
+                {/*                        <CommandEmpty>*/}
+                {/*                          No district found.*/}
+                {/*                        </CommandEmpty>*/}
+                {/*                        <CommandGroup>*/}
+                {/*                          {districts.map((district) => (*/}
+                {/*                            <CommandItem*/}
+                {/*                              key={district.Id}*/}
+                {/*                              value={district.Name}*/}
+                {/*                              onSelect={(currentValue) => {*/}
+                {/*                                setSelectedDistrict(*/}
+                {/*                                  currentValue ===*/}
+                {/*                                    selectedDistrict*/}
+                {/*                                    ? null*/}
+                {/*                                    : currentValue*/}
+                {/*                                );*/}
+                {/*                                setOpenDistrict(false);*/}
+                {/*                                field.onChange(currentValue); // Update form field value*/}
+                {/*                              }}*/}
+                {/*                            >*/}
+                {/*                              {district.Name}*/}
+                {/*                              <CheckIcon*/}
+                {/*                                className={cn(*/}
+                {/*                                  'ml-auto h-4 w-4',*/}
+                {/*                                  selectedDistrict ===*/}
+                {/*                                    district.Id*/}
+                {/*                                    ? 'opacity-100'*/}
+                {/*                                    : 'opacity-0'*/}
+                {/*                                )}*/}
+                {/*                              />*/}
+                {/*                            </CommandItem>*/}
+                {/*                          ))}*/}
+                {/*                        </CommandGroup>*/}
+                {/*                      </CommandList>*/}
+                {/*                    </Command>*/}
+                {/*                  </PopoverContent>*/}
+                {/*                </Popover>*/}
+                {/*                {form.formState.errors.district && (*/}
+                {/*                  <p className="text-red-600">*/}
+                {/*                    {form.formState.errors.district.message}*/}
+                {/*                  </p>*/}
+                {/*                )}*/}
+                {/*              </>*/}
+                {/*            </FormControl>*/}
+                {/*          </FormItem>*/}
+                {/*        )}*/}
+                {/*      />*/}
+                {/*      <FormField*/}
+                {/*        control={form.control}*/}
+                {/*        name="ward_code"*/}
+                {/*        render={({ field }) => (*/}
+                {/*          <FormItem className="flex items-center gap-4">*/}
+                {/*            <FormControl>*/}
+                {/*              <>*/}
+                {/*                <Popover*/}
+                {/*                  open={openward}*/}
+                {/*                  onOpenChange={setOpenWard}*/}
+                {/*                >*/}
+                {/*                  <PopoverTrigger asChild>*/}
+                {/*                    <Button*/}
+                {/*                      variant="outline"*/}
+                {/*                      role="combobox"*/}
+                {/*                      aria-expanded={openward}*/}
+                {/*                      className="w-full justify-between"*/}
+                {/*                      disabled={!selectedDistrict}*/}
+                {/*                    >*/}
+                {/*                      {selectedWard*/}
+                {/*                        ? wards.find(*/}
+                {/*                            (ward) => ward.Name === selectedWard*/}
+                {/*                          )?.Name*/}
+                {/*                        : 'Chọn huyện'}*/}
+                {/*                      <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />*/}
+                {/*                    </Button>*/}
+                {/*                  </PopoverTrigger>*/}
+                {/*                  <PopoverContent className="w-full p-0">*/}
+                {/*                    <Command>*/}
+                {/*                      <CommandInput*/}
+                {/*                        placeholder="Search ward..."*/}
+                {/*                        className="h-9"*/}
+                {/*                      />*/}
+                {/*                      <CommandList>*/}
+                {/*                        <CommandEmpty>*/}
+                {/*                          No ward found.*/}
+                {/*                        </CommandEmpty>*/}
+                {/*                        <CommandGroup>*/}
+                {/*                          {wards.map((ward) => (*/}
+                {/*                            <CommandItem*/}
+                {/*                              key={ward.Id}*/}
+                {/*                              value={ward.Name}*/}
+                {/*                              onSelect={(currentValue) => {*/}
+                {/*                                setSelectedWard(*/}
+                {/*                                  currentValue === selectedWard*/}
+                {/*                                    ? null*/}
+                {/*                                    : currentValue*/}
+                {/*                                );*/}
+                {/*                                setOpenWard(false);*/}
+                {/*                                field.onChange(currentValue); // Update form field value*/}
+                {/*                              }}*/}
+                {/*                            >*/}
+                {/*                              {ward.Name}*/}
+                {/*                              <CheckIcon*/}
+                {/*                                className={cn(*/}
+                {/*                                  'ml-auto h-4 w-4',*/}
+                {/*                                  selectedWard === ward.Id*/}
+                {/*                                    ? 'opacity-100'*/}
+                {/*                                    : 'opacity-0'*/}
+                {/*                                )}*/}
+                {/*                              />*/}
+                {/*                            </CommandItem>*/}
+                {/*                          ))}*/}
+                {/*                        </CommandGroup>*/}
+                {/*                      </CommandList>*/}
+                {/*                    </Command>*/}
+                {/*                  </PopoverContent>*/}
+                {/*                </Popover>*/}
+                {/*                {form.formState.errors.ward && (*/}
+                {/*                  <p className="text-red-600">*/}
+                {/*                    {form.formState.errors.ward.message}*/}
+                {/*                  </p>*/}
+                {/*                )}*/}
+                {/*              </>*/}
+                {/*            </FormControl>*/}
+                {/*          </FormItem>*/}
+                {/*        )}*/}
+                {/*      />*/}
 
-                      <FormField
-                        control={form.control}
-                        name="namedistrict"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Tên đường</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Nhập tên đường" {...field} />
-                            </FormControl>
+                {/*      <FormField*/}
+                {/*        control={form.control}*/}
+                {/*        name="namedistrict"*/}
+                {/*        render={({ field }) => (*/}
+                {/*          <FormItem>*/}
+                {/*            <FormLabel>Tên đường</FormLabel>*/}
+                {/*            <FormControl>*/}
+                {/*              <Input placeholder="Nhập tên đường" {...field} />*/}
+                {/*            </FormControl>*/}
 
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="numberofstreet"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Số nhà</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Nhập Số nhà" {...field} />
-                            </FormControl>
+                {/*            <FormMessage />*/}
+                {/*          </FormItem>*/}
+                {/*        )}*/}
+                {/*      />*/}
+                {/*      <FormField*/}
+                {/*        control={form.control}*/}
+                {/*        name="numberofstreet"*/}
+                {/*        render={({ field }) => (*/}
+                {/*          <FormItem>*/}
+                {/*            <FormLabel>Số nhà</FormLabel>*/}
+                {/*            <FormControl>*/}
+                {/*              <Input placeholder="Nhập Số nhà" {...field} />*/}
+                {/*            </FormControl>*/}
 
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="positionBDS"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Vị trí BĐS</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Nhập Mã căn" {...field} />
-                            </FormControl>
+                {/*            <FormMessage />*/}
+                {/*          </FormItem>*/}
+                {/*        )}*/}
+                {/*      />*/}
+                {/*      <FormField*/}
+                {/*        control={form.control}*/}
+                {/*        name="positionBDS"*/}
+                {/*        render={({ field }) => (*/}
+                {/*          <FormItem>*/}
+                {/*            <FormLabel>Vị trí BĐS</FormLabel>*/}
+                {/*            <FormControl>*/}
+                {/*              <Input placeholder="Nhập Mã căn" {...field} />*/}
+                {/*            </FormControl>*/}
 
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="subdivision_code"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Tên Phân Khu/lô</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Tên phân khu/lô" {...field} />
-                            </FormControl>
+                {/*            <FormMessage />*/}
+                {/*          </FormItem>*/}
+                {/*        )}*/}
+                {/*      />*/}
+                {/*      <FormField*/}
+                {/*        control={form.control}*/}
+                {/*        name="subdivision_code"*/}
+                {/*        render={({ field }) => (*/}
+                {/*          <FormItem>*/}
+                {/*            <FormLabel>Tên Phân Khu/lô</FormLabel>*/}
+                {/*            <FormControl>*/}
+                {/*              <Input placeholder="Tên phân khu/lô" {...field} />*/}
+                {/*            </FormControl>*/}
 
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="block"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Block/Tháp</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
+                {/*            <FormMessage />*/}
+                {/*          </FormItem>*/}
+                {/*        )}*/}
+                {/*      />*/}
+                {/*      <FormField*/}
+                {/*        control={form.control}*/}
+                {/*        name="block"*/}
+                {/*        render={({ field }) => (*/}
+                {/*          <FormItem>*/}
+                {/*            <FormLabel>Block/Tháp</FormLabel>*/}
+                {/*            <FormControl>*/}
+                {/*              <Input {...field} />*/}
+                {/*            </FormControl>*/}
 
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                {/*            <FormMessage />*/}
+                {/*          </FormItem>*/}
+                {/*        )}*/}
+                {/*      />*/}
 
-                      <FormField
-                        control={form.control}
-                        name="typeofhouse"
-                        render={({ field }) => (
-                          <div className="mt-2 flex flex-col gap-3">
-                            <Select {...field} onValueChange={field.onChange}>
-                              <SelectTrigger className="w-full">
-                                <SelectValue>
-                                  {field.value || 'Loại hình căn hộ'}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectGroup>
-                                  <SelectLabel>Loại hình nhà ở:</SelectLabel>
-                                  <SelectItem value="Nhà mặt phố/ mặt tiền">
-                                    Nhà mặt phố/ mặt tiền
-                                  </SelectItem>
-                                  <SelectItem value="Nhà ngõ, hẻm">
-                                    Nhà ngõ, hẻm
-                                  </SelectItem>
-                                  <SelectItem value="Nhà biệt thự">
-                                    Nhà biệt thự
-                                  </SelectItem>
-                                  <SelectItem value="Nhà phố liền kề">
-                                    Nhà phố liền kề
-                                  </SelectItem>
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
-                            {form.formState.errors.typeofhouse && (
-                              <p className="text-red-600">
-                                {form.formState.errors.typeofhouse.message}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="bedroom_id"
-                        render={({ field }) => (
-                          <div className="mt-2 ">
-                            <Select {...field} onValueChange={field.onChange}>
-                              <SelectTrigger className="w-full">
-                                <SelectValue>
-                                  {field.value || 'Số phòng ngủ'}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectGroup>
-                                  <SelectLabel>Số phòng ngủ</SelectLabel>
-                                  <SelectItem value="1">1</SelectItem>
-                                  <SelectItem value="2">2</SelectItem>
-                                  <SelectItem value="3">3</SelectItem>
-                                  <SelectItem value="4">4</SelectItem>
-                                  <SelectItem value="5">5</SelectItem>
-                                  <SelectItem value="6">6</SelectItem>
-                                  <SelectItem value=">6">
-                                    Nhiều hơn 6
-                                  </SelectItem>
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
-                            {form.formState.errors.bedroom_id && (
-                              <p className="text-red-600">
-                                {form.formState.errors.bedroom_id.message}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="bathroom_id"
-                        render={({ field }) => (
-                          <div className="mt-2 flex flex-col gap-3">
-                            <FormLabel>Số phòng vệ sinh</FormLabel>
-                            <Select {...field} onValueChange={field.onChange}>
-                              <SelectTrigger className="w-full">
-                                <SelectValue>
-                                  {field.value || 'Số phòng vệ sinh'}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectGroup>
-                                  <SelectLabel>Số phòng vệ sinh</SelectLabel>
-                                  <SelectItem value="1">1</SelectItem>
-                                  <SelectItem value="2">2</SelectItem>
-                                  <SelectItem value="3">3</SelectItem>
-                                  <SelectItem value="4">4</SelectItem>
-                                  <SelectItem value="5">5</SelectItem>
-                                  <SelectItem value="6">6</SelectItem>
-                                  <SelectItem value="Nhiều hơn 6">
-                                    Nhiều hơn 6
-                                  </SelectItem>
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
-                            {form.formState.errors.bathroom_id && (
-                              <p className="text-red-600">
-                                {form.formState.errors.bathroom_id.message}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="viewbalcony"
-                        render={({ field }) => (
-                          <div className="mt-2 flex flex-col gap-3">
-                            <FormLabel>Hướng ban công</FormLabel>
-                            <Select {...field} onValueChange={field.onChange}>
-                              <SelectTrigger className="w-full">
-                                <SelectValue>
-                                  {field.value || 'Hướng ban công:'}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectGroup>
-                                  <SelectLabel>Hướng ban công:</SelectLabel>
-                                  <SelectItem value="Đông">Đông</SelectItem>
-                                  <SelectItem value="Tây">Tây</SelectItem>
-                                  <SelectItem value="Nam">Nam</SelectItem>
-                                  <SelectItem value="Bắc">Bắc</SelectItem>
-                                  <SelectItem value="Đông Bắc">
-                                    Đông Bắc
-                                  </SelectItem>
-                                  <SelectItem value="Đông Nam">
-                                    Đông Nam
-                                  </SelectItem>
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
-                            {form.formState.errors.viewbalcony && (
-                              <p className="text-red-600">
-                                {form.formState.errors.viewbalcony.message}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="main_door_id"
-                        render={({ field }) => (
-                          <div className="mt-2 flex flex-col gap-3">
-                            <FormLabel>Hướng cửa chính</FormLabel>
-                            <Select {...field} onValueChange={field.onChange}>
-                              <SelectTrigger className="w-full">
-                                <SelectValue>
-                                  {field.value || 'Hướng cửa chính:'}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectGroup>
-                                  <SelectLabel>Hướng cửa chính</SelectLabel>
-                                  <SelectItem value="1">Đông</SelectItem>
-                                  <SelectItem value="2">Tây</SelectItem>
-                                  <SelectItem value="3">Nam</SelectItem>
-                                  <SelectItem value="4">Bắc</SelectItem>
-                                  <SelectItem value="5">Đông Bắc</SelectItem>
-                                  <SelectItem value="6">Đông Nam</SelectItem>
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
-                            {form.formState.errors.main_door_id && (
-                              <p className="text-red-600">
-                                {form.formState.errors.main_door_id.message}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="floor"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Nhập Số tầng</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Nhập Số tầng" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                {/*      <FormField*/}
+                {/*        control={form.control}*/}
+                {/*        name="typeofhouse"*/}
+                {/*        render={({ field }) => (*/}
+                {/*          <div className="mt-2 flex flex-col gap-3">*/}
+                {/*            <Select {...field} onValueChange={field.onChange}>*/}
+                {/*              <SelectTrigger className="w-full">*/}
+                {/*                <SelectValue>*/}
+                {/*                  {field.value || 'Loại hình căn hộ'}*/}
+                {/*                </SelectValue>*/}
+                {/*              </SelectTrigger>*/}
+                {/*              <SelectContent>*/}
+                {/*                <SelectGroup>*/}
+                {/*                  <SelectLabel>Loại hình nhà ở:</SelectLabel>*/}
+                {/*                  <SelectItem value="Nhà mặt phố/ mặt tiền">*/}
+                {/*                    Nhà mặt phố/ mặt tiền*/}
+                {/*                  </SelectItem>*/}
+                {/*                  <SelectItem value="Nhà ngõ, hẻm">*/}
+                {/*                    Nhà ngõ, hẻm*/}
+                {/*                  </SelectItem>*/}
+                {/*                  <SelectItem value="Nhà biệt thự">*/}
+                {/*                    Nhà biệt thự*/}
+                {/*                  </SelectItem>*/}
+                {/*                  <SelectItem value="Nhà phố liền kề">*/}
+                {/*                    Nhà phố liền kề*/}
+                {/*                  </SelectItem>*/}
+                {/*                </SelectGroup>*/}
+                {/*              </SelectContent>*/}
+                {/*            </Select>*/}
+                {/*            {form.formState.errors.typeofhouse && (*/}
+                {/*              <p className="text-red-600">*/}
+                {/*                {form.formState.errors.typeofhouse.message}*/}
+                {/*              </p>*/}
+                {/*            )}*/}
+                {/*          </div>*/}
+                {/*        )}*/}
+                {/*      />*/}
+                {/*      <FormField*/}
+                {/*        control={form.control}*/}
+                {/*        name="bedroom_id"*/}
+                {/*        render={({ field }) => (*/}
+                {/*          <div className="mt-2 ">*/}
+                {/*            <Select {...field} onValueChange={field.onChange}>*/}
+                {/*              <SelectTrigger className="w-full">*/}
+                {/*                <SelectValue>*/}
+                {/*                  {field.value || 'Số phòng ngủ'}*/}
+                {/*                </SelectValue>*/}
+                {/*              </SelectTrigger>*/}
+                {/*              <SelectContent>*/}
+                {/*                <SelectGroup>*/}
+                {/*                  <SelectLabel>Số phòng ngủ</SelectLabel>*/}
+                {/*                  <SelectItem value="1">1</SelectItem>*/}
+                {/*                  <SelectItem value="2">2</SelectItem>*/}
+                {/*                  <SelectItem value="3">3</SelectItem>*/}
+                {/*                  <SelectItem value="4">4</SelectItem>*/}
+                {/*                  <SelectItem value="5">5</SelectItem>*/}
+                {/*                  <SelectItem value="6">6</SelectItem>*/}
+                {/*                  <SelectItem value=">6">*/}
+                {/*                    Nhiều hơn 6*/}
+                {/*                  </SelectItem>*/}
+                {/*                </SelectGroup>*/}
+                {/*              </SelectContent>*/}
+                {/*            </Select>*/}
+                {/*            {form.formState.errors.bedroom_id && (*/}
+                {/*              <p className="text-red-600">*/}
+                {/*                {form.formState.errors.bedroom_id.message}*/}
+                {/*              </p>*/}
+                {/*            )}*/}
+                {/*          </div>*/}
+                {/*        )}*/}
+                {/*      />*/}
+                {/*      <FormField*/}
+                {/*        control={form.control}*/}
+                {/*        name="bathroom_id"*/}
+                {/*        render={({ field }) => (*/}
+                {/*          <div className="mt-2 flex flex-col gap-3">*/}
+                {/*            <FormLabel>Số phòng vệ sinh</FormLabel>*/}
+                {/*            <Select {...field} onValueChange={field.onChange}>*/}
+                {/*              <SelectTrigger className="w-full">*/}
+                {/*                <SelectValue>*/}
+                {/*                  {field.value || 'Số phòng vệ sinh'}*/}
+                {/*                </SelectValue>*/}
+                {/*              </SelectTrigger>*/}
+                {/*              <SelectContent>*/}
+                {/*                <SelectGroup>*/}
+                {/*                  <SelectLabel>Số phòng vệ sinh</SelectLabel>*/}
+                {/*                  <SelectItem value="1">1</SelectItem>*/}
+                {/*                  <SelectItem value="2">2</SelectItem>*/}
+                {/*                  <SelectItem value="3">3</SelectItem>*/}
+                {/*                  <SelectItem value="4">4</SelectItem>*/}
+                {/*                  <SelectItem value="5">5</SelectItem>*/}
+                {/*                  <SelectItem value="6">6</SelectItem>*/}
+                {/*                  <SelectItem value="Nhiều hơn 6">*/}
+                {/*                    Nhiều hơn 6*/}
+                {/*                  </SelectItem>*/}
+                {/*                </SelectGroup>*/}
+                {/*              </SelectContent>*/}
+                {/*            </Select>*/}
+                {/*            {form.formState.errors.bathroom_id && (*/}
+                {/*              <p className="text-red-600">*/}
+                {/*                {form.formState.errors.bathroom_id.message}*/}
+                {/*              </p>*/}
+                {/*            )}*/}
+                {/*          </div>*/}
+                {/*        )}*/}
+                {/*      />*/}
+                {/*      <FormField*/}
+                {/*        control={form.control}*/}
+                {/*        name="viewbalcony"*/}
+                {/*        render={({ field }) => (*/}
+                {/*          <div className="mt-2 flex flex-col gap-3">*/}
+                {/*            <FormLabel>Hướng ban công</FormLabel>*/}
+                {/*            <Select {...field} onValueChange={field.onChange}>*/}
+                {/*              <SelectTrigger className="w-full">*/}
+                {/*                <SelectValue>*/}
+                {/*                  {field.value || 'Hướng ban công:'}*/}
+                {/*                </SelectValue>*/}
+                {/*              </SelectTrigger>*/}
+                {/*              <SelectContent>*/}
+                {/*                <SelectGroup>*/}
+                {/*                  <SelectLabel>Hướng ban công:</SelectLabel>*/}
+                {/*                  <SelectItem value="Đông">Đông</SelectItem>*/}
+                {/*                  <SelectItem value="Tây">Tây</SelectItem>*/}
+                {/*                  <SelectItem value="Nam">Nam</SelectItem>*/}
+                {/*                  <SelectItem value="Bắc">Bắc</SelectItem>*/}
+                {/*                  <SelectItem value="Đông Bắc">*/}
+                {/*                    Đông Bắc*/}
+                {/*                  </SelectItem>*/}
+                {/*                  <SelectItem value="Đông Nam">*/}
+                {/*                    Đông Nam*/}
+                {/*                  </SelectItem>*/}
+                {/*                </SelectGroup>*/}
+                {/*              </SelectContent>*/}
+                {/*            </Select>*/}
+                {/*            {form.formState.errors.viewbalcony && (*/}
+                {/*              <p className="text-red-600">*/}
+                {/*                {form.formState.errors.viewbalcony.message}*/}
+                {/*              </p>*/}
+                {/*            )}*/}
+                {/*          </div>*/}
+                {/*        )}*/}
+                {/*      />*/}
+                {/*      <FormField*/}
+                {/*        control={form.control}*/}
+                {/*        name="main_door_id"*/}
+                {/*        render={({ field }) => (*/}
+                {/*          <div className="mt-2 flex flex-col gap-3">*/}
+                {/*            <FormLabel>Hướng cửa chính</FormLabel>*/}
+                {/*            <Select {...field} onValueChange={field.onChange}>*/}
+                {/*              <SelectTrigger className="w-full">*/}
+                {/*                <SelectValue>*/}
+                {/*                  {field.value || 'Hướng cửa chính:'}*/}
+                {/*                </SelectValue>*/}
+                {/*              </SelectTrigger>*/}
+                {/*              <SelectContent>*/}
+                {/*                <SelectGroup>*/}
+                {/*                  <SelectLabel>Hướng cửa chính</SelectLabel>*/}
+                {/*                  <SelectItem value="1">Đông</SelectItem>*/}
+                {/*                  <SelectItem value="2">Tây</SelectItem>*/}
+                {/*                  <SelectItem value="3">Nam</SelectItem>*/}
+                {/*                  <SelectItem value="4">Bắc</SelectItem>*/}
+                {/*                  <SelectItem value="5">Đông Bắc</SelectItem>*/}
+                {/*                  <SelectItem value="6">Đông Nam</SelectItem>*/}
+                {/*                </SelectGroup>*/}
+                {/*              </SelectContent>*/}
+                {/*            </Select>*/}
+                {/*            {form.formState.errors.main_door_id && (*/}
+                {/*              <p className="text-red-600">*/}
+                {/*                {form.formState.errors.main_door_id.message}*/}
+                {/*              </p>*/}
+                {/*            )}*/}
+                {/*          </div>*/}
+                {/*        )}*/}
+                {/*      />*/}
+                {/*      <FormField*/}
+                {/*        control={form.control}*/}
+                {/*        name="floor"*/}
+                {/*        render={({ field }) => (*/}
+                {/*          <FormItem>*/}
+                {/*            <FormLabel>Nhập Số tầng</FormLabel>*/}
+                {/*            <FormControl>*/}
+                {/*              <Input placeholder="Nhập Số tầng" {...field} />*/}
+                {/*            </FormControl>*/}
+                {/*            <FormMessage />*/}
+                {/*          </FormItem>*/}
+                {/*        )}*/}
+                {/*      />*/}
 
-                      {/* diện tích */}
-                      <FormField
-                        control={form.control}
-                        name="land_area"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Diện tích & giá</FormLabel>
+                {/* diện tích */}
+                {/*<FormField*/}
+                {/*  control={form.control}*/}
+                {/*  name="land_area2"*/}
+                {/*  render={({ field }) => (*/}
+                {/*    <FormItem>*/}
+                {/*      <FormLabel>Diện tích & giá</FormLabel>*/}
 
-                            <FormControl>
-                              <Input
-                                type="number"
-                                placeholder="Diện tích "
-                                {...field}
-                                onChange={(e) =>
-                                  field.onChange(parseFloat(e.target.value))
-                                }
-                              />
-                            </FormControl>
+                {/*      <FormControl>*/}
+                {/*        <Input*/}
+                {/*          type="number"*/}
+                {/*          placeholder="Diện tích "*/}
+                {/*          {...field}*/}
+                {/*          onChange={(e) =>*/}
+                {/*            field.onChange(parseFloat(e.target.value))*/}
+                {/*          }*/}
+                {/*        />*/}
+                {/*      </FormControl>*/}
 
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="usable_area"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Diện tích sử dụng</FormLabel>
+                {/*      <FormMessage />*/}
+                {/*    </FormItem>*/}
+                {/*  )}*/}
+                {/*/>*/}
+                {/*<FormField*/}
+                {/*  control={form.control}*/}
+                {/*  name="usable_area"*/}
+                {/*  render={({ field }) => (*/}
+                {/*    <FormItem>*/}
+                {/*      <FormLabel>Diện tích sử dụng</FormLabel>*/}
 
-                            <FormControl>
-                              <Input
-                                type="number"
-                                placeholder="Diện tích "
-                                {...field}
-                                onChange={(e) =>
-                                  field.onChange(parseFloat(e.target.value))
-                                }
-                              />
-                            </FormControl>
+                {/*      <FormControl>*/}
+                {/*        <Input*/}
+                {/*          type="number"*/}
+                {/*          placeholder="Diện tích "*/}
+                {/*          {...field}*/}
+                {/*          onChange={(e) =>*/}
+                {/*            field.onChange(parseFloat(e.target.value))*/}
+                {/*          }*/}
+                {/*        />*/}
+                {/*      </FormControl>*/}
 
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="horizontal"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Chiều ngang</FormLabel>
+                {/*      <FormMessage />*/}
+                {/*    </FormItem>*/}
+                {/*  )}*/}
+                {/*/>*/}
+                {/*<FormField*/}
+                {/*  control={form.control}*/}
+                {/*  name="horizontal"*/}
+                {/*  render={({ field }) => (*/}
+                {/*    <FormItem>*/}
+                {/*      <FormLabel>Chiều ngang</FormLabel>*/}
 
-                            <FormControl>
-                              <Input placeholder="Chiều ngang " {...field} />
-                            </FormControl>
+                {/*      <FormControl>*/}
+                {/*        <Input placeholder="Chiều ngang " {...field} />*/}
+                {/*      </FormControl>*/}
 
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="length"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Chiều dài</FormLabel>
+                {/*      <FormMessage />*/}
+                {/*    </FormItem>*/}
+                {/*  )}*/}
+                {/*/>*/}
+                {/*<FormField*/}
+                {/*  control={form.control}*/}
+                {/*  name="length"*/}
+                {/*  render={({ field }) => (*/}
+                {/*    <FormItem>*/}
+                {/*      <FormLabel>Chiều dài</FormLabel>*/}
 
-                            <FormControl>
-                              <Input placeholder="Chiều dài " {...field} />
-                            </FormControl>
+                {/*      <FormControl>*/}
+                {/*        <Input placeholder="Chiều dài " {...field} />*/}
+                {/*      </FormControl>*/}
 
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="cost"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Giá bán</FormLabel>
+                {/*      <FormMessage />*/}
+                {/*    </FormItem>*/}
+                {/*  )}*/}
+                {/*/>*/}
+                {/*<FormField*/}
+                {/*  control={form.control}*/}
+                {/*  name="cost"*/}
+                {/*  render={({ field }) => (*/}
+                {/*    <FormItem>*/}
+                {/*      <FormLabel>Giá bán</FormLabel>*/}
 
-                            <FormControl>
-                              <Input
-                                type="number"
-                                placeholder="Giá thuê "
-                                {...field}
-                                onChange={(e) =>
-                                  field.onChange(parseFloat(e.target.value))
-                                }
-                              />
-                            </FormControl>
+                {/*      <FormControl>*/}
+                {/*        <Input*/}
+                {/*          type="number"*/}
+                {/*          placeholder="Giá thuê "*/}
+                {/*          {...field}*/}
+                {/*          onChange={(e) =>*/}
+                {/*            field.onChange(parseFloat(e.target.value))*/}
+                {/*          }*/}
+                {/*        />*/}
+                {/*      </FormControl>*/}
 
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                {/*      <FormMessage />*/}
+                {/*    </FormItem>*/}
+                {/*  )}*/}
+                {/*/>*/}
 
-                      <FormField
-                        control={form.control}
-                        name="legal_id"
-                        render={({ field }) => (
-                          <div className="mt-2 flex flex-col gap-3">
-                            <FormLabel>Thông tin khác</FormLabel>
-                            <Select {...field} onValueChange={field.onChange}>
-                              <SelectTrigger className="w-full">
-                                <SelectValue>
-                                  {field.value || 'Giấy tờ pháp lý'}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectGroup>
-                                  <SelectLabel>Giấy tờ pháp lý:</SelectLabel>
-                                  <SelectItem value="1">Đã có sổ</SelectItem>
-                                  <SelectItem value="2">Đang chờ sổ</SelectItem>
-                                  <SelectItem value="3">Không có sổ</SelectItem>
-                                  <SelectItem value="4">
-                                    Sổ chung / công chứng vi bằng
-                                  </SelectItem>
-                                  <SelectItem value="5">
-                                    Giấy tờ viết tay
-                                  </SelectItem>
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
-                            {form.formState.errors.legal_id && (
-                              <p className="text-red-600">
-                                {form.formState.errors.legal_id.message}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="condition_interior"
-                        render={({ field }) => (
-                          <Select {...field} onValueChange={field.onChange}>
-                            <SelectTrigger className="w-full">
-                              <SelectValue>
-                                {field.value || 'Nội thất'}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                <SelectLabel>Nội thất</SelectLabel>
+                {/*<FormField*/}
+                {/*  control={form.control}*/}
+                {/*  name="legal_id"*/}
+                {/*  render={({ field }) => (*/}
+                {/*    <div className="mt-2 flex flex-col gap-3">*/}
+                {/*      <FormLabel>Thông tin khác</FormLabel>*/}
+                {/*      <Select {...field} onValueChange={field.onChange}>*/}
+                {/*        <SelectTrigger className="w-full">*/}
+                {/*          <SelectValue>*/}
+                {/*            {field.value || 'Giấy tờ pháp lý'}*/}
+                {/*          </SelectValue>*/}
+                {/*        </SelectTrigger>*/}
+                {/*        <SelectContent>*/}
+                {/*          <SelectGroup>*/}
+                {/*            <SelectLabel>Giấy tờ pháp lý:</SelectLabel>*/}
+                {/*            <SelectItem value="1">Đã có sổ</SelectItem>*/}
+                {/*            <SelectItem value="2">Đang chờ sổ</SelectItem>*/}
+                {/*            <SelectItem value="3">Không có sổ</SelectItem>*/}
+                {/*            <SelectItem value="4">*/}
+                {/*              Sổ chung / công chứng vi bằng*/}
+                {/*            </SelectItem>*/}
+                {/*            <SelectItem value="5">*/}
+                {/*              Giấy tờ viết tay*/}
+                {/*            </SelectItem>*/}
+                {/*          </SelectGroup>*/}
+                {/*        </SelectContent>*/}
+                {/*      </Select>*/}
+                {/*      {form.formState.errors.legal_id && (*/}
+                {/*        <p className="text-red-600">*/}
+                {/*          {form.formState.errors.legal_id.message}*/}
+                {/*        </p>*/}
+                {/*      )}*/}
+                {/*    </div>*/}
+                {/*  )}*/}
+                {/*/>*/}
+                {/*<FormField*/}
+                {/*  control={form.control}*/}
+                {/*  name="condition_interior"*/}
+                {/*  render={({ field }) => (*/}
+                {/*    <Select {...field} onValueChange={field.onChange}>*/}
+                {/*      <SelectTrigger className="w-full">*/}
+                {/*        <SelectValue>*/}
+                {/*          {field.value || 'Nội thất'}*/}
+                {/*        </SelectValue>*/}
+                {/*      </SelectTrigger>*/}
+                {/*      <SelectContent>*/}
+                {/*        <SelectGroup>*/}
+                {/*          <SelectLabel>Nội thất</SelectLabel>*/}
 
-                                {funitureOptions.map((option) => (
-                                  <SelectItem
-                                    key={option.value}
-                                    value={option.value}
-                                  >
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="car_alley"
-                          render={({ field }) => (
-                            <FormItem>
-                              <div className="flex gap-3 p-1 h-12 items-center">
-                                <FormLabel>Hẻm xe hơi</FormLabel>
+                {/*          {funitureOptions.map((option) => (*/}
+                {/*            <SelectItem*/}
+                {/*              key={option.value}*/}
+                {/*              value={option.value}*/}
+                {/*            >*/}
+                {/*              {option.label}*/}
+                {/*            </SelectItem>*/}
+                {/*          ))}*/}
+                {/*        </SelectGroup>*/}
+                {/*      </SelectContent>*/}
+                {/*    </Select>*/}
+                {/*  )}*/}
+                {/*/>*/}
+                {/*<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">*/}
+                {/*  <FormField*/}
+                {/*    control={form.control}*/}
+                {/*    name="car_alley"*/}
+                {/*    render={({ field }) => (*/}
+                {/*      <FormItem>*/}
+                {/*        <div className="flex gap-3 p-1 h-12 items-center">*/}
+                {/*          <FormLabel>Hẻm xe hơi</FormLabel>*/}
 
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
-                                </FormControl>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="back_house"
-                          render={({ field }) => (
-                            <FormItem>
-                              <div className="flex gap-3 p-1 h-12 items-center">
-                                <FormLabel>Nhà tóp hậu</FormLabel>
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
-                                </FormControl>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="blooming_house"
-                          render={({ field }) => (
-                            <FormItem>
-                              <div className="flex gap-3 p-1 h-12 items-center">
-                                <FormLabel>Nhà nở hậu</FormLabel>
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
-                                </FormControl>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="not_completed_yet"
-                          render={({ field }) => (
-                            <FormItem>
-                              <div className="flex gap-3 p-1 h-12 items-center">
-                                <FormLabel>Nhà chưa hoàn công</FormLabel>
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
-                                </FormControl>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="land_not_changed_yet"
-                          render={({ field }) => (
-                            <FormItem>
-                              <div className="flex gap-3 p-1 h-12 items-center">
-                                <FormLabel>Đất chưa chuyển thổ</FormLabel>
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
-                                </FormControl>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="planning_or_road"
-                          render={({ field }) => (
-                            <FormItem>
-                              <div className="flex gap-3 p-1 h-12 items-center">
-                                <FormLabel>
-                                  Nhà dính quy hoạch / lộ giới
-                                </FormLabel>
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
-                                </FormControl>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="diff_situation"
-                          render={({ field }) => (
-                            <FormItem>
-                              <div className="flex gap-3 p-1 h-12 items-center">
-                                <FormLabel>Hiện trạng khác</FormLabel>
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
-                                </FormControl>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      <FormField
-                        control={form.control}
-                        name="title"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              Tiêu đề tin đăng và Mô tả chi tiết
-                            </FormLabel>
+                {/*          <FormControl>*/}
+                {/*            <Checkbox*/}
+                {/*              checked={field.value}*/}
+                {/*              onCheckedChange={field.onChange}*/}
+                {/*            />*/}
+                {/*          </FormControl>*/}
+                {/*        </div>*/}
+                {/*      </FormItem>*/}
+                {/*    )}*/}
+                {/*  />*/}
+                {/*  <FormField*/}
+                {/*    control={form.control}*/}
+                {/*    name="back_house"*/}
+                {/*    render={({ field }) => (*/}
+                {/*      <FormItem>*/}
+                {/*        <div className="flex gap-3 p-1 h-12 items-center">*/}
+                {/*          <FormLabel>Nhà tóp hậu</FormLabel>*/}
+                {/*          <FormControl>*/}
+                {/*            <Checkbox*/}
+                {/*              checked={field.value}*/}
+                {/*              onCheckedChange={field.onChange}*/}
+                {/*            />*/}
+                {/*          </FormControl>*/}
+                {/*        </div>*/}
+                {/*      </FormItem>*/}
+                {/*    )}*/}
+                {/*  />*/}
+                {/*  <FormField*/}
+                {/*    control={form.control}*/}
+                {/*    name="blooming_house"*/}
+                {/*    render={({ field }) => (*/}
+                {/*      <FormItem>*/}
+                {/*        <div className="flex gap-3 p-1 h-12 items-center">*/}
+                {/*          <FormLabel>Nhà nở hậu</FormLabel>*/}
+                {/*          <FormControl>*/}
+                {/*            <Checkbox*/}
+                {/*              checked={field.value}*/}
+                {/*              onCheckedChange={field.onChange}*/}
+                {/*            />*/}
+                {/*          </FormControl>*/}
+                {/*        </div>*/}
+                {/*      </FormItem>*/}
+                {/*    )}*/}
+                {/*  />*/}
+                {/*  <FormField*/}
+                {/*    control={form.control}*/}
+                {/*    name="not_completed_yet"*/}
+                {/*    render={({ field }) => (*/}
+                {/*      <FormItem>*/}
+                {/*        <div className="flex gap-3 p-1 h-12 items-center">*/}
+                {/*          <FormLabel>Nhà chưa hoàn công</FormLabel>*/}
+                {/*          <FormControl>*/}
+                {/*            <Checkbox*/}
+                {/*              checked={field.value}*/}
+                {/*              onCheckedChange={field.onChange}*/}
+                {/*            />*/}
+                {/*          </FormControl>*/}
+                {/*        </div>*/}
+                {/*      </FormItem>*/}
+                {/*    )}*/}
+                {/*  />*/}
+                {/*  <FormField*/}
+                {/*    control={form.control}*/}
+                {/*    name="land_not_changed_yet"*/}
+                {/*    render={({ field }) => (*/}
+                {/*      <FormItem>*/}
+                {/*        <div className="flex gap-3 p-1 h-12 items-center">*/}
+                {/*          <FormLabel>Đất chưa chuyển thổ</FormLabel>*/}
+                {/*          <FormControl>*/}
+                {/*            <Checkbox*/}
+                {/*              checked={field.value}*/}
+                {/*              onCheckedChange={field.onChange}*/}
+                {/*            />*/}
+                {/*          </FormControl>*/}
+                {/*        </div>*/}
+                {/*      </FormItem>*/}
+                {/*    )}*/}
+                {/*  />*/}
+                {/*  <FormField*/}
+                {/*    control={form.control}*/}
+                {/*    name="planning_or_road"*/}
+                {/*    render={({ field }) => (*/}
+                {/*      <FormItem>*/}
+                {/*        <div className="flex gap-3 p-1 h-12 items-center">*/}
+                {/*          <FormLabel>*/}
+                {/*            Nhà dính quy hoạch / lộ giới*/}
+                {/*          </FormLabel>*/}
+                {/*          <FormControl>*/}
+                {/*            <Checkbox*/}
+                {/*              checked={field.value}*/}
+                {/*              onCheckedChange={field.onChange}*/}
+                {/*            />*/}
+                {/*          </FormControl>*/}
+                {/*        </div>*/}
+                {/*      </FormItem>*/}
+                {/*    )}*/}
+                {/*  />*/}
+                {/*  <FormField*/}
+                {/*    control={form.control}*/}
+                {/*    name="diff_situation"*/}
+                {/*    render={({ field }) => (*/}
+                {/*      <FormItem>*/}
+                {/*        <div className="flex gap-3 p-1 h-12 items-center">*/}
+                {/*          <FormLabel>Hiện trạng khác</FormLabel>*/}
+                {/*          <FormControl>*/}
+                {/*            <Checkbox*/}
+                {/*              checked={field.value}*/}
+                {/*              onCheckedChange={field.onChange}*/}
+                {/*            />*/}
+                {/*          </FormControl>*/}
+                {/*        </div>*/}
+                {/*      </FormItem>*/}
+                {/*    )}*/}
+                {/*  />*/}
+                {/*</div>*/}
+                {/*<FormField*/}
+                {/*  control={form.control}*/}
+                {/*  name="title"*/}
+                {/*  render={({ field }) => (*/}
+                {/*    <FormItem>*/}
+                {/*      <FormLabel>*/}
+                {/*        Tiêu đề tin đăng và Mô tả chi tiết*/}
+                {/*      </FormLabel>*/}
 
-                            <FormControl>
-                              <Input
-                                placeholder="Tiêu đề tin đăng "
-                                {...field}
-                                onFocus={() => setIsFocus(true)}
-                                onBlur={() => setIsFocus(false)}
-                              />
-                            </FormControl>
+                {/*      <FormControl>*/}
+                {/*        <Input*/}
+                {/*          placeholder="Tiêu đề tin đăng "*/}
+                {/*          {...field}*/}
+                {/*          onFocus={() => setIsFocus(true)}*/}
+                {/*          onBlur={() => setIsFocus(false)}*/}
+                {/*        />*/}
+                {/*      </FormControl>*/}
 
-                            <FormDescription>
-                              {isFocus && (
-                                <h1 className="text-base">
-                                  {' '}
-                                  Nếu bạn cung cấp thêm một số thông tin chi
-                                  tiết như:Phong cách thiết kế: Hiện đại, cổ
-                                  điển, tối giản,...Màu sắc chủ đạo: Trắng,
-                                  xanh, nâu,..Vị trí nổi bật: Gần công viên,
-                                  view sông,...Đặc điểm nổi bật: Ban công rộng,
-                                  bếp hiện đại,...
-                                </h1>
-                              )}
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="content"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Mô tả chi tiết</FormLabel>
+                {/*      <FormDescription>*/}
+                {/*        {isFocus && (*/}
+                {/*          <h1 className="text-base">*/}
+                {/*            {' '}*/}
+                {/*            Nếu bạn cung cấp thêm một số thông tin chi*/}
+                {/*            tiết như:Phong cách thiết kế: Hiện đại, cổ*/}
+                {/*            điển, tối giản,...Màu sắc chủ đạo: Trắng,*/}
+                {/*            xanh, nâu,..Vị trí nổi bật: Gần công viên,*/}
+                {/*            view sông,...Đặc điểm nổi bật: Ban công rộng,*/}
+                {/*            bếp hiện đại,...*/}
+                {/*          </h1>*/}
+                {/*        )}*/}
+                {/*      </FormDescription>*/}
+                {/*      <FormMessage />*/}
+                {/*    </FormItem>*/}
+                {/*  )}*/}
+                {/*/>*/}
+                {/*<FormField*/}
+                {/*  control={form.control}*/}
+                {/*  name="content"*/}
+                {/*  render={({ field }) => (*/}
+                {/*    <FormItem>*/}
+                {/*      <FormLabel>Mô tả chi tiết</FormLabel>*/}
 
-                            <FormControl>
-                              <Textarea
-                                placeholder="Tiêu đề tin đăng"
-                                {...field}
-                                onFocus={() => setIsFocusDescribeDetail(true)}
-                                onBlur={() => setIsFocusDescribeDetail(false)}
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              {isFocusDescribeDetail && (
-                                <h1 className="text-base">
-                                  {' '}
-                                  Nên có: Loại căn hộ chung cư, vị trí, tiện
-                                  ích, diện tích, số phòng, thông tin pháp lý,
-                                  tình trạng nội thất, v.v. Ví dụ: Tọa lạc tại
-                                  đường Số 2 Đ. N4, Căn hộ Duplex Celadon City
-                                  Q. Tân Phú 68m2 2PN, 1WC. Tiện ích đầy đủ
-                                </h1>
-                              )}
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                {/*      <FormControl>*/}
+                {/*        <Textarea*/}
+                {/*          placeholder="Tiêu đề tin đăng1"*/}
+                {/*          {...field}*/}
+                {/*          onFocus={() => setIsFocusDescribeDetail(true)}*/}
+                {/*          onBlur={() => setIsFocusDescribeDetail(false)}*/}
+                {/*        />*/}
+                {/*      </FormControl>*/}
+                {/*      <FormDescription>*/}
+                {/*        {isFocusDescribeDetail && (*/}
+                {/*          <h1 className="text-base">*/}
+                {/*            {' '}*/}
+                {/*            Nên có: Loại căn hộ chung cư, vị trí, tiện*/}
+                {/*            ích, diện tích, số phòng, thông tin pháp lý,*/}
+                {/*            tình trạng nội thất, v.v. Ví dụ: Tọa lạc tại*/}
+                {/*            đường Số 2 Đ. N4, Căn hộ Duplex Celadon City*/}
+                {/*            Q. Tân Phú 68m2 2PN, 1WC. Tiện ích đầy đủ*/}
+                {/*          </h1>*/}
+                {/*        )}*/}
+                {/*      </FormDescription>*/}
+                {/*      <FormMessage />*/}
+                {/*    </FormItem>*/}
+                {/*  )}*/}
+                {/*/>*/}
 
-                      {/* fix */}
-                      <FormField
-                        control={form.control}
-                        name="floor"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Bạn là:</FormLabel>
+                {/* fix */}
+                {/*      <FormField*/}
+                {/*        control={form.control}*/}
+                {/*        name="floor"*/}
+                {/*        render={({ field }) => (*/}
+                {/*          <FormItem>*/}
+                {/*            <FormLabel>Bạn là:</FormLabel>*/}
 
-                            <FormControl>
-                              <div className="flex items-center space-x-2">
-                                <Switch
-                                  id="broker"
-                                  onCheckedChange={handleCheckedChange}
-                                />
-                                <Label htmlFor="broker" className="uppercase">
-                                  Môi giới
-                                </Label>
-                              </div>
-                            </FormControl>
+                {/*            <FormControl>*/}
+                {/*              <div className="flex items-center space-x-2">*/}
+                {/*                <Switch*/}
+                {/*                  id="broker"*/}
+                {/*                  onCheckedChange={handleCheckedChange}*/}
+                {/*                />*/}
+                {/*                <Label htmlFor="broker" className="uppercase">*/}
+                {/*                  Môi giới*/}
+                {/*                </Label>*/}
+                {/*              </div>*/}
+                {/*            </FormControl>*/}
 
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                {/*            <FormMessage />*/}
+                {/*          </FormItem>*/}
+                {/*        )}*/}
+                {/*      />*/}
 
-                      <div className="flex gap-3 mt-3">
-                        <Button variant="outline">Xem trước</Button>
-                        <Button type="submit">Đăng tin</Button>
-                      </div>
-                    </TabsContent>
-                  </form>
-                </Form>
+                {/*      <div className="flex gap-3 mt-3">*/}
+                {/*        <Button variant="outline">Xem trước</Button>*/}
+                {/*        <Button type="submit">Đăng tin</Button>*/}
+                {/*      </div>*/}
+                {/*    </TabsContent>*/}
+                {/*  </form>*/}
+                {/*</Form>*/}
 
                 {/* check rent */}
                 <Form {...form}>
@@ -1925,48 +1960,18 @@ const CategoryPage1020 = () => {
                           </FormItem>
                         )}
                       />
-                      <FormField
-                        control={form.control}
+                      <CurrencyInput
+                        form={form}
                         name="cost"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Giá thuê</FormLabel>
-
-                            <FormControl>
-                              <Input
-                                type="number"
-                                placeholder="Giá thuê "
-                                {...field}
-                                onChange={(e) =>
-                                  field.onChange(parseFloat(e.target.value))
-                                }
-                              />
-                            </FormControl>
-
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                        placeholder="Giá thuê"
                       />
-                      <FormField
-                        control={form.control}
+
+                      <CurrencyInput
+                        form={form}
                         name="cost_deposit"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Số tiền cọc</FormLabel>
-
-                            <FormControl>
-                              <Input
-                                type="number"
-                                placeholder="Số tiền cọc "
-                                {...field}
-                                onChange={(e) => field.onChange(e.target.value)}
-                              />
-                            </FormControl>
-
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                        placeholder="Số tiền cọc"
                       />
+
                       <FormField
                         control={form.control}
                         name="legal_id"
@@ -2197,7 +2202,7 @@ const CategoryPage1020 = () => {
                         name="content"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Mô tả chi tiết</FormLabel>
+                            <FormLabel>Mô tả chi tiết1</FormLabel>
 
                             <FormControl>
                               <Textarea

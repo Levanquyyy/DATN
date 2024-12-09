@@ -1,6 +1,6 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Sidebar from "@/components/ui/sidebar";
-import Header from "@/components/ui/header";
+import Header from "@/components/ui/header.tsx";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";

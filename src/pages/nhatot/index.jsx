@@ -1,20 +1,20 @@
-import { useEffect, useState } from "react";
-import Sidebar from "@/components/ui/sidebar";
-import Header from "@/components/ui/header";
-import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
-import { cn } from "@/lib/utils";
-import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import apiClient from "@/lib/api-client";
-import { GET_DATA_PRODUCT_RENTHOUSE } from "@/utilities/constant";
+import { useEffect, useState } from 'react';
+import Sidebar from '@/components/ui/sidebar';
+import Header from '@/components/ui/header.tsx';
+import { CaretSortIcon, CheckIcon } from '@radix-ui/react-icons';
+import { cn } from '@/lib/utils';
+import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import apiClient from '@/lib/api-client';
+import { GET_DATA_PRODUCT_RENTHOUSE } from '@/utilities/constant';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
 import {
   Command,
@@ -23,7 +23,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
+} from '@/components/ui/command';
 import {
   FaChevronDown,
   FaHome,
@@ -32,12 +32,12 @@ import {
   FaStore,
   FaUser,
   FaUserTie,
-} from "react-icons/fa";
+} from 'react-icons/fa';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from '@/components/ui/popover';
 import {
   Form,
   FormControl,
@@ -45,50 +45,51 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import PropertyListings from "@/components/ui/property-listing";
-import { Button } from "@/components/ui/button";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import axios from "axios";
-import { toast } from "sonner";
+} from '@/components/ui/form';
+import PropertyListings from '@/components/ui/property-listing';
+import { Button } from '@/components/ui/button';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import axios from 'axios';
+import { toast } from 'sonner';
+import { getFilterData } from '@/routes/apiforRentHouse.jsx';
 const FormSchema = z.object({
   city: z.string().min(1, {
-    message: "Vui lòng chọn tỉnh thành",
+    message: 'Vui lòng chọn tỉnh thành',
   }),
   district: z.string().min(1, {
-    message: "Vui lòng chọn quận",
+    message: 'Vui lòng chọn quận',
   }),
   ward: z.string().min(1, {
-    message: "Vui lòng chọn huyện",
+    message: 'Vui lòng chọn huyện',
   }),
   space: z.string().optional(),
 });
 const FormSchemaFortransactionTypes = z.object({
   transactionTypes: z.string().min(1, {
-    message: "Vui lòng chọn loại hình",
+    message: 'Vui lòng chọn loại hình',
   }),
 });
 const FormSchemaForTypeOfHouse = z.object({
   typeOfHouse: z.string().min(1, {
-    message: "Vui lòng chọn loại nhà ở",
+    message: 'Vui lòng chọn loại nhà ở',
   }),
 });
 
 const FormSchemaForbed = z.object({
   items: z.array(z.string()).refine((value) => value.some((item) => item), {
-    message: "You have to select at least one item.",
+    message: 'You have to select at least one item.',
   }),
 });
 const FormSchemaForProjects = z.object({
   items: z.array(z.string()).refine((value) => value.some((item) => item), {
-    message: "You have to select at least one item.",
+    message: 'You have to select at least one item.',
   }),
 });
 const FormSchemaForPrices = z.object({
-  minPrice: z.string().nonempty("Min price is required"),
-  maxPrice: z.string().nonempty("Max price is required"),
+  minPrice: z.string().nonempty('Min price is required'),
+  maxPrice: z.string().nonempty('Max price is required'),
 });
 
 const NhatotPage = () => {
@@ -106,14 +107,14 @@ const NhatotPage = () => {
   const [open, setOpen] = useState(false);
   const [openforBed, setOpenforBed] = useState(false);
   const [openforPrice, setOpenforPrice] = useState(false);
-  const [value, setValue] = useState("");
-  const [valueforbed, setValueforbed] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [value, setValue] = useState('');
+  const [valueforbed, setValueforbed] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [forSale, setForSale] = useState(false);
   const [dataFromServer, setDataFromServer] = useState([]);
   const [filterbyCategory, setFilterbyCategory] = useState({
-    category: "Nhà ở",
-    userType: "Tất cả",
+    category: 'Nhà ở',
+    userType: 'Tất cả',
   });
   const [errors, setErrors] = useState({
     city: null,
@@ -121,18 +122,31 @@ const NhatotPage = () => {
     ward: null,
   });
 
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       const response = await apiClient.get(
+  //         `${import.meta.env.VITE_SERVER_URL}/${GET_DATA_PRODUCT_RENTHOUSE}`
+  //       );
+  //       setDataFromServer(response.data.data);
+  //     } catch (error) {
+  //       console.error('Signin error:', error.response?.data || error.message);
+  //       toast.error(
+  //         `Signin failed: ${error.response?.data?.message || error.message}`
+  //       );
+  //     }
+  //   };
+  //
+  //   fetchData();
+  // }, []);
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await apiClient.get(
-          `${import.meta.env.VITE_SERVER_URL}/${GET_DATA_PRODUCT_RENTHOUSE}`
-        );
-        setDataFromServer(response.data.data);
+        const res = await getFilterData();
+        setDataFromServer(res.data);
+        // console.log(res.data);
       } catch (error) {
-        console.error("Signin error:", error.response?.data || error.message);
-        toast.error(
-          `Signin failed: ${error.response?.data?.message || error.message}`
-        );
+        console.error('Error fetching data:', error);
       }
     };
 
@@ -143,12 +157,12 @@ const NhatotPage = () => {
     const fetchData = async () => {
       try {
         const res = await axios.get(
-          "https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json"
+          'https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json'
         );
         setCities(res.data);
         // console.log(res.data);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error('Error fetching data:', error);
       }
     };
 
@@ -176,22 +190,22 @@ const NhatotPage = () => {
   const form = useForm({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      city: "",
-      district: "",
-      ward: "",
-      space: "",
+      city: '',
+      district: '',
+      ward: '',
+      space: '',
     },
   });
   const formFortransactionTypes = useForm({
     resolver: zodResolver(FormSchemaFortransactionTypes),
     defaultValues: {
-      transactionTypes: "",
+      transactionTypes: '',
     },
   });
   const formForTypeOfHouse = useForm({
     resolver: zodResolver(FormSchemaForTypeOfHouse),
     defaultValues: {
-      typeOfHouse: "",
+      typeOfHouse: '',
     },
   });
   const formForBed = useForm({
@@ -203,168 +217,168 @@ const NhatotPage = () => {
   const formForProjects = useForm({
     resolver: zodResolver(FormSchemaForProjects),
     defaultValues: {
-      items: "",
+      items: '',
     },
   });
   const formForPrices = useForm({
     resolver: zodResolver(FormSchemaForPrices),
     defaultValues: {
-      minPrice: "",
-      maxPrice: "",
+      minPrice: '',
+      maxPrice: '',
     },
   });
 
-  const transactionTypes = ["Mua bán", "Cho thuê"];
+  const transactionTypes = ['Mua bán', 'Cho thuê'];
   const filterbypricetag = [
-    { label: "Tin mới trước", value: "newest" },
-    { label: "Giá thấp trước", value: "low-to-high" },
-    { label: "Giá cao trước", value: "high-to-low" },
+    { label: 'Tin mới trước', value: 'newest' },
+    { label: 'Giá thấp trước', value: 'low-to-high' },
+    { label: 'Giá cao trước', value: 'high-to-low' },
   ];
   const projects = [
-    { value: "152-dien-bien-phu", label: "152 Điện Biên Phủ" },
-    { value: "2t-corporation", label: "2T Corporation" },
-    { value: "319-bo-de", label: "319 Bồ Đề" },
+    { value: '152-dien-bien-phu', label: '152 Điện Biên Phủ' },
+    { value: '2t-corporation', label: '2T Corporation' },
+    { value: '319-bo-de', label: '319 Bồ Đề' },
     {
-      value: "4s-riverside-garden-binh-trieu",
-      label: "4S Riverside Garden Bình Triệu",
+      value: '4s-riverside-garden-binh-trieu',
+      label: '4S Riverside Garden Bình Triệu',
     },
-    { value: "4s-riverside-linh-dong", label: "4S Riverside Linh Đông" },
+    { value: '4s-riverside-linh-dong', label: '4S Riverside Linh Đông' },
     {
-      value: "84-tho-nhuom-hanoi-apartment-center",
-      label: "84 Thợ Nhuộm - Hanoi Apartment Center",
+      value: '84-tho-nhuom-hanoi-apartment-center',
+      label: '84 Thợ Nhuộm - Hanoi Apartment Center',
     },
-    { value: "8x-dam-sen", label: "8x Đầm Sen" },
-    { value: "9-view-apartment", label: "9 View Apartment" },
-    { value: "9x-ciao-quan-9", label: "9X CIAO Quận 9" },
-    { value: "a10-a14-nam-trung-yen", label: "A10-A14 Nam Trung Yên" },
+    { value: '8x-dam-sen', label: '8x Đầm Sen' },
+    { value: '9-view-apartment', label: '9 View Apartment' },
+    { value: '9x-ciao-quan-9', label: '9X CIAO Quận 9' },
+    { value: 'a10-a14-nam-trung-yen', label: 'A10-A14 Nam Trung Yên' },
     {
-      value: "ab-central-square-nha-trang",
-      label: "AB Central Square Nha Trang",
+      value: 'ab-central-square-nha-trang',
+      label: 'AB Central Square Nha Trang',
     },
-    { value: "ac-building", label: "AC Building" },
-    { value: "acb-office-building", label: "ACB Office Building" },
-    { value: "acbr-office-building", label: "ACBR Office Building" },
+    { value: 'ac-building', label: 'AC Building' },
+    { value: 'acb-office-building', label: 'ACB Office Building' },
+    { value: 'acbr-office-building', label: 'ACBR Office Building' },
     {
-      value: "aio-city-sonata-residences",
-      label: "AIO City (Sonata Residences)",
+      value: 'aio-city-sonata-residences',
+      label: 'AIO City (Sonata Residences)',
     },
-    { value: "aqh-riverside", label: "AQH Riverside" },
-    { value: "at-home", label: "AT Home" },
-    { value: "az-lam-vien-complex", label: "AZ Lâm Viên Complex" },
-    { value: "abacus-tower", label: "Abacus Tower" },
-    { value: "acenza-villas", label: "Acenza Villas" },
-    { value: "adi-lucky-home", label: "Adi Lucky Home" },
-    { value: "aeon-mall-long-bien", label: "Aeon Mall Long Biên" },
-    { value: "agrex-tower-building", label: "Agrex Tower Building" },
-    { value: "airlink-city", label: "Airlink City" },
-    { value: "airlink-city-3", label: "Airlink City 3" },
-    { value: "airlink-residence", label: "Airlink Residence" },
-    { value: "airlink-town", label: "Airlink Town" },
-    { value: "akari-city", label: "Akari City" },
-    { value: "alibaba-long-phuoc", label: "Alibaba Long Phước" },
-    { value: "alibaba-tan-thanh", label: "Alibaba Tân Thành" },
-    { value: "aloha-beach-village", label: "Aloha Beach Village" },
-    { value: "alpha-city-87-cong-quynh", label: "Alpha City 87 Cống quỳnh" },
-    { value: "alpha-tower", label: "Alpha Tower" },
-    { value: "alphanam-luxury-apartment", label: "Alphanam Luxury Apartment" },
-    { value: "altara-residences", label: "Altara Residences" },
-    { value: "alva-plaza-binh-duong", label: "Alva Plaza Bình Dương" },
-    { value: "amber-court", label: "Amber Court" },
-    { value: "amber-riverside", label: "Amber Riverside" },
-    { value: "amelie-villa-phu-my-hung", label: "Amelie Villa Phú Mỹ Hưng" },
+    { value: 'aqh-riverside', label: 'AQH Riverside' },
+    { value: 'at-home', label: 'AT Home' },
+    { value: 'az-lam-vien-complex', label: 'AZ Lâm Viên Complex' },
+    { value: 'abacus-tower', label: 'Abacus Tower' },
+    { value: 'acenza-villas', label: 'Acenza Villas' },
+    { value: 'adi-lucky-home', label: 'Adi Lucky Home' },
+    { value: 'aeon-mall-long-bien', label: 'Aeon Mall Long Biên' },
+    { value: 'agrex-tower-building', label: 'Agrex Tower Building' },
+    { value: 'airlink-city', label: 'Airlink City' },
+    { value: 'airlink-city-3', label: 'Airlink City 3' },
+    { value: 'airlink-residence', label: 'Airlink Residence' },
+    { value: 'airlink-town', label: 'Airlink Town' },
+    { value: 'akari-city', label: 'Akari City' },
+    { value: 'alibaba-long-phuoc', label: 'Alibaba Long Phước' },
+    { value: 'alibaba-tan-thanh', label: 'Alibaba Tân Thành' },
+    { value: 'aloha-beach-village', label: 'Aloha Beach Village' },
+    { value: 'alpha-city-87-cong-quynh', label: 'Alpha City 87 Cống quỳnh' },
+    { value: 'alpha-tower', label: 'Alpha Tower' },
+    { value: 'alphanam-luxury-apartment', label: 'Alphanam Luxury Apartment' },
+    { value: 'altara-residences', label: 'Altara Residences' },
+    { value: 'alva-plaza-binh-duong', label: 'Alva Plaza Bình Dương' },
+    { value: 'amber-court', label: 'Amber Court' },
+    { value: 'amber-riverside', label: 'Amber Riverside' },
+    { value: 'amelie-villa-phu-my-hung', label: 'Amelie Villa Phú Mỹ Hưng' },
     {
-      value: "an-binh-building-chung-cu-an-binh-1-dinh-cong",
-      label: "An Bình Building (Chung cư An Bình 1 Định Công)",
+      value: 'an-binh-building-chung-cu-an-binh-1-dinh-cong',
+      label: 'An Bình Building (Chung cư An Bình 1 Định Công)',
     },
-    { value: "an-binh-city", label: "An Bình City" },
-    { value: "an-binh-green-home", label: "An Bình Green Home" },
+    { value: 'an-binh-city', label: 'An Bình City' },
+    { value: 'an-binh-green-home', label: 'An Bình Green Home' },
     {
-      value: "an-binh-plaza-sunshine-tower",
-      label: "An Bình Plaza (Sunshine Tower)",
+      value: 'an-binh-plaza-sunshine-tower',
+      label: 'An Bình Plaza (Sunshine Tower)',
     },
-    { value: "an-binh-plaza-ha-noi", label: "An Bình Plaza_Hà Nội" },
-    { value: "an-binh-quan-tan-phu", label: "An Bình Quận Tân Phú" },
-    { value: "an-binh-tower", label: "An Bình Tower" },
-    { value: "an-binh-riverside-2", label: "An Bình Riverside 2" },
-    { value: "an-cuu-city", label: "An Cựu City" },
-    { value: "an-dan-residence", label: "An Dân Residence" },
-    { value: "an-gia-garden", label: "An Gia Garden" },
+    { value: 'an-binh-plaza-ha-noi', label: 'An Bình Plaza_Hà Nội' },
+    { value: 'an-binh-quan-tan-phu', label: 'An Bình Quận Tân Phú' },
+    { value: 'an-binh-tower', label: 'An Bình Tower' },
+    { value: 'an-binh-riverside-2', label: 'An Bình Riverside 2' },
+    { value: 'an-cuu-city', label: 'An Cựu City' },
+    { value: 'an-dan-residence', label: 'An Dân Residence' },
+    { value: 'an-gia-garden', label: 'An Gia Garden' },
   ];
 
   const options = [
     {
-      id: "1",
-      label: "1",
+      id: '1',
+      label: '1',
     },
     {
-      id: "2",
-      label: "2",
+      id: '2',
+      label: '2',
     },
     {
-      id: "3",
-      label: "3",
+      id: '3',
+      label: '3',
     },
     {
-      id: "4",
-      label: "4",
+      id: '4',
+      label: '4',
     },
     {
-      id: "5",
-      label: "5",
+      id: '5',
+      label: '5',
     },
     {
-      id: "6",
-      label: "6",
+      id: '6',
+      label: '6',
     },
     {
-      id: "more_than_6",
-      label: "More than 6",
+      id: 'more_than_6',
+      label: 'More than 6',
     },
   ];
 
   const propertyCategories = [
-    "Nhà ở",
-    "Căn hộ/Chung cư",
-    "Đất",
-    "Văn phòng, Mặt bằng kinh doanh",
+    'Nhà ở',
+    'Căn hộ/Chung cư',
+    'Đất',
+    'Văn phòng, Mặt bằng kinh doanh',
   ];
 
-  const userTypes = ["Tất cả", "Cá nhân", "Môi giới"];
+  const userTypes = ['Tất cả', 'Cá nhân', 'Môi giới'];
   const typeofhouse = [
-    { value: "can-ho-chung-cu", label: "Căn hộ/Chung cư" },
-    { value: "nha-o", label: "Nhà ở" },
+    { value: 'can-ho-chung-cu', label: 'Căn hộ/Chung cư' },
+    { value: 'nha-o', label: 'Nhà ở' },
     {
-      value: "van-phong-mat-bang-kinh-doanh",
-      label: "Văn phòng, Mặt bằng kinh doanh",
+      value: 'van-phong-mat-bang-kinh-doanh',
+      label: 'Văn phòng, Mặt bằng kinh doanh',
     },
-    { value: "dat", label: "Đất" },
-    { value: "phong-tro", label: "Phòng trọ" },
-    { value: "can-ho-dich-vu-mini", label: "Căn hộ dịch vụ, mini" },
+    { value: 'dat', label: 'Đất' },
+    { value: 'phong-tro', label: 'Phòng trọ' },
+    { value: 'can-ho-dich-vu-mini', label: 'Căn hộ dịch vụ, mini' },
   ];
   const filterbyprice = [
-    { label: "Giá dưới 1 tỷ", value: "<1" },
-    { label: "Giá 1 - 2 tỷ", value: "1-2" },
-    { label: "Giá 2 - 3 tỷ", value: "2-3" },
-    { label: "Giá 3 - 5 tỷ", value: "3-5" },
-    { label: "Giá 5 - 7 tỷ", value: "5-7" },
-    { label: "Giá 7 - 10 tỷ", value: "7-10" },
-    { label: "Giá 10 - 15 tỷ", value: "10-15" },
-    { label: "Giá 15 - 20 tỷ", value: "15-20" },
-    { label: "Giá 20 - 30 tỷ", value: "20-30" },
-    { label: "Giá trên 30 tỷ", value: ">30" },
+    { label: 'Giá dưới 1 tỷ', value: '<1' },
+    { label: 'Giá 1 - 2 tỷ', value: '1-2' },
+    { label: 'Giá 2 - 3 tỷ', value: '2-3' },
+    { label: 'Giá 3 - 5 tỷ', value: '3-5' },
+    { label: 'Giá 5 - 7 tỷ', value: '5-7' },
+    { label: 'Giá 7 - 10 tỷ', value: '7-10' },
+    { label: 'Giá 10 - 15 tỷ', value: '10-15' },
+    { label: 'Giá 15 - 20 tỷ', value: '15-20' },
+    { label: 'Giá 20 - 30 tỷ', value: '20-30' },
+    { label: 'Giá trên 30 tỷ', value: '>30' },
   ];
   const highlightoftypes = [
-    { label: "Loại hình nổi bật", value: "highlight" },
-    { label: "Nhà đất Tp Hồ Chí Minh", value: "nhadat-tphcm" },
-    { label: "Chung cư Tp Hồ Chí Minh", value: "chungcu-tphcm" },
-    { label: "Nhà đất Hà Nội", value: "nhadat-hanoi" },
-    { label: "Đất Tp Hồ Chí Minh", value: "dat-tphcm" },
-    { label: "Nhà đất Đà Nẵng", value: "nhadat-danang" },
-    { label: "Chung cư Hà Nội", value: "chungcu-hanoi" },
-    { label: "Đất Bình Dương", value: "dat-binhduong" },
-    { label: "Đất Đồng Nai", value: "dat-dongnai" },
-    { label: "Nhà đất Bình Dương", value: "nhadat-binhduong" },
-    { label: "Đất Đà Nẵng", value: "dat-danang" },
+    { label: 'Loại hình nổi bật', value: 'highlight' },
+    { label: 'Nhà đất Tp Hồ Chí Minh', value: 'nhadat-tphcm' },
+    { label: 'Chung cư Tp Hồ Chí Minh', value: 'chungcu-tphcm' },
+    { label: 'Nhà đất Hà Nội', value: 'nhadat-hanoi' },
+    { label: 'Đất Tp Hồ Chí Minh', value: 'dat-tphcm' },
+    { label: 'Nhà đất Đà Nẵng', value: 'nhadat-danang' },
+    { label: 'Chung cư Hà Nội', value: 'chungcu-hanoi' },
+    { label: 'Đất Bình Dương', value: 'dat-binhduong' },
+    { label: 'Đất Đồng Nai', value: 'dat-dongnai' },
+    { label: 'Nhà đất Bình Dương', value: 'nhadat-binhduong' },
+    { label: 'Đất Đà Nẵng', value: 'dat-danang' },
   ];
 
   const onSubmitForLocation = (data) => {
@@ -372,15 +386,15 @@ const NhatotPage = () => {
     const newErrors = { city: null, district: null, ward: null };
 
     if (!selectedCity) {
-      newErrors.city = "Vui lòng chọn tỉnh thành.";
+      newErrors.city = 'Vui lòng chọn tỉnh thành.';
       hasError = true;
     }
     if (!selectedDistrict) {
-      newErrors.district = "Vui lòng chọn quận.";
+      newErrors.district = 'Vui lòng chọn quận.';
       hasError = true;
     }
     if (!selectedWard) {
-      newErrors.ward = "Vui lòng chọn huyện.";
+      newErrors.ward = 'Vui lòng chọn huyện.';
       hasError = true;
     }
 
@@ -395,7 +409,7 @@ const NhatotPage = () => {
   };
   const onChnagetransactionTypes = (data) => {
     console.log({ data });
-    if (data === "Mua bán") {
+    if (data === 'Mua bán') {
       setForSale(true);
     } else {
       setForSale(false);
@@ -409,9 +423,9 @@ const NhatotPage = () => {
     const maxPrice = parseCurrency(data.maxPrice);
 
     if (parseInt(minPrice) > parseInt(maxPrice)) {
-      setErrorMessage("Giá tối thiểu không được lớn hơn giá tối đa");
+      setErrorMessage('Giá tối thiểu không được lớn hơn giá tối đa');
     } else {
-      setErrorMessage("");
+      setErrorMessage('');
       // Proceed with form submission
       console.log(data);
     }
@@ -435,7 +449,7 @@ const NhatotPage = () => {
     console.log(data);
   };
   const onChangeForProjects = (currentValue) => {
-    console.log("Selected project:", currentValue);
+    console.log('Selected project:', currentValue);
   };
 
   const handleSliderChange = (event) => {
@@ -444,14 +458,14 @@ const NhatotPage = () => {
   };
 
   const formatCurrency = (value) => {
-    if (!value) return "";
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
+    if (!value) return '';
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
     }).format(value);
   };
   const parseCurrency = (value) => {
-    return value.replace(/[^\d]/g, "");
+    return value.replace(/[^\d]/g, '');
   };
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -534,7 +548,7 @@ const NhatotPage = () => {
                                                 (city) =>
                                                   city.Name === selectedCity
                                               )?.Name
-                                            : "Chọn tỉnh thành"}
+                                            : 'Chọn tỉnh thành'}
                                           <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                         </Button>
                                       </PopoverTrigger>
@@ -569,10 +583,10 @@ const NhatotPage = () => {
                                                   {city.Name}
                                                   <CheckIcon
                                                     className={cn(
-                                                      "ml-auto h-4 w-4",
+                                                      'ml-auto h-4 w-4',
                                                       selectedCity === city.Id
-                                                        ? "opacity-100"
-                                                        : "opacity-0"
+                                                        ? 'opacity-100'
+                                                        : 'opacity-0'
                                                     )}
                                                   />
                                                 </CommandItem>
@@ -617,7 +631,7 @@ const NhatotPage = () => {
                                                   district.Name ===
                                                   selectedDistrict
                                               )?.Name
-                                            : "Chọn quận"}
+                                            : 'Chọn quận'}
                                           <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                         </Button>
                                       </PopoverTrigger>
@@ -652,11 +666,11 @@ const NhatotPage = () => {
                                                   {district.Name}
                                                   <CheckIcon
                                                     className={cn(
-                                                      "ml-auto h-4 w-4",
+                                                      'ml-auto h-4 w-4',
                                                       selectedDistrict ===
                                                         district.Id
-                                                        ? "opacity-100"
-                                                        : "opacity-0"
+                                                        ? 'opacity-100'
+                                                        : 'opacity-0'
                                                     )}
                                                   />
                                                 </CommandItem>
@@ -700,7 +714,7 @@ const NhatotPage = () => {
                                                 (ward) =>
                                                   ward.Name === selectedWard
                                               )?.Name
-                                            : "Chọn huyện"}
+                                            : 'Chọn huyện'}
                                           <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                         </Button>
                                       </PopoverTrigger>
@@ -735,10 +749,10 @@ const NhatotPage = () => {
                                                   {ward.Name}
                                                   <CheckIcon
                                                     className={cn(
-                                                      "ml-auto h-4 w-4",
+                                                      'ml-auto h-4 w-4',
                                                       selectedWard === ward.Id
-                                                        ? "opacity-100"
-                                                        : "opacity-0"
+                                                        ? 'opacity-100'
+                                                        : 'opacity-0'
                                                     )}
                                                   />
                                                 </CommandItem>
@@ -908,7 +922,7 @@ const NhatotPage = () => {
                         aria-expanded={openforPrice}
                         className="w-full justify-between"
                       >
-                        {forSale ? `Giá bán` : "Giá thuê"}
+                        {forSale ? `Giá bán` : 'Giá thuê'}
                         <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
@@ -989,7 +1003,7 @@ const NhatotPage = () => {
                         {value
                           ? projects.find((project) => project.value === value)
                               ?.label
-                          : "Chọn dự án"}
+                          : 'Chọn dự án'}
                         <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
@@ -1017,7 +1031,7 @@ const NhatotPage = () => {
                                             field.onChange(currentValue);
                                             setValue(
                                               currentValue === value
-                                                ? ""
+                                                ? ''
                                                 : currentValue
                                             );
                                             setOpen(false);
@@ -1028,10 +1042,10 @@ const NhatotPage = () => {
                                           {project.label}
                                           <CheckIcon
                                             className={cn(
-                                              "ml-auto h-4 w-4",
+                                              'ml-auto h-4 w-4',
                                               value === project.value
-                                                ? "opacity-100"
-                                                : "opacity-0"
+                                                ? 'opacity-100'
+                                                : 'opacity-0'
                                             )}
                                           />
                                         </CommandItem>
@@ -1059,7 +1073,7 @@ const NhatotPage = () => {
                       >
                         {valueforbed
                           ? options.find((option) => option === valueforbed)
-                          : "Chọn số phòng ngủ"}
+                          : 'Chọn số phòng ngủ'}
                         <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
@@ -1201,8 +1215,8 @@ const NhatotPage = () => {
                 <h2 className="text-xl font-semibold mb-2">
                   Danh sách nổi bật
                 </h2>
-                {filterbyCategory.category === "Nhà ở" &&
-                  filterbyCategory.userType === "Tất cả" && (
+                {filterbyCategory.category === 'Nhà ở' &&
+                  filterbyCategory.userType === 'Tất cả' && (
                     <>
                       <PropertyListings dataFromServer={dataFromServer} />
                     </>

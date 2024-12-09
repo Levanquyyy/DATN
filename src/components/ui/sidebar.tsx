@@ -1,37 +1,37 @@
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom';
 import {
   BriefcaseBusiness,
   Building,
   LaptopMinimal,
   Package2,
-} from "lucide-react";
+} from 'lucide-react';
 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from '@/components/ui/popover';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 const frameworks = [
   {
-    value: "Hope",
-    label: "Hope",
+    value: 'Hope',
+    label: 'Hope',
   },
   {
-    value: "nhatot",
-    label: "Nhà Hope",
+    value: 'nhatot',
+    label: 'Nhà Hope',
   },
   {
-    value: "Xe Hope",
-    label: "Xe Hope",
+    value: 'Xe Hope',
+    label: 'Xe Hope',
   },
   {
-    value: "Việc Hope",
-    label: "Việc Hope",
+    value: 'Việc Hope',
+    label: 'Việc Hope',
   },
 ];
-import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
+import { CaretSortIcon, CheckIcon } from '@radix-ui/react-icons';
 import {
   Command,
   CommandEmpty,
@@ -39,8 +39,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 import {
   Menubar,
   MenubarContent,
@@ -51,12 +51,12 @@ import {
   MenubarSubContent,
   MenubarSubTrigger,
   MenubarTrigger,
-} from "@/components/ui/menubar";
-import { useState } from "react";
+} from '@/components/ui/menubar';
+import { useState } from 'react';
 
 const Sidebar = () => {
   const [open, setOpen] = useState(false);
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState('');
 
   return (
     <div className="hidden border-r bg-muted/40 md:block">
@@ -89,7 +89,7 @@ const Sidebar = () => {
                   {value
                     ? frameworks.find((framework) => framework.value === value)
                         ?.label
-                    : "Chọn Sàn Hope"}
+                    : 'Chọn Sàn Hope'}
                   <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -109,7 +109,7 @@ const Sidebar = () => {
                             value={framework.value}
                             onSelect={(currentValue) => {
                               setValue(
-                                currentValue === value ? "" : currentValue
+                                currentValue === value ? '' : currentValue
                               );
                               setOpen(false);
                             }}
@@ -117,10 +117,10 @@ const Sidebar = () => {
                             {framework.label}
                             <CheckIcon
                               className={cn(
-                                "ml-auto h-4 w-4",
+                                'ml-auto h-4 w-4',
                                 value === framework.value
-                                  ? "opacity-100"
-                                  : "opacity-0"
+                                  ? 'opacity-100'
+                                  : 'opacity-0'
                               )}
                             />
                           </CommandItem>
@@ -147,7 +147,11 @@ const Sidebar = () => {
                       <Link to="/nhatot" className="w-full">
                         <MenubarItem>Mua bán</MenubarItem>
                       </Link>
-                      <MenubarItem>Cho thuê</MenubarItem>
+                      <MenubarItem>
+                        <Link to="/dang-tin?category=1020" className="w-full">
+                          Nhà ở
+                        </Link>
+                      </MenubarItem>
                       <MenubarItem>Dự án</MenubarItem>
                     </MenubarSubContent>
                   </MenubarSub>

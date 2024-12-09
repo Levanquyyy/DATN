@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom';
 import {
   Bell,
   BriefcaseBusiness,
@@ -12,42 +12,40 @@ import {
   Search,
   ShoppingCart,
   SquareArrowOutUpRight,
-} from "lucide-react";
+} from 'lucide-react';
 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from '@/components/ui/popover';
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+} from '@/components/ui/breadcrumb';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 const frameworks = [
   {
-    value: "Hope",
-    label: "Hope",
+    value: 'Hope',
+    label: 'Hope',
   },
   {
-    value: "Nhà Hope",
-    label: "Nhà Hope",
+    value: 'Nhà Hope',
+    label: 'Nhà Hope',
   },
   {
-    value: "Xe Hope",
-    label: "Xe Hope",
+    value: 'Xe Hope',
+    label: 'Xe Hope',
   },
   {
-    value: "Việc Hope",
-    label: "Việc Hope",
+    value: 'Việc Hope',
+    label: 'Việc Hope',
   },
 ];
-import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
+import { CaretSortIcon, CheckIcon } from '@radix-ui/react-icons';
 import {
   Command,
   CommandEmpty,
@@ -55,8 +53,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 import {
   Menubar,
   MenubarContent,
@@ -67,10 +65,10 @@ import {
   MenubarSubContent,
   MenubarSubTrigger,
   MenubarTrigger,
-} from "@/components/ui/menubar";
-import { useState } from "react";
+} from '@/components/ui/menubar';
+import { useEffect, useState } from 'react';
 
-import { Input } from "@/components/ui/input";
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -80,7 +78,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -89,14 +87,35 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { fetchUserInfo, signOut } from '@/routes/apiforUser.jsx';
+import { toast } from 'sonner';
+import Cookies from 'js-cookie';
 const Header = () => {
   const [openBurger, setOpenBurger] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState("");
-  const [position, setPosition] = useState("bottom");
+
+  const [value, setValue] = useState('');
+  const [position, setPosition] = useState('bottom');
+  const [idUser, setIdUser] = useState('');
+  const SignOut = async () => {
+    const res = await signOut();
+    console.log(res);
+    if (res) {
+      Cookies.remove('access_token');
+      window.location.href = '/';
+    } else {
+      toast.error('Đăng xuất thất bại');
+    }
+  };
+  useEffect(() => {
+    const userFetch = async () => {
+      const res = await fetchUserInfo();
+      setIdUser(res.id);
+    };
+    userFetch();
+  }, []);
   return (
     <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
       <Sheet>
@@ -133,7 +152,7 @@ const Header = () => {
                   {value
                     ? frameworks.find((framework) => framework.value === value)
                         ?.label
-                    : "Chọn Sàn Hope"}
+                    : 'Chọn Sàn Hope'}
                   <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -152,18 +171,17 @@ const Header = () => {
                           value={framework.value}
                           onSelect={(currentValue) => {
                             setValue(
-                              currentValue === value ? "" : currentValue
+                              currentValue === value ? '' : currentValue
                             );
-                            setOpen(false);
                           }}
                         >
                           {framework.label}
                           <CheckIcon
                             className={cn(
-                              "ml-auto h-4 w-4",
+                              'ml-auto h-4 w-4',
                               value === framework.value
-                                ? "opacity-100"
-                                : "opacity-0"
+                                ? 'opacity-100'
+                                : 'opacity-0'
                             )}
                           />
                         </CommandItem>
@@ -397,10 +415,16 @@ const Header = () => {
 
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Settings</DropdownMenuItem>
+          <DropdownMenuItem>
+            <Link to={`/profile/${idUser}`}>Profile</Link>
+          </DropdownMenuItem>
           <DropdownMenuItem>Support</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Logout</DropdownMenuItem>
+          <DropdownMenuItem>
+            <Button size="sm" className="w-full" onClick={SignOut}>
+              Đăng xuất
+            </Button>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -408,7 +432,7 @@ const Header = () => {
       <Dialog>
         <DialogTrigger asChild>
           <Button>
-            {" "}
+            {' '}
             <SquareArrowOutUpRight className="mr-2" /> Đăng tin
           </Button>
         </DialogTrigger>

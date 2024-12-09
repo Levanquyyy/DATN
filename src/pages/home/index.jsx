@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useState, useEffect } from 'react';
 import Sidebar from '@/components/ui/sidebar';
-import Header from '@/components/ui/header';
+import Header from '@/components/ui/header.tsx';
 const items = [
   {
     id: 1,

@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -6,33 +6,32 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
-import { useFacebookLogin } from "@kazion/react-facebook-login";
-import { jwtDecode } from "jwt-decode";
-import { useState, useEffect } from "react";
-import { FaFacebookF } from "react-icons/fa6";
-import { useAppStore, useStore } from "@/store";
-import { useNavigate } from "react-router-dom";
-import Cookies from "js-cookie";
-import apiClient from "@/lib/api-client";
-import { SIGNUP_ROUTE, SIGNIN_ROUTE } from "@/utilities/constant";
-import { toast } from "sonner";
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
+import { useFacebookLogin } from '@kazion/react-facebook-login';
+import { jwtDecode } from 'jwt-decode';
+import { useState, useEffect } from 'react';
+import { FaFacebookF } from 'react-icons/fa6';
+import { useAppStore, useStore } from '@/store';
+import { useNavigate } from 'react-router-dom';
+import Cookies from 'js-cookie';
+import apiClient from '@/lib/api-client';
+import { SIGNUP_ROUTE, SIGNIN_ROUTE } from '@/utilities/constant';
+import { toast } from 'sonner';
 const Auth = () => {
-  const [first, setFirst] = useState("");
-  const [last, setLast] = useState("");
-  const [phone, setPhone] = useState("");
-  const [emailForSignIn, setEmailForSignIn] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [passwordForSignIn, setPasswordForpasswordForSignIn] = useState("");
+  const [first, setFirst] = useState('');
+  const [last, setLast] = useState('');
+  const [phone, setPhone] = useState('');
+  const [emailForSignIn, setEmailForSignIn] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordForSignIn, setPasswordForpasswordForSignIn] = useState('');
 
   const [showPassword, setShowPassword] = useState(false);
   const { setUserInfo } = useAppStore();
-  const { user_id, setUserId, clearUserId } = useStore();
 
   const navigate = useNavigate();
 
@@ -40,30 +39,46 @@ const Auth = () => {
     setShowPassword(!showPassword);
   };
 
+  const validateSignIn = () => {
+    if (!emailForSignIn.length) {
+      toast.warning('Email không được để trống');
+      return false;
+    }
+    const emailCriteria = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailCriteria.test(emailForSignIn)) {
+      toast.warning('Email không hợp lệ');
+      return false;
+    }
+    if (!passwordForSignIn.length) {
+      toast.warning('Mật khẩu không được để trống');
+      return false;
+    }
+    return true;
+  };
   const validateSignUp = () => {
     if (!first.length) {
-      toast.warning(" First Name is required");
+      toast.warning('Họ không được để trống');
       return false;
     }
     if (!last.length) {
-      toast.warning("Last Name is required");
+      toast.warning('Tên không được để trống');
       return false;
     }
     if (!phone.length) {
-      toast.warning("Phone is required");
+      toast.warning('số điện thoại không được để trống');
       return false;
     }
     if (!email.length) {
-      toast.warning("Email is required");
+      toast.warning('Email không được để trống');
       return false;
     }
     const emailCriteria = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailCriteria.test(email)) {
-      toast.warning("Email không hợp lệ");
+      toast.warning('Email không hợp lệ');
       return false;
     }
     if (!password.length) {
-      toast.warning("Password is required");
+      toast.warning('Mật khẩu không được để trống');
       return false;
     }
     const passwordCriteria =
@@ -71,7 +86,7 @@ const Auth = () => {
 
     if (!passwordCriteria.test(password)) {
       toast.warning(
-        "Mật khẩu phải có viết hoa, thường, số, ký tự đặc biệt ít nhất 8 ký tự"
+        'Mật khẩu phải có viết hoa, thường, số, ký tự đặc biệt ít nhất 8 ký tự'
       );
       return false;
     }
@@ -86,14 +101,6 @@ const Auth = () => {
   });
 
   const handleSignUp = async () => {
-    setUserInfo({
-      first,
-      last,
-      phone,
-      email,
-      password,
-      fullName: `${first} ${last}`,
-    });
     if (validateSignUp()) {
       const data = {
         username: first + last,
@@ -106,62 +113,58 @@ const Auth = () => {
 
       try {
         const response = await apiClient.post(SIGNUP_ROUTE, data);
-        if (response.data.status === "error") {
+        if (response.data.status === 'error') {
           throw new Error(response.data.message);
         }
         console.log(response);
-        toast.success("Đăng ký thành công!");
+        toast.success('Đăng ký thành công!');
 
         // Save the token in a cookie
-        const { access_token, expires_in } = response.data;
-        Cookies.set("access_token", access_token, {
-          expires: new Date(expires_in),
-          secure: true,
-          sameSite: "strict",
-        });
       } catch (error) {
-        const errorMessage = error.message || "An unknown error occurred";
-        console.error("Signup error:", errorMessage);
+        const errorMessage = error.message || 'An unknown error occurred';
+        console.error('Signup error:', errorMessage);
         toast.error(`Signup failed: ${errorMessage}`);
       }
     }
   };
   const handleSignIn = async () => {
-    const data = {
-      email: emailForSignIn,
-      password: passwordForSignIn,
-    };
-
-    try {
-      const response = await apiClient.post(SIGNIN_ROUTE, data);
-      if (response.data.status) {
-        // Save the token in a cookie
-        const { access_token, expires_in } = response.data;
-        Cookies.set("access_token", access_token, {
-          expires: new Date(expires_in),
-          secure: true,
-          sameSite: "strict",
-        });
-
-        // Navigate based on response status
-        if (response.status === 200) {
-          navigate("/home-page");
+    if (validateSignIn()) {
+      const data = {
+        email: emailForSignIn,
+        password: passwordForSignIn,
+      };
+      try {
+        const response = await apiClient.post(SIGNIN_ROUTE, data);
+        if (response.data.status === 'error') {
+          throw new Error(response.data.message);
         } else {
-          navigate("/auth");
+          // Save the token in a cookie
+          const { access_token, expires_in } = response.data;
+          Cookies.set('access_token', access_token, {
+            expires: new Date(expires_in),
+            secure: true,
+            sameSite: 'strict',
+          });
+
+          // Navigate based on response status
+          if (response.status === 'error') {
+            navigate('/auth');
+          } else {
+            navigate('/home-page');
+          }
         }
+      } catch (error) {
+        console.error('Signin error:', error.response?.data || error.message);
+        toast.error(
+          `Signin failed: ${error.response?.data?.message || error.message}`
+        );
       }
-      console.log(response);
-    } catch (error) {
-      console.error("Signin error:", error.response?.data || error.message);
-      toast.error(
-        `Signin failed: ${error.response?.data?.message || error.message}`
-      );
     }
   };
 
   return (
     <div className="flex items-center justify-center h-screen">
-      <Tabs defaultValue="account" className="w-[400px]">
+      <Tabs defaultValue="account" className="w-[500px]">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="account">Đăng Ký</TabsTrigger>
           <TabsTrigger value="password">Đăng Nhập</TabsTrigger>
@@ -217,7 +220,7 @@ const Auth = () => {
                 <div className="relative">
                   <Input
                     id="password"
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pr-10" // Add padding to the right to avoid overlap with the button
@@ -227,7 +230,7 @@ const Auth = () => {
                     onClick={togglePasswordVisibility}
                     className="absolute inset-y-0 right-0 px-3 text-blue-500"
                   >
-                    {showPassword ? "Hide" : "Show"}
+                    {showPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
               </div>
@@ -241,7 +244,7 @@ const Auth = () => {
                       const decoded = jwtDecode(credentialResponse.credential);
                     }}
                     onError={() => {
-                      console.log("Login Failed");
+                      console.log('Login Failed');
                     }}
                   />
 
@@ -249,13 +252,15 @@ const Auth = () => {
                     className="bg-blue-500 flex-1 dark:text-white"
                     onClick={() => login()}
                   >
-                    <FaFacebookF /> {""} Login With FaceBook
+                    <FaFacebookF /> {''} Login With FaceBook
                   </Button>
                 </div>
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSignUp}>Đăng ký</Button>
+              <Button onClick={handleSignUp} className="w-full">
+                Đăng ký
+              </Button>
             </CardFooter>
           </Card>
         </TabsContent>
@@ -264,7 +269,7 @@ const Auth = () => {
             <CardHeader>
               <CardTitle>Password</CardTitle>
               <CardDescription>
-                Change your password here. After saving, you'll be logged out.
+                Thực hiện thay đổi cho tài khoản của bạn tại đây. Nhấp vào lưu
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -282,7 +287,7 @@ const Auth = () => {
                 <div className="relative">
                   <Input
                     id="password"
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     defaultValue="123"
                     className="pr-10" // Add padding to the right to avoid overlap with the button
                     onChange={(e) =>
@@ -294,7 +299,7 @@ const Auth = () => {
                     onClick={togglePasswordVisibility}
                     className="absolute inset-y-0 right-0 px-3 text-blue-500"
                   >
-                    {showPassword ? "Hide" : "Show"}
+                    {showPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
               </div>
@@ -309,7 +314,7 @@ const Auth = () => {
                       console.log(decoded);
                     }}
                     onError={() => {
-                      console.log("Login Failed");
+                      console.log('Login Failed');
                     }}
                   />
 
@@ -317,13 +322,15 @@ const Auth = () => {
                     className="bg-blue-500 flex-1 dark:text-white"
                     onClick={() => login()}
                   >
-                    <FaFacebookF /> {""} Login With FaceBook
+                    <FaFacebookF /> {''} Login With FaceBook
                   </Button>
                 </div>
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSignIn}>Đăng nhập</Button>
+              <Button onClick={handleSignIn} className="w-full">
+                Đăng nhập
+              </Button>
             </CardFooter>
           </Card>
         </TabsContent>

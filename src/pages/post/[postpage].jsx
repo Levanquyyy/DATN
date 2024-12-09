@@ -1,204 +1,74 @@
-import { useEffect, useState } from "react";
-import Sidebar from "@/components/ui/sidebar";
-import Header from "@/components/ui/header";
-
-import { Button } from "@/components/ui/button";
-import Cookies from "js-cookie";
-import { SmartDatetimeInput } from "@/components/core/dateTime-input";
-import { useAppStore } from "@/store";
-import { MultiSelect } from "@/components/core/multi-selector";
+import { useEffect, useState } from 'react';
+import * as React from 'react';
+import Sidebar from '@/components/ui/sidebar';
+import Header from '@/components/ui/header.tsx';
+import { Plus, Minus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  FaAngleDown,
-  FaBed,
-  FaMoneyBillWave,
-  FaRegBuilding,
-  FaRulerCombined,
-} from "react-icons/fa";
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from '@/components/ui/card';
 
-import { v4 as uuidv4 } from "uuid";
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { v4 as uuidv4 } from 'uuid';
 
-import apiClient from "@/lib/api-client";
-import {
-  GET_DATA_POSTINGTYPE1,
-  GET_DATA_POSTINGTYPE2,
-} from "@/utilities/constant";
-import { getDecryptedCookie } from "@/store/cookies/cookies.js";
-import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { format, isBefore, startOfDay } from 'date-fns';
 
-const ServiceOption = ({ data, isSelected, onSelect }) => {
-  const { name, cost, title, description, rule_day } = data;
-  const [expanded, setExpanded] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(undefined);
-  const [save_day, setSaveDay] = useState(0);
-  const days = useAppStore((state) => state.days);
+import apiClient from '@/lib/api-client';
+import { GET_DATA_POSTINGTYPE1 } from '@/utilities/constant';
+import { getDecryptedCookie } from '@/store/cookies/cookies.js';
+import { toast } from 'sonner';
+import { useNavigate, useParams } from 'react-router-dom';
+import { getDataProductByIdRent } from '@/routes/apiforRentHouse.jsx';
+import { fetchUserInfo } from '@/routes/apiforUser.jsx';
+import { postPayment } from '@/routes/apiforpayment.jsx';
 
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
-  };
-
-  const toggleExpand = () => setExpanded(!expanded);
-
-  const calculatePrice = () => {
-    const numericPrice = parseFloat(cost.replace(/[^0-9.-]+/g, ""));
-    console.log(
-      "name",
-      name,
-      "rule_day",
-      save_day,
-      "numericPrice",
-      numericPrice
-    );
-
-    if (isNaN(numericPrice)) {
-      console.error("Invalid price:", cost);
-      return "Invalid price";
-    }
-
-    let totalPrice;
-    if (name === "Tin thường") {
-      totalPrice = numericPrice * save_day;
-    } else {
-      const daysLength = Array.isArray(days) ? days.length : 0;
-      if (isNaN(daysLength)) {
-        console.error("Invalid days length:", daysLength);
-        return "Invalid days length";
-      }
-      totalPrice = numericPrice * daysLength;
-    }
-
-    const formattedPrice = new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(totalPrice);
-
-    return formattedPrice;
-  };
-
-  // Parse rule_day into an array and format it for Select
-  const parsedRuleDays = rule_day
-    ? JSON.parse(rule_day.replace(/'/g, '"').replace(/^"|"$/g, "")).map(
-        (day) => ({
-          label: `${day} ngày`,
-          value: day.toString(),
-        })
-      )
-    : [];
-
-  if (!Array.isArray(parsedRuleDays)) {
-    console.error("Invalid rule_day format:", rule_day);
-    return null;
-  }
-
-  return (
-    <div
-      className={`p-4 border rounded-lg transition-colors ${
-        isSelected ? "border-blue-500 " : "border-gray-200"
-      } ${expanded ? "border-yellow-500 bg-yellow-50 dark:text-blue-500" : ""}`}
-    >
-      <label className="flex items-start cursor-pointer">
-        <input
-          type="checkbox"
-          checked={isSelected}
-          onChange={(e) => {
-            onSelect(isSelected ? null : data);
-            if (e.target.checked) setExpanded(true);
-            else setExpanded(false);
-          }}
-          className="mt-1 mr-3"
-        />
-        <div className="flex-grow">
-          <div className="flex justify-between items-center">
-            <h4 className="font-semibold ">{title}</h4>
-          </div>
-          <p className="text-sm ">{cost}</p>
-          {description && (
-            <p className="text-sm text-blue-500 mt-1 dark:text-yellow-500">
-              {description}
-            </p>
-          )}
-          {name === "Tin thường" ? (
-            <div className="pt-8 pb-16 w-96 mx-auto">
-              <Select onValueChange={(value) => setSaveDay(parseInt(value))}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Chọn số ngày" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Số ngày</SelectLabel>
-                    {parsedRuleDays.map((day) => (
-                      <SelectItem key={day.value} value={day.value}>
-                        {day.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          ) : (
-            <div className="pt-8 pb-16 w-96 mx-auto">
-              <SmartDatetimeInput
-                value={selectedDate}
-                onValueChange={handleDateChange}
-                placeholder="Enter a date and time"
-              />
-              {selectedDate && (
-                <p className="mt-4">
-                  Selected Date: {selectedDate.toLocaleString()}
-                </p>
-              )}
-              <ul>
-                {[...new Set(days)]?.map((time, index) => (
-                  <li key={index} className="text-sm">
-                    {time}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-        <button onClick={toggleExpand} className="ml-2 focus:outline-none">
-          <FaAngleDown
-            className={`transition-transform ${
-              expanded ? "transform rotate-180" : ""
-            }`}
-          />
-        </button>
-      </label>
-      {isSelected && expanded && (
-        <div className="mt-2">
-          <span className="font-semibold">Total Price: </span>
-          <span>{calculatePrice()}</span>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const InfoItem = ({ icon, label, value }) => (
-  <div className="flex items-center">
-    <div className="text-blue-500 mr-2">{icon}</div>
-    <div>
-      <p className="text-sm text-gray-600">{label}</p>
-      <p className="font-semibold">{value}</p>
-    </div>
-  </div>
-);
-
-const PropertyPost = () => {
+const PropertyPost = ({ id }) => {
   const navigate = useNavigate();
   const [postingType, setPostingType] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
-  const [totalPrice, setTotalPrice] = useState(0);
+  const [date, setDate] = React.useState();
+  const [time, setTime] = React.useState();
+  const [selectedDays, setSelectedDays] = React.useState();
+  const [selectedOption, setSelectedOption] = React.useState(null);
+  const [posting_data_type, setPosting_data_type] = useState([]);
+  const [selectedTimeSlots, setSelectedTimeSlots] = useState([]);
+  const [isFirstOptionExpanded, setIsFirstOptionExpanded] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState([]);
+  const [postCount, setPostCount] = useState(1);
+  const today = startOfDay(new Date());
+  const [saveindex, setSaveIndex] = useState(0);
+  useEffect(() => {
+    setSelectedTimeSlots([]);
+  }, [selectedOption]);
+  const isDateDisabled = (date) => {
+    return isBefore(date, today);
+  };
+
+  const calculateTotalPrice = () => {
+    let totalPrice = 0;
+    if (selectedOptions.includes(1)) {
+      totalPrice += 15000;
+    }
+    if (selectedOptions.includes(2)) {
+      totalPrice += 50000;
+    }
+    if (selectedOptions.includes(3)) {
+      totalPrice += parseInt(postingType[2]?.cost || 0) * postCount;
+    }
+    return totalPrice.toLocaleString('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    });
+  };
+
+  const handlePostCountChange = (increment) => {
+    setPostCount((prev) => Math.max(1, Math.min(5, prev + increment)));
+  };
 
   useEffect(() => {
     const getPostingType = async () => {
@@ -207,9 +77,14 @@ const PropertyPost = () => {
           `${import.meta.env.VITE_SERVER_URL}/${GET_DATA_POSTINGTYPE1}`
         );
         setPostingType(response.data.data);
-        console.log(response.data.data);
+
+        response.data.data.map((item) => {
+          if (item.code === 'nZa6Z81KVR') {
+            setPosting_data_type(item.posting_data_type);
+          }
+        });
       } catch (error) {
-        console.error("Signin error:", error.response?.data || error.message);
+        console.error('Signin error:', error.response?.data || error.message);
         toast.error(
           `Signin failed: ${error.response?.data?.message || error.message}`
         );
@@ -218,88 +93,84 @@ const PropertyPost = () => {
 
     getPostingType();
   }, []);
+  const handleCheckboxChange = (index, checked) => {
+    setSelectedOptions((prev) => {
+      if (index === 0) {
+        // Tin thường
+        if (checked) {
+          setSaveIndex(1); // Set index value = 1 cho Tin thường
+          return [1];
+        } else {
+          return prev.filter((opt) => opt !== 1 && opt !== 3);
+        }
+      } else if (index === 1) {
+        // Tin Vip
+        if (checked) {
+          setSaveIndex(4); // Set index value = 4 cho Tin Vip
+          return [2];
+        } else {
+          return prev.filter((opt) => opt !== 2);
+        }
+      } else if (index === 2) {
+        // Load tin
+        if (checked) {
+          setSaveIndex(1); // Set index value = 4 (Load tin thuộc cùng loại)
+          return [...new Set([...prev, 1, 3])];
+        } else {
+          return prev.filter((opt) => opt !== 3);
+        }
+      }
+      return prev;
+    });
 
-  const handleSelectService = (service) => {
-    setSelectedService(service);
+    setIsFirstOptionExpanded((prev) => (index === 0 ? checked : prev));
   };
+
   const createTransformedData = (userData, product_id, totalPrice) => {
+    const transformSelectedDays = parseInt(selectedDays);
+    const transformTime = parseInt(selectedOption);
+    console.log(transformSelectedDays);
     const vnp_txnref = uuidv4();
     if (userData && product_id && totalPrice) {
       return {
         vnp_txnref: vnp_txnref,
-        username: userData.lastname,
-        product_id: getDecryptedCookie(product_id),
-        vnp_amount: Math.ceil(totalPrice / 1000) * 1000,
-        user_id: userData.id,
-        day: daysOptions,
-        // type_posting_id:
-        //   selectedServiceUnder === "sponsoredPost"
-        //     ? 1
-        //     : selectedServiceUnder === "comboOffer"
-        //     ? 2
-        //     : selectedServiceUnder === "featuredPost"
-        //     ? 3
-        //     : 0,
+        product_id: product_id,
+        vnp_amount: totalPrice,
+        user_id: userData,
+        type_posting_id: saveindex,
+        load_key_post: postCount,
       };
     } else {
       return;
     }
   };
 
-  const postPayment = async (transformedData) => {
-    try {
-      const response = await apiClient.post(
-        "http://localhost:8000/api/zalopay/payment",
-        transformedData
-      );
-      return response.data;
-    } catch (error) {
-      console.error(
-        "Error posting payment:",
-        error.response?.data || error.message
-      );
-      throw error;
-    }
-  };
-  const getUserData = async () => {
-    try {
-      const response = await apiClient.get(
-        `${import.meta.env.VITE_SERVER_URL}/api/auth/user`
-      );
-      return response.data;
-    } catch (error) {
-      console.error(
-        "Error fetching user info:",
-        error.response?.data || error.message
-      );
-      throw error;
-    }
-  };
   const onSubmit = async () => {
-    const access_token = Cookies.get("access_token");
-    const product_id = Cookies.get("productData");
-    if (!access_token || !product_id) {
-      console.error("No access token or product id not found");
-      toast.error("No access token or product id not found");
-      return;
+    const getData = await getDataProductByIdRent(id);
+    const getUser = await fetchUserInfo();
+
+    let total = calculateTotalPrice();
+    // Convert total to a number
+    total = parseFloat(total.replace(/[^\d.-]/g, '')) * 1000;
+    if (!getData || !getUser) {
+      toast.error('Sản phẩm không hợp lệ! hoặc bạn chưa đăng nhập');
     }
 
     try {
-      const userData = await getUserData();
       const transformedData = createTransformedData(
-        userData,
-        product_id,
-        totalPrice
+        getUser.id,
+        getData.data.id,
+        total
       );
 
       if (transformedData === undefined) {
-        navigate("/myads");
+        navigate('/myads');
       } else {
         const paymentResponse = await postPayment(transformedData);
 
-        if (paymentResponse.message === "success") {
-          window.open(paymentResponse.data, "_blank");
-          toast.success("Payment successful!");
+        if (paymentResponse.message === 'success') {
+          window.open(paymentResponse.data, '_blank');
+          toast.success('Payment successful!');
         }
       }
     } catch (error) {
@@ -308,41 +179,157 @@ const PropertyPost = () => {
       );
     }
   };
+  const handleTimeChange = (selectedTime) => {
+    console.log('Selected time: ', selectedTime);
 
+    setSelectedTimeSlots((prev) => {
+      if (prev.includes(selectedTime)) {
+        return prev.filter((item) => item !== selectedTime);
+      } else {
+        return [...prev, selectedTime];
+      }
+    });
+  };
   return (
-    <div className="max-w-4xl mx-auto p-4 font-sans">
-      <div className="rounded-lg shadow-lg overflow-hidden">
-        <div className="p-6">
-          <h1 className="text-3xl font-bold mb-4">Dịch vụ bán nhanh hơn</h1>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6"></div>
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-4">Service Options</h2>
-            <p className="mb-4">
-              Offer additional services for faster selling:
-            </p>
-
-            <div className="space-y-4">
-              {postingType.map((service) => (
-                <ServiceOption
-                  key={service.id}
-                  data={service}
-                  isSelected={selectedService?.id === service.id}
-                  onSelect={handleSelectService}
-                />
-              ))}
-            </div>
+    <div className="w-full max-w-3xl mx-auto p-4 space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold">
+            Dịch vụ bán nhanh hơn
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">Service Options</p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            {postingType.slice(0, 2).map((service, index) => (
+              <Card
+                key={service.id}
+                className="border-2 hover:border-primary/50 transition-colors"
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start space-x-4">
+                    <Checkbox
+                      id={`${index + 1}`}
+                      className="mt-1"
+                      checked={selectedOptions.includes(index + 1)}
+                      onCheckedChange={(checked) =>
+                        handleCheckboxChange(index, checked)
+                      }
+                      disabled={index === 1 && selectedOptions.includes(1)}
+                    />
+                    <div className="flex-1 space-y-2">
+                      <label
+                        htmlFor={`${index + 1}`}
+                        className="font-medium cursor-pointer"
+                      >
+                        {service.name} (
+                        {parseInt(service.cost).toLocaleString('vi-VN', {
+                          style: 'currency',
+                          currency: 'VND',
+                        })}
+                        )
+                      </label>
+                      <ul className="list-disc list-inside text-sm text-muted-foreground mt-2 space-y-1">
+                        <li>{service.benefits}</li>
+                      </ul>
+                      {index === 0 && isFirstOptionExpanded && (
+                        <Card className="mt-4 border border-dashed">
+                          <CardContent className="p-4">
+                            <div className="flex items-start space-x-4">
+                              <Checkbox
+                                id="3"
+                                className="mt-1"
+                                checked={selectedOptions.includes(3)}
+                                onCheckedChange={(checked) =>
+                                  handleCheckboxChange(2, checked)
+                                }
+                              />
+                              <div className="flex-1 space-y-2">
+                                <label
+                                  htmlFor="3"
+                                  className="font-medium cursor-pointer"
+                                >
+                                  {postingType[2]?.name} (
+                                  {parseInt(
+                                    postingType[2]?.cost || 0
+                                  ).toLocaleString('vi-VN', {
+                                    style: 'currency',
+                                    currency: 'VND',
+                                  })}
+                                  )
+                                </label>
+                                <ul className="list-disc list-inside text-sm text-muted-foreground mt-2 space-y-1">
+                                  <li>{postingType[2]?.benefits}</li>
+                                </ul>
+                                {selectedOptions.includes(3) && (
+                                  <div className="flex items-center space-x-4 mt-2">
+                                    <span className="text-sm font-medium">
+                                      Số lượng tin:
+                                    </span>
+                                    <Button
+                                      size="icon"
+                                      variant="outline"
+                                      onClick={() => handlePostCountChange(-1)}
+                                      disabled={postCount === 1}
+                                    >
+                                      <Minus className="h-4 w-4" />
+                                    </Button>
+                                    <Input
+                                      type="number"
+                                      value={postCount}
+                                      onChange={(e) =>
+                                        setPostCount(
+                                          Math.max(
+                                            1,
+                                            Math.min(
+                                              5,
+                                              parseInt(e.target.value) || 1
+                                            )
+                                          )
+                                        )
+                                      }
+                                      className="w-16 text-center"
+                                      min="1"
+                                      max="5"
+                                    />
+                                    <Button
+                                      size="icon"
+                                      variant="outline"
+                                      onClick={() => handlePostCountChange(1)}
+                                      disabled={postCount === 5}
+                                    >
+                                      <Plus className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-
-          <div className="flex justify-end items-center p-6">
-            <Button onClick={() => onSubmit()}>Thanh Toán</Button>
+        </CardContent>
+        <CardFooter className="flex justify-between items-center">
+          <div className="text-lg font-semibold">
+            Tổng tiền: {calculateTotalPrice()}
           </div>
-        </div>
-      </div>
+          <Button size="lg" className="px-8" onClick={onSubmit}>
+            Thanh Toán
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 };
 
 const PostPage = () => {
+  const { id } = useParams();
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <Sidebar />
@@ -359,10 +346,8 @@ const PostPage = () => {
           <div className="flex flex-col sm:flex-row">
             <div className="flex-1">
               <div className="font-[sans-serif] w-full">
-                {/* Your new div tag */}
                 <div className="w-full flex justify-center items-center">
-                  {/* Content for the new div */}
-                  <PropertyPost />
+                  <PropertyPost id={id} />
                 </div>
               </div>
             </div>

@@ -9,33 +9,25 @@ import PaidPage from './pages/paid/[paid].jsx';
 import DetailPage from './pages/detailproduct/[detailpage].jsx';
 import NhatotPage from './pages/nhatot/index.jsx';
 import BillPage from './pages/bill/[bill].jsx';
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-  useNavigate,
-} from 'react-router-dom';
+import Profile from './pages/profile/[profile].jsx';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
-import { useAppStore } from './store/index.js';
 import { useEffect, useState } from 'react';
-
 const AuthRoutes = ({ children }) => {
-  const [authenticated, setAuthenticated] = useState(false);
-  const navigate = useNavigate();
+  const access_token = Cookies.get('access_token');
 
-  useEffect(() => {
-    const access_token = Cookies.get('access_token');
-    if (access_token) {
-      setAuthenticated(true);
-      navigate('/home-page');
-    } else {
-      setAuthenticated(false);
-    }
-  }, [navigate]);
-
-  return authenticated ? <Navigate to="/home-page" /> : children;
+  // Kiểm tra token, nếu không có sẽ chuyển hướng về trang đăng nhập
+  return access_token ? <Navigate to="/home-page" replace /> : children;
 };
+// Component PrivateRoute để bảo vệ các route cần đăng nhập
+
+const PrivateRoute = ({ children }) => {
+  const access_token = Cookies.get('access_token');
+
+  // Kiểm tra token, nếu không có sẽ chuyển hướng về trang đăng nhập
+  return access_token ? children : <Navigate to="/auth" replace />;
+};
+
 function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
@@ -50,14 +42,78 @@ function App() {
                 </AuthRoutes>
               }
             />
-            <Route path="/home-page" element={<HomePage />} />
-            <Route path="/dang-tin" element={<CategoryPage />} />
-            <Route path="/preview" element={<ReviewPage />} />
-            <Route path="/post" element={<PostPage />} />
-            <Route path="/paid" element={<PaidPage />} />
-            <Route path="/detaipage" element={<DetailPage />} />
-            <Route path="/nhatot" element={<NhatotPage />} />
-            <Route path="/myads" element={<BillPage />} />
+            <Route
+              path="/home-page"
+              element={
+                <PrivateRoute>
+                  <HomePage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/dang-tin"
+              element={
+                <PrivateRoute>
+                  <CategoryPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/preview/:id"
+              element={
+                <PrivateRoute>
+                  <ReviewPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/post/:id"
+              element={
+                <PrivateRoute>
+                  <PostPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/paid"
+              element={
+                <PrivateRoute>
+                  <PaidPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/detailproduct"
+              element={
+                <PrivateRoute>
+                  <DetailPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/nhatot"
+              element={
+                <PrivateRoute>
+                  <NhatotPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/myads"
+              element={
+                <PrivateRoute>
+                  <BillPage />
+                </PrivateRoute>
+              }
+            />{' '}
+            <Route
+              path="/profile/:id"
+              element={
+                <PrivateRoute>
+                  <Profile />
+                </PrivateRoute>
+              }
+            />
             <Route path="*" element={<Navigate to="/auth" />} />
           </Routes>
         </Layout>

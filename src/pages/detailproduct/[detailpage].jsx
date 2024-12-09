@@ -1,7 +1,7 @@
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import Sidebar from "@/components/ui/sidebar";
-import Header from "@/components/ui/header";
-import { Button } from "@/components/ui/button";
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import Sidebar from '@/components/ui/sidebar';
+import Header from '@/components/ui/header.tsx';
+import { Button } from '@/components/ui/button';
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -12,17 +12,16 @@ import {
   FaMoneyBillWave,
   FaExchangeAlt,
   FaInfoCircle,
-} from "react-icons/fa";
+} from 'react-icons/fa';
 
 // page nha dat
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import emailjs from "emailjs-com";
-import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import apiClient from "@/lib/api-client";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import emailjs from 'emailjs-com';
+import { toast } from 'sonner';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 import {
   Carousel,
@@ -30,7 +29,7 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-} from "@/components/ui/carousel";
+} from '@/components/ui/carousel';
 import {
   Form,
   FormControl,
@@ -39,18 +38,18 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 
 const formSchema = z.object({
   username: z.string().min(2, {
-    message: "Username must be at least 2 characters.",
+    message: 'Username must be at least 2 characters.',
   }),
   email: z.string().email({
-    message: "Please enter a valid email address.",
+    message: 'Please enter a valid email address.',
   }),
   phone: z.string().min(10, {
-    message: "Phone number must be at least 10 characters.",
+    message: 'Phone number must be at least 10 characters.',
   }),
 });
 import {
@@ -60,7 +59,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 
 import {
   FaArrowLeft,
@@ -69,8 +68,8 @@ import {
   FaRulerCombined,
   FaBuilding,
   FaFileAlt,
-} from "react-icons/fa";
-import { Line } from "react-chartjs-2";
+} from 'react-icons/fa';
+import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -80,7 +79,7 @@ import {
   Title,
   Tooltip,
   Legend,
-} from "chart.js";
+} from 'chart.js';
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -90,25 +89,28 @@ ChartJS.register(
   Tooltip,
   Legend
 );
-import { useEffect, useState } from "react";
-import MapIframe from "@/components/Map.jsx";
-import { FaStar, FaStarHalfAlt } from "react-icons/fa";
-import Cookies from "js-cookie";
+import { useEffect, useState } from 'react';
+import MapIframe from '@/components/Map.jsx';
+import { FaStar, FaStarHalfAlt } from 'react-icons/fa';
+import Cookies from 'js-cookie';
+import { getDataProductByIdRent } from '@/routes/apiforRentHouse.jsx';
+import { fetchUserInfo } from '@/routes/apiforUser.jsx';
+import { PropertyHeader } from '@/components/website/ui/PropertyHeader.tsx';
 const DetailPage = () => {
   // nha dat
+  const [searchParams] = useSearchParams();
+  const [data, setData] = useState([]);
   const navigate = useNavigate();
 
-  const handleClick = () => {
-    // Kiểm tra xem có access_token trong cookie không
-    const accessToken = Cookies.get("access_token");
-
-    if (accessToken) {
+  const handleClick = async () => {
+    const res = await fetchUserInfo();
+    if (res) {
       // Nếu có token, hiển thị số liên lạc
       setShowContact(true);
       return true;
     } else {
       // Nếu không có, chuyển hướng về trang /auth
-      navigate("/auth");
+      navigate('/auth');
     }
   };
   useEffect(() => {
@@ -117,15 +119,15 @@ const DetailPage = () => {
       setIsLoading(false);
     }, 2000);
   }, []);
+
   const [isLoading, setIsLoading] = useState(true);
   const [isNhaDat, setIsNhaDat] = useState(false);
   const location = useLocation();
-  const [searchParams] = useSearchParams();
   const [showFullImage, setShowFullImage] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(0);
-  const [loanAmount, setLoanAmount] = useState("");
-  const [interestRate, setInterestRate] = useState("");
-  const [loanTenure, setLoanTenure] = useState("");
+  const [loanAmount, setLoanAmount] = useState('');
+  const [interestRate, setInterestRate] = useState('');
+  const [loanTenure, setLoanTenure] = useState('');
   const [monthlyPayment, setMonthlyPayment] = useState(null);
   const [showDetailedDescription, setShowDetailedDescription] = useState(false);
   const rating = 0;
@@ -149,9 +151,9 @@ const DetailPage = () => {
     resolver: zodResolver(formSchema),
 
     defaultValues: {
-      username: "",
-      email: "",
-      phone: "",
+      username: '',
+      email: '',
+      phone: '',
     },
   });
   function onSubmit(values) {
@@ -159,23 +161,23 @@ const DetailPage = () => {
       email_id: values.username,
       message: values.phone,
       from_name: values.email,
-      market: "Nhà đất",
+      market: 'Nhà đất',
     };
     emailjs
       .send(
-        "service_71t3k2h",
-        "template_nj5zhvb",
+        'service_71t3k2h',
+        'template_nj5zhvb',
         templateParams,
-        "hlF3QHN-uRCXJzVgl"
+        'hlF3QHN-uRCXJzVgl'
       )
       .then(
         (response) => {
-          toast.success("Email sent successfully");
-          console.log("SUCCESS!", response.status, response.text);
+          toast.success('Email sent successfully');
+          console.log('SUCCESS!', response.status, response.text);
         },
         (error) => {
-          toast.warning("Email not sent. Please try again later");
-          console.log("FAILED...", error);
+          toast.warning('Email not sent. Please try again later');
+          console.log('FAILED...', error);
         }
       );
   }
@@ -184,48 +186,37 @@ const DetailPage = () => {
   };
 
   const imagesForHouse = [
-    "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2",
-    "https://images.unsplash.com/photo-1564013799919-ab600027ffc6",
-    "https://images.unsplash.com/photo-1512917774080-9991f1c4c750",
-    "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b",
+    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2',
+    'https://images.unsplash.com/photo-1564013799919-ab600027ffc6',
+    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750',
+    'https://images.unsplash.com/photo-1512915922686-57c11dde9b6b',
   ];
 
-  const propertyDetails = {
-    address:
-      "Đường Man Thiện, Phường Hiệp Phú (Quận 9 cũ), Thành phố Thủ Đức, Tp Hồ Chí Minh",
-    pricePerSqm: "45,000,000 VND",
-    bedrooms: 3,
-    floors: 4,
-    legalStatus: "Full ownership",
-    propertyType: "Townhouse",
-    width: "5m",
-    description:
-      "A modern townhouse in a prime location with excellent amenities and convenient access to public transportation.",
-    detailedDescription: `BÁN NHÀ C4 KHU CẢNH VỆ MAN THIỆN, TNP A, QUẬN 9, THỦ ĐỨC, 50M2, NHỈNH 4.X TỶ
-
-      Mô tả chi tiết:
-      - Vị trí: khu dân cư cảnh vệ, Tăng Nhơn Phú A, Quận 9, Thủ Đức, TP Hồ Chí Minh. Đường thông, trước nhà 4m. Tiện ích đầy đủ, khu dân cư sầm uất, thuận tiện di chuyển sang Lê Văn Việt, Võ Nguyên Giáp, Xa Lộ Hà Nội, Võ Văn Ngân, Hoàng Diệu, Lê Văn Chí, Lã Xuân Oai… Bệnh viện Lê Văn Việt, trường học Lê Văn Việt, THCS Khai Nguyên, Trần Quốc Toản, Đại học Makerting, Học viện Công nghệ, quán xá không thiếu thứ gì.
-      - Kết cấu: Nhà 2 tầng, 1 PN, DT 50m2, đường thông, trước nhà 4m. Ngang 5m
-      - Phù hợp: Mua ở và đầu tư.
-      - Pháp lý: Pháp lý sạch, chuẩn chỉnh, công chứng nhanh gọn ngay trong ngày.
-      - Liên hệ NGAY em Hậu để được tư vấn biết thêm thông tin Mua bán nhà đất, bất động sản tại Quận 2, Quận 9, Thủ Đức, Hồ Chí Minh.
-      Em nhận ký gửi mua bán nhà đất TP Hồ Chí Minh, Thành Phố Thủ Đức nhanh gọn.
-      
-      Mua Bán Nhà Quận 9 Giá Rẻ Mới Nhất
-      Mua bán nhà đất, bất động sản tại Quận 9, Hồ Chí Minh
-      Mua Bán Nhà Đất Quận 9 (TP. Thủ Đức) Giá Tốt, Chất Lượng
-      Mua bán nhà đất Hồ Chí Minh, Nhà đất Thủ Đức nhanh chóng
-      
- `,
-  };
+  const mapApiDataToPropertyDetails = (apiData) => ({
+    address: `${apiData.ward_code || 'N/A'}, ${apiData.district_code || 'N/A'}, ${
+      apiData.province_code || 'N/A'
+    }`,
+    pricePerSqm: apiData.cost ? `${apiData.cost} VND` : 'N/A',
+    status: apiData.status || 0,
+    bedrooms: apiData.bedroom_id || 0,
+    floors: apiData.floor || 0,
+    legalStatus: 'Full ownership',
+    propertyType: 'Townhouse',
+    width: `${apiData.horizontal || 0}m`,
+    description: apiData.content || 'No description available',
+    detailedDescription: apiData.title || 'No details available',
+    images: apiData.images
+      ? apiData.images.split(',').map((img) => `url_path/${img}`)
+      : [],
+  });
 
   const chartData = {
-    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
     datasets: [
       {
-        label: "Price Trend (Million VND/sqm)",
+        label: 'Price Trend (Million VND/sqm)',
         data: [43, 44, 45, 44.5, 45, 45.5],
-        borderColor: "rgb(75, 192, 192)",
+        borderColor: 'rgb(75, 192, 192)',
         tension: 0.1,
       },
     ],
@@ -242,7 +233,7 @@ const DetailPage = () => {
   };
   const calculateLoan = () => {
     // Kiểm tra xem có access_token trong cookie không
-    const accessToken = Cookies.get("access_token");
+    const accessToken = Cookies.get('access_token');
 
     if (accessToken) {
       // Nếu có token, hiển thị số liên lạc
@@ -259,7 +250,7 @@ const DetailPage = () => {
       }
     } else {
       // Nếu không có, chuyển hướng về trang /auth
-      navigate("/auth");
+      navigate('/auth');
     }
   };
   //xe
@@ -268,20 +259,28 @@ const DetailPage = () => {
   const [showContact, setShowContact] = useState(false);
   const [showWarranty, setShowWarranty] = useState(false);
   useEffect(() => {
-    const nhaDat = searchParams.get("nhadat");
-    console.log("nhaDat:", nhaDat); // Kiểm tra giá trị của query parameter
+    const nhaDat = searchParams.get('nhadat');
+    const id = searchParams.get('id');
+    if (id) {
+      const fetchData = async () => {
+        const res = await getDataProductByIdRent(id); // Giả sử đây là API
+        const mappedData = mapApiDataToPropertyDetails(res.data);
+        setData(mappedData); // Lưu trữ vào state
+      };
+
+      fetchData();
+    }
     if (nhaDat) {
       setIsNhaDat(true);
-      console.log("nhaDat:", nhaDat); // Kiểm tra giá trị của query parameter
+      console.log('nhaDat:', nhaDat); // Kiểm tra giá trị của query parameter
     } else {
       setIsNhaDat(false);
     }
-    // console.log(123);
   }, [location.search]);
   const images = [
-    "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
-    "https://images.unsplash.com/photo-1558980664-769d59546b3d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
-    "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
+    'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
+    'https://images.unsplash.com/photo-1558980664-769d59546b3d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
+    'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
   ];
 
   const nextImage = () => {
@@ -295,21 +294,21 @@ const DetailPage = () => {
   const similarListings = [
     {
       image:
-        "https://images.unsplash.com/photo-1558981359-219d6364c9c8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
-      title: "Xe Click 2011 nguyên rin 1 đời chủ biển 43",
-      price: "11,500,000 VND",
-      type: "Special Sale",
-      time: "3 weeks ago",
-      location: "Quận Hải Châu",
+        'https://images.unsplash.com/photo-1558981359-219d6364c9c8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
+      title: 'Xe Click 2011 nguyên rin 1 đời chủ biển 43',
+      price: '11,500,000 VND',
+      type: 'Special Sale',
+      time: '3 weeks ago',
+      location: 'Quận Hải Châu',
     },
     {
       image:
-        "https://images.unsplash.com/photo-1558981806-ec527fa84c39?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
-      title: "Honda Click 2012 - Excellent Condition",
-      price: "10,800,000 VND",
-      type: "Regular Sale",
-      time: "2 days ago",
-      location: "Quận Sơn Trà",
+        'https://images.unsplash.com/photo-1558981806-ec527fa84c39?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
+      title: 'Honda Click 2012 - Excellent Condition',
+      price: '10,800,000 VND',
+      type: 'Regular Sale',
+      time: '2 days ago',
+      location: 'Quận Sơn Trà',
     },
   ];
 
@@ -320,7 +319,7 @@ const DetailPage = () => {
         <Header />
         {isNhaDat ? (
           <div className="max-w-7xl mx-auto p-6 b rounded-lg shadow-lg">
-            <h1 className="text-3xl font-bold mb-6 ">Property Information</h1>
+            <PropertyHeader data={data} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
@@ -354,7 +353,7 @@ const DetailPage = () => {
                       src={img}
                       alt={`Thumbnail ${index + 1}`}
                       className={`w-20 h-20 object-cover cursor-pointer rounded ${
-                        index === activeImage ? "ring-2 ring-blue-500" : ""
+                        index === activeImage ? 'ring-2 ring-blue-500' : ''
                       }`}
                       onClick={() => setActiveImage(index)}
                     />
@@ -365,44 +364,38 @@ const DetailPage = () => {
                   <h2 className="text-2xl font-semibold mb-4 ">
                     Property Details
                   </h2>
-                  <p className=" mb-2">Address: {propertyDetails.address}</p>
-                  <p className=" mb-2">
-                    Price per sqm: {propertyDetails.pricePerSqm}
-                  </p>
+                  <p className=" mb-2">Address: {data.address}</p>
+                  <p className=" mb-2">Price per sqm: {data.pricePerSqm}</p>
                   <div className="flex items-center mb-2">
-                    <FaBed className="mr-2 " />
-                    <span className="">
-                      {propertyDetails.bedrooms} Bedrooms
-                    </span>
+                    <FaBed className="mr-2" />
+                    <span>{data.bedrooms} Bedrooms</span>
                   </div>
                   <div className="flex items-center mb-2">
-                    <FaBuilding className="mr-2 " />
-                    <span className="">{propertyDetails.floors} Floors</span>
+                    <FaBuilding className="mr-2" />
+                    <span>{data.floors} Floors</span>
                   </div>
                   <div className="flex items-center mb-2">
-                    <FaFileAlt className="mr-2 " />
-                    <span className="">
-                      Legal Status: {propertyDetails.legalStatus}
-                    </span>
+                    <FaFileAlt className="mr-2" />
+                    <span>Legal Status: {data.legalStatus}</span>
                   </div>
                   <div className="flex items-center mb-2">
-                    <FaRulerCombined className="mr-2 " />
-                    <span className="">Width: {propertyDetails.width}</span>
+                    <FaRulerCombined className="mr-2" />
+                    <span>Width: {data.width}</span>
                   </div>
-                  <p className=" mt-4">{propertyDetails.description}</p>
+                  <p className="mt-4">{data.description}</p>
                   <button
                     onClick={toggleDetailedDescription}
-                    className="mt-4 flex items-center   transition duration-300"
+                    className="mt-4 flex items-center transition duration-300"
                   >
                     <FaInfoCircle className="mr-2" />
                     {showDetailedDescription
-                      ? "Hide Detailed Description"
-                      : "View Detailed Description"}
+                      ? 'Hide Detailed Description'
+                      : 'View Detailed Description'}
                   </button>
                   {showDetailedDescription && (
                     <div className="mt-4 p-4 dark:bg-gray-100 dark:text-black rounded-lg">
-                      <pre className="whitespace-pre-wrap text-sm ">
-                        {propertyDetails.detailedDescription}
+                      <pre className="whitespace-pre-wrap text-sm">
+                        {data.detailedDescription}
                       </pre>
                     </div>
                   )}
@@ -495,7 +488,7 @@ const DetailPage = () => {
                   </div>
 
                   <div className=" p-4 flex items-center justify-between gap-3">
-                    <MapIframe address={propertyDetails.address} />
+                    <MapIframe address={data.address} />
                   </div>
                 </div>
               </div>
@@ -647,7 +640,7 @@ const DetailPage = () => {
                   </div>
                 ) : (
                   <Carousel
-                    opts={{ align: "start" }}
+                    opts={{ align: 'start' }}
                     className="w-full max-w-screen-lg"
                   >
                     <CarouselContent>
@@ -799,7 +792,7 @@ const DetailPage = () => {
                           src={img}
                           alt={`Thumbnail ${index + 1}`}
                           className={`w-20 h-20 object-cover cursor-pointer rounded-md ${
-                            index === activeImage ? "ring-2 ring-pink-500" : ""
+                            index === activeImage ? 'ring-2 ring-pink-500' : ''
                           }`}
                           onClick={() => setActiveImage(index)}
                         />

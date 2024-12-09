@@ -2,7 +2,7 @@ import { useState } from "react";
 import { FaSearch, FaQrcode, FaCreditCard } from "react-icons/fa";
 import { RiErrorWarningLine } from "react-icons/ri";
 import Sidebar from "@/components/ui/sidebar";
-import Header from "@/components/ui/header";
+import Header from "@/components/ui/header.tsx";
 const PropertyPaid = () => {
   const [selectedBank, setSelectedBank] = useState("");
   const [searchTerm, setSearchTerm] = useState("");

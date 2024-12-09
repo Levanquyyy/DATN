@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import {
   Pagination,
@@ -9,7 +9,7 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination";
+} from '@/components/ui/pagination';
 
 export default function PropertyListings({ dataFromServer = [] }) {
   const itemsPerPage = 8;
@@ -25,14 +25,18 @@ export default function PropertyListings({ dataFromServer = [] }) {
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {currentItems.map((item) => (
-          <Link key={item.id} href={`/detaipage?nhadat=nhadat${item.id}`}>
+          <Link
+            key={item.id}
+            to={`/detailproduct?nhadat=true&id=${item.id}`}
+            className="block"
+          >
             <div className="dark:border-white p-4 rounded-md shadow-md hover:shadow-lg transition-shadow">
               <img
                 src="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1074&q=80"
