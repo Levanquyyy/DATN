@@ -10,9 +10,11 @@ import DetailPage from './pages/detailproduct/[detailpage].jsx';
 import NhatotPage from './pages/nhatot/index.jsx';
 import BillPage from './pages/bill/[bill].jsx';
 import Profile from './pages/profile/[profile].jsx';
+import ForgotPasswordForm from './pages/forgot-password/forgot-password.jsx';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import { useEffect, useState } from 'react';
+import ConfirmPasswordForm from '@/pages/confirm-password/confirm-password.jsx';
 const AuthRoutes = ({ children }) => {
   const access_token = Cookies.get('access_token');
 
@@ -87,7 +89,7 @@ function App() {
               element={
                 <PrivateRoute>
                   <DetailPage />
-                </PrivateRoute>
+</PrivateRoute>
               }
             />
             <Route
@@ -113,6 +115,11 @@ function App() {
                   <Profile />
                 </PrivateRoute>
               }
+            />
+            <Route path="/reset_password" element={<ForgotPasswordForm />} />
+            <Route
+              path="/confirm_reset_password/:id"
+              element={<ConfirmPasswordForm />}
             />
             <Route path="*" element={<Navigate to="/auth" />} />
           </Routes>
