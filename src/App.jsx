@@ -106,6 +106,7 @@ function App() {
                   <NhatotPage />
                 </PrivateRoute>
               }
+              
             />
             <Route
               path="/myads"
