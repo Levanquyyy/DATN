@@ -1000,7 +1000,11 @@ const NhatotPage = () => {
                 {filterbyCategory.category === 'Nhà ở' &&
                   filterbyCategory.userType === 'Tất cả' && (
                     <>
-                      <PropertyListings dataFromServer={dataFromServer} />
+                      {dataFromServer.length === 0 ? (
+                        <div className="text-center">No data found</div>
+                      ) : (
+                        <PropertyListings dataFromServer={dataFromServer} />
+                      )}
                     </>
                   )}
               </div>
