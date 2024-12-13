@@ -1,6 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-
+import { Badge } from '@/components/ui/badge';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Star, MapPin, ArrowRight } from 'lucide-react';
 import {
   Pagination,
   PaginationContent,
@@ -10,51 +25,120 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
+import { PropertyListingSkeleton } from './PropertyListingSkeleton';
 
 export default function PropertyListings({ dataFromServer = [] }) {
   const itemsPerPage = 8;
   const [currentPage, setCurrentPage] = useState(1);
-
-  // Calculate total pages
+  const [isLoading, setIsLoading] = useState(true);
   const totalPages = Math.ceil(dataFromServer.length / itemsPerPage);
-
-  // Get current items
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = dataFromServer.slice(indexOfFirstItem, indexOfLastItem);
 
+  useEffect(() => {
+    // Simulate loading delay
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   const handlePageChange = (page) => {
     setCurrentPage(page);
+    setIsLoading(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Simulate loading delay when changing pages
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
   };
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {currentItems.map((item) => (
-          <Link
-            key={item.id}
-            to={`/detailproduct?nhadat=true&id=${item.id}`}
-            className="block"
-          >
-            <div className="dark:border-white p-4 rounded-md shadow-md hover:shadow-lg transition-shadow">
-              <img
-                src="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1074&q=80"
-                alt="Property"
-                width={400}
-                height={300}
-                className="w-full h-48 object-cover rounded-md mb-4"
-                loading="lazy"
-              />
-              <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-              <p className="">Diện tích {item.land_area} m² </p>
-              <p className="font-semibold mb-2">Giá: {item.cost}</p>
-              <p className="text-sm text-gray-500 line-clamp-2">
-                {item.content}
-              </p>
-            </div>
-          </Link>
-        ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {isLoading
+          ? Array.from({ length: itemsPerPage }).map((_, index) => (
+              <PropertyListingSkeleton key={index} />
+            ))
+          : currentItems.map((item) => {
+              const firstImageUrl = item.images[0];
+              return (
+                <Link
+                  key={item.id}
+                  to={`/detailproduct?nhadat=true&id=${item.id}`}
+                  className="block"
+                >
+                  <Card
+                    className={`h-full transition-all hover:shadow-lg ${
+                      item.type_posting_id === 4
+                        ? 'border-primary shadow-primary/20'
+                        : ''
+                    }`}
+                  >
+                    <CardHeader className="relative p-0">
+                      <img
+                        src={firstImageUrl}
+                        alt="Property"
+                        width={400}
+                        height={300}
+                        className="w-full h-48 object-cover rounded-t-lg"
+                        loading="lazy"
+                      />
+                      {item.type_posting_id === 4 && (
+                        <Badge className="absolute top-2 right-2 bg-primary text-primary-foreground">
+                          VIP
+                        </Badge>
+                      )}
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      <CardTitle
+                        className={`text-lg mb-2 ${
+                          item.type_posting_id === 4 ? 'text-primary' : ''
+                        }`}
+                      >
+                        {item.title}
+                      </CardTitle>
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-2">
+                        <MapPin className="w-4 h-4" />
+                        <span>{item.land_area} m²</span>
+                      </div>
+                      <p className="font-semibold mb-2">Giá: {item.cost}</p>
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {item.content}
+                      </p>
+                    </CardContent>
+                    <CardFooter className="p-4 pt-0">
+                      {item.type_posting_id === 4 ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center space-x-1 text-primary">
+                                <Star className="w-4 h-4 fill-current" />
+                                <Star className="w-4 h-4 fill-current" />
+                                <Star className="w-4 h-4 fill-current" />
+                                <Star className="w-4 h-4 fill-current" />
+                                <Star className="w-4 h-4 fill-current" />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Tin VIP - Ưu tiên hiển thị</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <div className="flex-grow" />
+                      )}
+                      <Button variant="ghost" className="ml-auto">
+                        Xem chi tiết <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                </Link>
+              );
+            })}
       </div>
 
       {totalPages > 1 && (
@@ -72,7 +156,6 @@ export default function PropertyListings({ dataFromServer = [] }) {
 
             {Array.from({ length: totalPages }).map((_, index) => {
               const pageNumber = index + 1;
-              // Show first page, last page, and pages around current page
               if (
                 pageNumber === 1 ||
                 pageNumber === totalPages ||

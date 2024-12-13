@@ -11,13 +11,11 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import Cookies from 'js-cookie';
-import apiClient from '@/lib/api-client';
 import { CaretSortIcon, CheckIcon } from '@radix-ui/react-icons';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import axios from 'axios';
-import { useAppStore } from '@/store';
+
 import {
   Form,
   FormControl,
@@ -54,6 +52,7 @@ import {
 } from '@/components/ui/popover';
 import { fetchUserInfo } from '@/routes/apiforUser.jsx';
 import { postProduct } from '@/routes/apiforRentHouse.jsx';
+import { fetchLocation } from '@/routes/apiforLocation.jsx';
 
 const FormSchema = z.object({
   nameofbuilding: z.string().min(2, {
@@ -70,7 +69,7 @@ const FormSchema = z.object({
     message: 'Vui lòng chọn giấy tờ pháp lý',
   }),
 
-  city: z.string().min(1, {
+  province_code: z.string().min(1, {
     message: 'Vui lòng chọn tỉnh thành',
   }),
 
@@ -90,7 +89,7 @@ const FormSchema = z.object({
     message: 'Vui lòng nhập tiêu đề',
   }),
 
-  province_code: z.string().min(1, {
+  district_code: z.string().min(1, {
     message: 'Vui lòng chọn quận',
   }),
   land_area: z.number().min(1, {
@@ -143,32 +142,22 @@ const FormSchema = z.object({
   }),
   type_user: z.boolean().default(false).optional(),
 });
-const formatCurrency = (value) => {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-};
-const CategoryPage1020 = () => {
-  const setisforsale = useAppStore((state) => state.setisforsale);
-  const setpage1020 = useAppStore((state) => state.setpage1020);
 
+const CategoryPage1020 = () => {
   const form = useForm({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       nameofbuilding: 'Wuys 1',
       // citi: "",
       namedistrict: 'Levanquy',
-      district: '',
+
       condition_interior: '',
       typeofhouse: '',
       bedroom_id: '',
       legal_id: '',
 
       content: 'dsadasd',
-      city: '',
+      province_code: '',
       numberofstreet: '123165',
       positionBDS: '23/20',
       block: '5',
@@ -182,7 +171,7 @@ const CategoryPage1020 = () => {
       length: '',
       // fix
       usable_area: 0,
-      cost: '',
+      cost: 0,
 
       land_area: 0,
 
@@ -192,10 +181,10 @@ const CategoryPage1020 = () => {
       type_product: 1,
       type_rental: 3,
       category_id: 1,
-      province_code: '',
-      images: 'png2',
+
+      images: '',
       video: '1',
-      cost_deposit: '',
+      cost_deposit: 0,
       car_alley: false,
       back_house: false,
       blooming_house: false,
@@ -205,29 +194,27 @@ const CategoryPage1020 = () => {
       diff_situation: false,
       approved: 2,
       type_user: false,
-      district_code: 'hcm',
+      district_code: '',
     },
   });
   const navigate = useNavigate();
   const [cities, setCities] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [wards, setWards] = useState([]);
-  const [selectedCity, setSelectedCity] = useState(null);
+
+  const [selectedprovince_code, setSelectedprovince_code] = useState(null);
   const [selectedDistrict, setSelectedDistrict] = useState(null);
   const [selectedWard, setSelectedWard] = useState(null);
-  const [opencity, setOpenCity] = useState(false);
+
+  const [openprovince_code, setOpenprovince_code] = useState(false);
   const [opendistrict, setOpenDistrict] = useState(false);
   const [openward, setOpenWard] = useState(false);
   const [isFocus, setIsFocus] = useState(false);
   const [isFocusDescribeDetail, setIsFocusDescribeDetail] = useState(false);
-  const [displayValue, setDisplayValue] = useState('');
-  const [numericValue, setNumericValue] = useState(null);
-  useEffect(() => {
-    if (numericValue !== null) {
-      // Chỉ cập nhật giá trị trong form mà không có VND
-      form.setValue('cost', numericValue);
-    }
-  }, [numericValue, form]);
+
+  // Add these state variables at the top with other useState declarations
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [selectedVideo, setSelectedVideo] = useState(null);
 
   const CurrencyInput = ({ form, name, placeholder }) => {
     const [numericValue, setNumericValue] = useState(null);
@@ -282,8 +269,8 @@ const CategoryPage1020 = () => {
     );
   };
   const [errors, setErrors] = useState({
-    city: null,
-    district: null,
+    province_code: null,
+    district_code: null,
     ward: null,
   });
   const funitureOptions = [
@@ -299,54 +286,57 @@ const CategoryPage1020 = () => {
     }
   }, []);
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await axios.get(
-          'https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json'
-        );
-        setCities(res.data);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
+    const fetchCities = async () => {
+      const data = await fetchLocation('provinces', 1);
+      setCities(data);
     };
+    fetchCities();
+  }, []);
 
-    fetchData();
-  }, []); // Only run once on mount
-
+  // Fetch districts when a city is selected
   useEffect(() => {
-    if (selectedCity) {
-      const city = cities.find((city) => city.Name === selectedCity);
-      setDistricts(city?.Districts || []);
-      setSelectedDistrict(null);
-      setWards([]);
-      setSelectedWard(null);
+    if (selectedprovince_code) {
+      const fetchDistricts = async () => {
+        const data = await fetchLocation('districts', selectedprovince_code);
+        console.log('districts', data);
+        setDistricts(data);
+        setSelectedDistrict(null); // Reset selected district when province_code changes
+      };
+      fetchDistricts();
     }
-  }, [selectedCity, cities]); // Run when selectedCity or cities change
+  }, [selectedprovince_code]);
 
+  // Fetch wards when a district is selected
   useEffect(() => {
     if (selectedDistrict) {
-      const district = districts.find(
-        (district) => district.Name === selectedDistrict
-      );
-      setWards(district?.Wards || []);
-      setSelectedWard(null);
+      const fetchWards = async () => {
+        const data = await fetchLocation('wards', selectedDistrict);
+        setWards(data);
+        setSelectedWard(null); // Reset selected ward when district changes
+      };
+      fetchWards();
     }
-  }, [selectedDistrict, districts]); // Run when selectedDistrict or districts change
+  }, [selectedDistrict]);
 
-  const [imageNames, setImageNames] = useState([]);
   const [video, setVideo] = useState([]);
 
+  // Update the handleFileChange function
   const handleFileChange = (event) => {
     const files = Array.from(event.target.files);
-    const fileNames = files.map((file) => file.name);
-    setImageNames(fileNames);
+    console.log(files);
+
+    setSelectedImages(files); // Store the actual files instead of just names
   };
+
+  // Update the handleVideoChange function
   const handleVideoChange = (event) => {
     const files = Array.from(event.target.files);
+    setSelectedVideo(files[0]); // Store the first video file
     const fileNames = files.map((file) => file.name);
     setVideo(fileNames);
   };
 
+  // Update the onSubmit function
   const onSubmit = async (data, isForRent = false) => {
     const userInfo = await fetchUserInfo();
 
@@ -358,11 +348,7 @@ const CategoryPage1020 = () => {
 
     const transformedData = {
       ...data,
-      district_code: 'le van quy',
-      cost: Number(data.cost).toFixed(2).padStart(10, '0'),
-      cost_deposit: Number(data.cost_deposit).toFixed(2).padStart(10, '0'),
-      land_area: Number(data.land_area).toFixed(2).padStart(10, '0'),
-      usable_area: Number(data.usable_area).toFixed(2).padStart(10, '0'),
+
       car_alley: data.car_alley ? 1 : 0,
       back_house: data.back_house ? 1 : 0,
       blooming_house: data.blooming_house ? 1 : 0,
@@ -374,15 +360,35 @@ const CategoryPage1020 = () => {
       user_id: user_id,
     };
 
-    let hasError = false;
-    const newErrors = { city: null, district: null, ward: null };
+    // Create FormData object
+    const formData = new FormData();
 
-    if (!selectedCity) {
-      newErrors.city = 'Vui lòng chọn tỉnh thành.';
+    // Append each field from transformedData individually
+    Object.keys(transformedData).forEach((key) => {
+      formData.append(key, transformedData[key]);
+    });
+
+    // Append images as array
+    if (selectedImages.length > 0) {
+      selectedImages.forEach((image) => {
+        formData.append('images[]', image);
+      });
+    }
+
+    // Append video if exists
+    if (selectedVideo) {
+      formData.append('video', selectedVideo);
+    }
+
+    let hasError = false;
+    const newErrors = { province_code: null, district_code: null, ward: null };
+
+    if (!selectedprovince_code) {
+      newErrors.province_code = 'Vui lòng chọn tỉnh thành.';
       hasError = true;
     }
     if (!selectedDistrict) {
-      newErrors.district = 'Vui lòng chọn quận.';
+      newErrors.district_code = 'Vui lòng chọn quận.';
       hasError = true;
     }
     if (!selectedWard) {
@@ -394,23 +400,11 @@ const CategoryPage1020 = () => {
 
     if (!hasError) {
       if (isForRent) {
-        // setpage1020(true);
-        // setFormData(data, imageNames, video, false);
-        // setisforsale(false);
-        const id = await postProduct(transformedData);
+        const id = await postProduct(formData);
         navigate(`/preview/${id}`);
-      } else {
-        // setpage1020(true);
-        // setFormData(data, imageNames, video, true);
-        // setisforsale(true);
-        // await postProduct(transformedData, true);
-        // navigate("/preview");
       }
     }
   };
-  // const handleSaleSubmit = (data) => {
-  //   onSubmit(data, false);
-  // };
 
   const handleRentSubmit = (data) => {
     onSubmit(data, true);
@@ -431,17 +425,28 @@ const CategoryPage1020 = () => {
 
           <div className="flex flex-col sm:flex-row">
             <div className="flex-1">
-              <div class="font-[sans-serif] max-w-md ">
-                <label class="text-base text-gray-500 font-semibold mb-2 block">
+              <div className="font-[sans-serif] max-w-md ">
+                <label className="text-base text-gray-500 font-semibold mb-2 block">
                   ĐĂNG TỪ 03 ĐẾN 12 HÌNH
                 </label>
                 <Label htmlFor="picture">Picture</Label>
-                <Input id="picture" type="file" />
+                <Input
+                  id="picture"
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
               </div>
 
-              <div class="font-[sans-serif] max-w-md ">
+              <div className="font-[sans-serif] max-w-md ">
                 <Label htmlFor="video">Video</Label>
-                <Input id="video" type="file" accept="video/*" />
+                <Input
+                  id="videos"
+                  type="file"
+                  accept="video/*,.mkv,.avi,.mov,.mp4,.webm"
+                  onChange={handleVideoChange}
+                />
               </div>
             </div>
             <div className="flex-1">
@@ -453,912 +458,6 @@ const CategoryPage1020 = () => {
                   <TabsTrigger value="sale">Cần bán</TabsTrigger>
                   <TabsTrigger value="rent">Cho thuê</TabsTrigger>
                 </TabsList>
-                {/* check sale */}
-                {/*<Form {...form}>*/}
-                {/*  <form*/}
-                {/*    onSubmit={form.handleSubmit(handleSaleSubmit)}*/}
-                {/*    className="space-y-8"*/}
-                {/*  >*/}
-                {/*    <TabsContent value="sale">*/}
-                {/*      <FormField*/}
-                {/*        control={form.control}*/}
-                {/*        name="nameofbuilding"*/}
-                {/*        render={({ field }) => (*/}
-                {/*          <FormItem>*/}
-                {/*            <FormLabel>Địa chỉ BĐS và Hình ảnh</FormLabel>*/}
-                {/*            <FormControl>*/}
-                {/*              <Input placeholder="Tên toà nhà" {...field} />*/}
-                {/*            </FormControl>*/}
-                {/*            <FormDescription>*/}
-                {/*              Không tìm thấy dự án cần đăng tin?*/}
-                {/*              <Link to="/" className="text-blue-600">*/}
-                {/*                Yêu cầu thêm dự án*/}
-                {/*              </Link>*/}
-                {/*            </FormDescription>*/}
-                {/*            <FormMessage />*/}
-                {/*          </FormItem>*/}
-                {/*        )}*/}
-                {/*      />*/}
-                {/*      <FormLabel>Địa chỉ </FormLabel>*/}
-                {/*      <FormField*/}
-                {/*        control={form.control}*/}
-                {/*        name="city"*/}
-                {/*        render={({ field }) => (*/}
-                {/*          <FormItem className="flex items-center gap-4">*/}
-                {/*            <FormControl>*/}
-                {/*              <>*/}
-                {/*                <Popover*/}
-                {/*                  open={opencity}*/}
-                {/*                  onOpenChange={setOpenCity}*/}
-                {/*                >*/}
-                {/*                  <PopoverTrigger asChild>*/}
-                {/*                    <Button*/}
-                {/*                      variant="outline"*/}
-                {/*                      role="combobox"*/}
-                {/*                      aria-expanded={opencity}*/}
-                {/*                      className="w-full justify-between"*/}
-                {/*                    >*/}
-                {/*                      {selectedCity*/}
-                {/*                        ? cities.find(*/}
-                {/*                            (city) => city.Name === selectedCity*/}
-                {/*                          )?.Name*/}
-                {/*                        : 'Chọn tỉnh thành'}*/}
-                {/*                      <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />*/}
-                {/*                    </Button>*/}
-                {/*                  </PopoverTrigger>*/}
-                {/*                  <PopoverContent className="w-[200px] p-0">*/}
-                {/*                    <Command>*/}
-                {/*                      <CommandInput*/}
-                {/*                        placeholder="Search city..."*/}
-                {/*                        className="h-9"*/}
-                {/*                      />*/}
-                {/*                      <CommandList>*/}
-                {/*                        <CommandEmpty>*/}
-                {/*                          No city found.*/}
-                {/*                        </CommandEmpty>*/}
-                {/*                        <CommandGroup>*/}
-                {/*                          {cities.map((city) => (*/}
-                {/*                            <CommandItem*/}
-                {/*                              key={city.Id}*/}
-                {/*                              value={city.Name}*/}
-                {/*                              onSelect={(currentValue) => {*/}
-                {/*                                setSelectedCity(*/}
-                {/*                                  currentValue === selectedCity*/}
-                {/*                                    ? null*/}
-                {/*                                    : currentValue*/}
-                {/*                                );*/}
-                {/*                                setOpenCity(false);*/}
-                {/*                                field.onChange(currentValue); // Update form field value*/}
-                {/*                              }}*/}
-                {/*                            >*/}
-                {/*                              {city.Name}*/}
-                {/*                              <CheckIcon*/}
-                {/*                                className={cn(*/}
-                {/*                                  'ml-auto h-4 w-4',*/}
-                {/*                                  selectedCity === city.Id*/}
-                {/*                                    ? 'opacity-100'*/}
-                {/*                                    : 'opacity-0'*/}
-                {/*                                )}*/}
-                {/*                              />*/}
-                {/*                            </CommandItem>*/}
-                {/*                          ))}*/}
-                {/*                        </CommandGroup>*/}
-                {/*                      </CommandList>*/}
-                {/*                    </Command>*/}
-                {/*                  </PopoverContent>*/}
-                {/*                </Popover>*/}
-                {/*                {form.formState.errors.city && (*/}
-                {/*                  <p className="text-red-600">*/}
-                {/*                    {form.formState.errors.city.message}*/}
-                {/*                  </p>*/}
-                {/*                )}*/}
-                {/*              </>*/}
-                {/*            </FormControl>*/}
-                {/*          </FormItem>*/}
-                {/*        )}*/}
-                {/*      />*/}
-                {/*      <FormField*/}
-                {/*        control={form.control}*/}
-                {/*        name="province_code"*/}
-                {/*        render={({ field }) => (*/}
-                {/*          <FormItem className="flex items-center gap-4">*/}
-                {/*            <FormControl>*/}
-                {/*              <>*/}
-                {/*                <Popover*/}
-                {/*                  open={opendistrict}*/}
-                {/*                  onOpenChange={setOpenDistrict}*/}
-                {/*                >*/}
-                {/*                  <PopoverTrigger asChild>*/}
-                {/*                    <Button*/}
-                {/*                      variant="outline"*/}
-                {/*                      role="combobox"*/}
-                {/*                      aria-expanded={opendistrict}*/}
-                {/*                      className="w-full justify-between"*/}
-                {/*                      disabled={!selectedCity}*/}
-                {/*                    >*/}
-                {/*                      {selectedDistrict*/}
-                {/*                        ? districts.find(*/}
-                {/*                            (district) =>*/}
-                {/*                              district.Name === selectedDistrict*/}
-                {/*                          )?.Name*/}
-                {/*                        : 'Chọn quận'}*/}
-                {/*                      <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />*/}
-                {/*                    </Button>*/}
-                {/*                  </PopoverTrigger>*/}
-                {/*                  <PopoverContent className="w-full p-0">*/}
-                {/*                    <Command>*/}
-                {/*                      <CommandInput*/}
-                {/*                        placeholder="Search district..."*/}
-                {/*                        className="h-9"*/}
-                {/*                      />*/}
-                {/*                      <CommandList>*/}
-                {/*                        <CommandEmpty>*/}
-                {/*                          No district found.*/}
-                {/*                        </CommandEmpty>*/}
-                {/*                        <CommandGroup>*/}
-                {/*                          {districts.map((district) => (*/}
-                {/*                            <CommandItem*/}
-                {/*                              key={district.Id}*/}
-                {/*                              value={district.Name}*/}
-                {/*                              onSelect={(currentValue) => {*/}
-                {/*                                setSelectedDistrict(*/}
-                {/*                                  currentValue ===*/}
-                {/*                                    selectedDistrict*/}
-                {/*                                    ? null*/}
-                {/*                                    : currentValue*/}
-                {/*                                );*/}
-                {/*                                setOpenDistrict(false);*/}
-                {/*                                field.onChange(currentValue); // Update form field value*/}
-                {/*                              }}*/}
-                {/*                            >*/}
-                {/*                              {district.Name}*/}
-                {/*                              <CheckIcon*/}
-                {/*                                className={cn(*/}
-                {/*                                  'ml-auto h-4 w-4',*/}
-                {/*                                  selectedDistrict ===*/}
-                {/*                                    district.Id*/}
-                {/*                                    ? 'opacity-100'*/}
-                {/*                                    : 'opacity-0'*/}
-                {/*                                )}*/}
-                {/*                              />*/}
-                {/*                            </CommandItem>*/}
-                {/*                          ))}*/}
-                {/*                        </CommandGroup>*/}
-                {/*                      </CommandList>*/}
-                {/*                    </Command>*/}
-                {/*                  </PopoverContent>*/}
-                {/*                </Popover>*/}
-                {/*                {form.formState.errors.district && (*/}
-                {/*                  <p className="text-red-600">*/}
-                {/*                    {form.formState.errors.district.message}*/}
-                {/*                  </p>*/}
-                {/*                )}*/}
-                {/*              </>*/}
-                {/*            </FormControl>*/}
-                {/*          </FormItem>*/}
-                {/*        )}*/}
-                {/*      />*/}
-                {/*      <FormField*/}
-                {/*        control={form.control}*/}
-                {/*        name="ward_code"*/}
-                {/*        render={({ field }) => (*/}
-                {/*          <FormItem className="flex items-center gap-4">*/}
-                {/*            <FormControl>*/}
-                {/*              <>*/}
-                {/*                <Popover*/}
-                {/*                  open={openward}*/}
-                {/*                  onOpenChange={setOpenWard}*/}
-                {/*                >*/}
-                {/*                  <PopoverTrigger asChild>*/}
-                {/*                    <Button*/}
-                {/*                      variant="outline"*/}
-                {/*                      role="combobox"*/}
-                {/*                      aria-expanded={openward}*/}
-                {/*                      className="w-full justify-between"*/}
-                {/*                      disabled={!selectedDistrict}*/}
-                {/*                    >*/}
-                {/*                      {selectedWard*/}
-                {/*                        ? wards.find(*/}
-                {/*                            (ward) => ward.Name === selectedWard*/}
-                {/*                          )?.Name*/}
-                {/*                        : 'Chọn huyện'}*/}
-                {/*                      <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />*/}
-                {/*                    </Button>*/}
-                {/*                  </PopoverTrigger>*/}
-                {/*                  <PopoverContent className="w-full p-0">*/}
-                {/*                    <Command>*/}
-                {/*                      <CommandInput*/}
-                {/*                        placeholder="Search ward..."*/}
-                {/*                        className="h-9"*/}
-                {/*                      />*/}
-                {/*                      <CommandList>*/}
-                {/*                        <CommandEmpty>*/}
-                {/*                          No ward found.*/}
-                {/*                        </CommandEmpty>*/}
-                {/*                        <CommandGroup>*/}
-                {/*                          {wards.map((ward) => (*/}
-                {/*                            <CommandItem*/}
-                {/*                              key={ward.Id}*/}
-                {/*                              value={ward.Name}*/}
-                {/*                              onSelect={(currentValue) => {*/}
-                {/*                                setSelectedWard(*/}
-                {/*                                  currentValue === selectedWard*/}
-                {/*                                    ? null*/}
-                {/*                                    : currentValue*/}
-                {/*                                );*/}
-                {/*                                setOpenWard(false);*/}
-                {/*                                field.onChange(currentValue); // Update form field value*/}
-                {/*                              }}*/}
-                {/*                            >*/}
-                {/*                              {ward.Name}*/}
-                {/*                              <CheckIcon*/}
-                {/*                                className={cn(*/}
-                {/*                                  'ml-auto h-4 w-4',*/}
-                {/*                                  selectedWard === ward.Id*/}
-                {/*                                    ? 'opacity-100'*/}
-                {/*                                    : 'opacity-0'*/}
-                {/*                                )}*/}
-                {/*                              />*/}
-                {/*                            </CommandItem>*/}
-                {/*                          ))}*/}
-                {/*                        </CommandGroup>*/}
-                {/*                      </CommandList>*/}
-                {/*                    </Command>*/}
-                {/*                  </PopoverContent>*/}
-                {/*                </Popover>*/}
-                {/*                {form.formState.errors.ward && (*/}
-                {/*                  <p className="text-red-600">*/}
-                {/*                    {form.formState.errors.ward.message}*/}
-                {/*                  </p>*/}
-                {/*                )}*/}
-                {/*              </>*/}
-                {/*            </FormControl>*/}
-                {/*          </FormItem>*/}
-                {/*        )}*/}
-                {/*      />*/}
-
-                {/*      <FormField*/}
-                {/*        control={form.control}*/}
-                {/*        name="namedistrict"*/}
-                {/*        render={({ field }) => (*/}
-                {/*          <FormItem>*/}
-                {/*            <FormLabel>Tên đường</FormLabel>*/}
-                {/*            <FormControl>*/}
-                {/*              <Input placeholder="Nhập tên đường" {...field} />*/}
-                {/*            </FormControl>*/}
-
-                {/*            <FormMessage />*/}
-                {/*          </FormItem>*/}
-                {/*        )}*/}
-                {/*      />*/}
-                {/*      <FormField*/}
-                {/*        control={form.control}*/}
-                {/*        name="numberofstreet"*/}
-                {/*        render={({ field }) => (*/}
-                {/*          <FormItem>*/}
-                {/*            <FormLabel>Số nhà</FormLabel>*/}
-                {/*            <FormControl>*/}
-                {/*              <Input placeholder="Nhập Số nhà" {...field} />*/}
-                {/*            </FormControl>*/}
-
-                {/*            <FormMessage />*/}
-                {/*          </FormItem>*/}
-                {/*        )}*/}
-                {/*      />*/}
-                {/*      <FormField*/}
-                {/*        control={form.control}*/}
-                {/*        name="positionBDS"*/}
-                {/*        render={({ field }) => (*/}
-                {/*          <FormItem>*/}
-                {/*            <FormLabel>Vị trí BĐS</FormLabel>*/}
-                {/*            <FormControl>*/}
-                {/*              <Input placeholder="Nhập Mã căn" {...field} />*/}
-                {/*            </FormControl>*/}
-
-                {/*            <FormMessage />*/}
-                {/*          </FormItem>*/}
-                {/*        )}*/}
-                {/*      />*/}
-                {/*      <FormField*/}
-                {/*        control={form.control}*/}
-                {/*        name="subdivision_code"*/}
-                {/*        render={({ field }) => (*/}
-                {/*          <FormItem>*/}
-                {/*            <FormLabel>Tên Phân Khu/lô</FormLabel>*/}
-                {/*            <FormControl>*/}
-                {/*              <Input placeholder="Tên phân khu/lô" {...field} />*/}
-                {/*            </FormControl>*/}
-
-                {/*            <FormMessage />*/}
-                {/*          </FormItem>*/}
-                {/*        )}*/}
-                {/*      />*/}
-                {/*      <FormField*/}
-                {/*        control={form.control}*/}
-                {/*        name="block"*/}
-                {/*        render={({ field }) => (*/}
-                {/*          <FormItem>*/}
-                {/*            <FormLabel>Block/Tháp</FormLabel>*/}
-                {/*            <FormControl>*/}
-                {/*              <Input {...field} />*/}
-                {/*            </FormControl>*/}
-
-                {/*            <FormMessage />*/}
-                {/*          </FormItem>*/}
-                {/*        )}*/}
-                {/*      />*/}
-
-                {/*      <FormField*/}
-                {/*        control={form.control}*/}
-                {/*        name="typeofhouse"*/}
-                {/*        render={({ field }) => (*/}
-                {/*          <div className="mt-2 flex flex-col gap-3">*/}
-                {/*            <Select {...field} onValueChange={field.onChange}>*/}
-                {/*              <SelectTrigger className="w-full">*/}
-                {/*                <SelectValue>*/}
-                {/*                  {field.value || 'Loại hình căn hộ'}*/}
-                {/*                </SelectValue>*/}
-                {/*              </SelectTrigger>*/}
-                {/*              <SelectContent>*/}
-                {/*                <SelectGroup>*/}
-                {/*                  <SelectLabel>Loại hình nhà ở:</SelectLabel>*/}
-                {/*                  <SelectItem value="Nhà mặt phố/ mặt tiền">*/}
-                {/*                    Nhà mặt phố/ mặt tiền*/}
-                {/*                  </SelectItem>*/}
-                {/*                  <SelectItem value="Nhà ngõ, hẻm">*/}
-                {/*                    Nhà ngõ, hẻm*/}
-                {/*                  </SelectItem>*/}
-                {/*                  <SelectItem value="Nhà biệt thự">*/}
-                {/*                    Nhà biệt thự*/}
-                {/*                  </SelectItem>*/}
-                {/*                  <SelectItem value="Nhà phố liền kề">*/}
-                {/*                    Nhà phố liền kề*/}
-                {/*                  </SelectItem>*/}
-                {/*                </SelectGroup>*/}
-                {/*              </SelectContent>*/}
-                {/*            </Select>*/}
-                {/*            {form.formState.errors.typeofhouse && (*/}
-                {/*              <p className="text-red-600">*/}
-                {/*                {form.formState.errors.typeofhouse.message}*/}
-                {/*              </p>*/}
-                {/*            )}*/}
-                {/*          </div>*/}
-                {/*        )}*/}
-                {/*      />*/}
-                {/*      <FormField*/}
-                {/*        control={form.control}*/}
-                {/*        name="bedroom_id"*/}
-                {/*        render={({ field }) => (*/}
-                {/*          <div className="mt-2 ">*/}
-                {/*            <Select {...field} onValueChange={field.onChange}>*/}
-                {/*              <SelectTrigger className="w-full">*/}
-                {/*                <SelectValue>*/}
-                {/*                  {field.value || 'Số phòng ngủ'}*/}
-                {/*                </SelectValue>*/}
-                {/*              </SelectTrigger>*/}
-                {/*              <SelectContent>*/}
-                {/*                <SelectGroup>*/}
-                {/*                  <SelectLabel>Số phòng ngủ</SelectLabel>*/}
-                {/*                  <SelectItem value="1">1</SelectItem>*/}
-                {/*                  <SelectItem value="2">2</SelectItem>*/}
-                {/*                  <SelectItem value="3">3</SelectItem>*/}
-                {/*                  <SelectItem value="4">4</SelectItem>*/}
-                {/*                  <SelectItem value="5">5</SelectItem>*/}
-                {/*                  <SelectItem value="6">6</SelectItem>*/}
-                {/*                  <SelectItem value=">6">*/}
-                {/*                    Nhiều hơn 6*/}
-                {/*                  </SelectItem>*/}
-                {/*                </SelectGroup>*/}
-                {/*              </SelectContent>*/}
-                {/*            </Select>*/}
-                {/*            {form.formState.errors.bedroom_id && (*/}
-                {/*              <p className="text-red-600">*/}
-                {/*                {form.formState.errors.bedroom_id.message}*/}
-                {/*              </p>*/}
-                {/*            )}*/}
-                {/*          </div>*/}
-                {/*        )}*/}
-                {/*      />*/}
-                {/*      <FormField*/}
-                {/*        control={form.control}*/}
-                {/*        name="bathroom_id"*/}
-                {/*        render={({ field }) => (*/}
-                {/*          <div className="mt-2 flex flex-col gap-3">*/}
-                {/*            <FormLabel>Số phòng vệ sinh</FormLabel>*/}
-                {/*            <Select {...field} onValueChange={field.onChange}>*/}
-                {/*              <SelectTrigger className="w-full">*/}
-                {/*                <SelectValue>*/}
-                {/*                  {field.value || 'Số phòng vệ sinh'}*/}
-                {/*                </SelectValue>*/}
-                {/*              </SelectTrigger>*/}
-                {/*              <SelectContent>*/}
-                {/*                <SelectGroup>*/}
-                {/*                  <SelectLabel>Số phòng vệ sinh</SelectLabel>*/}
-                {/*                  <SelectItem value="1">1</SelectItem>*/}
-                {/*                  <SelectItem value="2">2</SelectItem>*/}
-                {/*                  <SelectItem value="3">3</SelectItem>*/}
-                {/*                  <SelectItem value="4">4</SelectItem>*/}
-                {/*                  <SelectItem value="5">5</SelectItem>*/}
-                {/*                  <SelectItem value="6">6</SelectItem>*/}
-                {/*                  <SelectItem value="Nhiều hơn 6">*/}
-                {/*                    Nhiều hơn 6*/}
-                {/*                  </SelectItem>*/}
-                {/*                </SelectGroup>*/}
-                {/*              </SelectContent>*/}
-                {/*            </Select>*/}
-                {/*            {form.formState.errors.bathroom_id && (*/}
-                {/*              <p className="text-red-600">*/}
-                {/*                {form.formState.errors.bathroom_id.message}*/}
-                {/*              </p>*/}
-                {/*            )}*/}
-                {/*          </div>*/}
-                {/*        )}*/}
-                {/*      />*/}
-                {/*      <FormField*/}
-                {/*        control={form.control}*/}
-                {/*        name="viewbalcony"*/}
-                {/*        render={({ field }) => (*/}
-                {/*          <div className="mt-2 flex flex-col gap-3">*/}
-                {/*            <FormLabel>Hướng ban công</FormLabel>*/}
-                {/*            <Select {...field} onValueChange={field.onChange}>*/}
-                {/*              <SelectTrigger className="w-full">*/}
-                {/*                <SelectValue>*/}
-                {/*                  {field.value || 'Hướng ban công:'}*/}
-                {/*                </SelectValue>*/}
-                {/*              </SelectTrigger>*/}
-                {/*              <SelectContent>*/}
-                {/*                <SelectGroup>*/}
-                {/*                  <SelectLabel>Hướng ban công:</SelectLabel>*/}
-                {/*                  <SelectItem value="Đông">Đông</SelectItem>*/}
-                {/*                  <SelectItem value="Tây">Tây</SelectItem>*/}
-                {/*                  <SelectItem value="Nam">Nam</SelectItem>*/}
-                {/*                  <SelectItem value="Bắc">Bắc</SelectItem>*/}
-                {/*                  <SelectItem value="Đông Bắc">*/}
-                {/*                    Đông Bắc*/}
-                {/*                  </SelectItem>*/}
-                {/*                  <SelectItem value="Đông Nam">*/}
-                {/*                    Đông Nam*/}
-                {/*                  </SelectItem>*/}
-                {/*                </SelectGroup>*/}
-                {/*              </SelectContent>*/}
-                {/*            </Select>*/}
-                {/*            {form.formState.errors.viewbalcony && (*/}
-                {/*              <p className="text-red-600">*/}
-                {/*                {form.formState.errors.viewbalcony.message}*/}
-                {/*              </p>*/}
-                {/*            )}*/}
-                {/*          </div>*/}
-                {/*        )}*/}
-                {/*      />*/}
-                {/*      <FormField*/}
-                {/*        control={form.control}*/}
-                {/*        name="main_door_id"*/}
-                {/*        render={({ field }) => (*/}
-                {/*          <div className="mt-2 flex flex-col gap-3">*/}
-                {/*            <FormLabel>Hướng cửa chính</FormLabel>*/}
-                {/*            <Select {...field} onValueChange={field.onChange}>*/}
-                {/*              <SelectTrigger className="w-full">*/}
-                {/*                <SelectValue>*/}
-                {/*                  {field.value || 'Hướng cửa chính:'}*/}
-                {/*                </SelectValue>*/}
-                {/*              </SelectTrigger>*/}
-                {/*              <SelectContent>*/}
-                {/*                <SelectGroup>*/}
-                {/*                  <SelectLabel>Hướng cửa chính</SelectLabel>*/}
-                {/*                  <SelectItem value="1">Đông</SelectItem>*/}
-                {/*                  <SelectItem value="2">Tây</SelectItem>*/}
-                {/*                  <SelectItem value="3">Nam</SelectItem>*/}
-                {/*                  <SelectItem value="4">Bắc</SelectItem>*/}
-                {/*                  <SelectItem value="5">Đông Bắc</SelectItem>*/}
-                {/*                  <SelectItem value="6">Đông Nam</SelectItem>*/}
-                {/*                </SelectGroup>*/}
-                {/*              </SelectContent>*/}
-                {/*            </Select>*/}
-                {/*            {form.formState.errors.main_door_id && (*/}
-                {/*              <p className="text-red-600">*/}
-                {/*                {form.formState.errors.main_door_id.message}*/}
-                {/*              </p>*/}
-                {/*            )}*/}
-                {/*          </div>*/}
-                {/*        )}*/}
-                {/*      />*/}
-                {/*      <FormField*/}
-                {/*        control={form.control}*/}
-                {/*        name="floor"*/}
-                {/*        render={({ field }) => (*/}
-                {/*          <FormItem>*/}
-                {/*            <FormLabel>Nhập Số tầng</FormLabel>*/}
-                {/*            <FormControl>*/}
-                {/*              <Input placeholder="Nhập Số tầng" {...field} />*/}
-                {/*            </FormControl>*/}
-                {/*            <FormMessage />*/}
-                {/*          </FormItem>*/}
-                {/*        )}*/}
-                {/*      />*/}
-
-                {/* diện tích */}
-                {/*<FormField*/}
-                {/*  control={form.control}*/}
-                {/*  name="land_area2"*/}
-                {/*  render={({ field }) => (*/}
-                {/*    <FormItem>*/}
-                {/*      <FormLabel>Diện tích & giá</FormLabel>*/}
-
-                {/*      <FormControl>*/}
-                {/*        <Input*/}
-                {/*          type="number"*/}
-                {/*          placeholder="Diện tích "*/}
-                {/*          {...field}*/}
-                {/*          onChange={(e) =>*/}
-                {/*            field.onChange(parseFloat(e.target.value))*/}
-                {/*          }*/}
-                {/*        />*/}
-                {/*      </FormControl>*/}
-
-                {/*      <FormMessage />*/}
-                {/*    </FormItem>*/}
-                {/*  )}*/}
-                {/*/>*/}
-                {/*<FormField*/}
-                {/*  control={form.control}*/}
-                {/*  name="usable_area"*/}
-                {/*  render={({ field }) => (*/}
-                {/*    <FormItem>*/}
-                {/*      <FormLabel>Diện tích sử dụng</FormLabel>*/}
-
-                {/*      <FormControl>*/}
-                {/*        <Input*/}
-                {/*          type="number"*/}
-                {/*          placeholder="Diện tích "*/}
-                {/*          {...field}*/}
-                {/*          onChange={(e) =>*/}
-                {/*            field.onChange(parseFloat(e.target.value))*/}
-                {/*          }*/}
-                {/*        />*/}
-                {/*      </FormControl>*/}
-
-                {/*      <FormMessage />*/}
-                {/*    </FormItem>*/}
-                {/*  )}*/}
-                {/*/>*/}
-                {/*<FormField*/}
-                {/*  control={form.control}*/}
-                {/*  name="horizontal"*/}
-                {/*  render={({ field }) => (*/}
-                {/*    <FormItem>*/}
-                {/*      <FormLabel>Chiều ngang</FormLabel>*/}
-
-                {/*      <FormControl>*/}
-                {/*        <Input placeholder="Chiều ngang " {...field} />*/}
-                {/*      </FormControl>*/}
-
-                {/*      <FormMessage />*/}
-                {/*    </FormItem>*/}
-                {/*  )}*/}
-                {/*/>*/}
-                {/*<FormField*/}
-                {/*  control={form.control}*/}
-                {/*  name="length"*/}
-                {/*  render={({ field }) => (*/}
-                {/*    <FormItem>*/}
-                {/*      <FormLabel>Chiều dài</FormLabel>*/}
-
-                {/*      <FormControl>*/}
-                {/*        <Input placeholder="Chiều dài " {...field} />*/}
-                {/*      </FormControl>*/}
-
-                {/*      <FormMessage />*/}
-                {/*    </FormItem>*/}
-                {/*  )}*/}
-                {/*/>*/}
-                {/*<FormField*/}
-                {/*  control={form.control}*/}
-                {/*  name="cost"*/}
-                {/*  render={({ field }) => (*/}
-                {/*    <FormItem>*/}
-                {/*      <FormLabel>Giá bán</FormLabel>*/}
-
-                {/*      <FormControl>*/}
-                {/*        <Input*/}
-                {/*          type="number"*/}
-                {/*          placeholder="Giá thuê "*/}
-                {/*          {...field}*/}
-                {/*          onChange={(e) =>*/}
-                {/*            field.onChange(parseFloat(e.target.value))*/}
-                {/*          }*/}
-                {/*        />*/}
-                {/*      </FormControl>*/}
-
-                {/*      <FormMessage />*/}
-                {/*    </FormItem>*/}
-                {/*  )}*/}
-                {/*/>*/}
-
-                {/*<FormField*/}
-                {/*  control={form.control}*/}
-                {/*  name="legal_id"*/}
-                {/*  render={({ field }) => (*/}
-                {/*    <div className="mt-2 flex flex-col gap-3">*/}
-                {/*      <FormLabel>Thông tin khác</FormLabel>*/}
-                {/*      <Select {...field} onValueChange={field.onChange}>*/}
-                {/*        <SelectTrigger className="w-full">*/}
-                {/*          <SelectValue>*/}
-                {/*            {field.value || 'Giấy tờ pháp lý'}*/}
-                {/*          </SelectValue>*/}
-                {/*        </SelectTrigger>*/}
-                {/*        <SelectContent>*/}
-                {/*          <SelectGroup>*/}
-                {/*            <SelectLabel>Giấy tờ pháp lý:</SelectLabel>*/}
-                {/*            <SelectItem value="1">Đã có sổ</SelectItem>*/}
-                {/*            <SelectItem value="2">Đang chờ sổ</SelectItem>*/}
-                {/*            <SelectItem value="3">Không có sổ</SelectItem>*/}
-                {/*            <SelectItem value="4">*/}
-                {/*              Sổ chung / công chứng vi bằng*/}
-                {/*            </SelectItem>*/}
-                {/*            <SelectItem value="5">*/}
-                {/*              Giấy tờ viết tay*/}
-                {/*            </SelectItem>*/}
-                {/*          </SelectGroup>*/}
-                {/*        </SelectContent>*/}
-                {/*      </Select>*/}
-                {/*      {form.formState.errors.legal_id && (*/}
-                {/*        <p className="text-red-600">*/}
-                {/*          {form.formState.errors.legal_id.message}*/}
-                {/*        </p>*/}
-                {/*      )}*/}
-                {/*    </div>*/}
-                {/*  )}*/}
-                {/*/>*/}
-                {/*<FormField*/}
-                {/*  control={form.control}*/}
-                {/*  name="condition_interior"*/}
-                {/*  render={({ field }) => (*/}
-                {/*    <Select {...field} onValueChange={field.onChange}>*/}
-                {/*      <SelectTrigger className="w-full">*/}
-                {/*        <SelectValue>*/}
-                {/*          {field.value || 'Nội thất'}*/}
-                {/*        </SelectValue>*/}
-                {/*      </SelectTrigger>*/}
-                {/*      <SelectContent>*/}
-                {/*        <SelectGroup>*/}
-                {/*          <SelectLabel>Nội thất</SelectLabel>*/}
-
-                {/*          {funitureOptions.map((option) => (*/}
-                {/*            <SelectItem*/}
-                {/*              key={option.value}*/}
-                {/*              value={option.value}*/}
-                {/*            >*/}
-                {/*              {option.label}*/}
-                {/*            </SelectItem>*/}
-                {/*          ))}*/}
-                {/*        </SelectGroup>*/}
-                {/*      </SelectContent>*/}
-                {/*    </Select>*/}
-                {/*  )}*/}
-                {/*/>*/}
-                {/*<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">*/}
-                {/*  <FormField*/}
-                {/*    control={form.control}*/}
-                {/*    name="car_alley"*/}
-                {/*    render={({ field }) => (*/}
-                {/*      <FormItem>*/}
-                {/*        <div className="flex gap-3 p-1 h-12 items-center">*/}
-                {/*          <FormLabel>Hẻm xe hơi</FormLabel>*/}
-
-                {/*          <FormControl>*/}
-                {/*            <Checkbox*/}
-                {/*              checked={field.value}*/}
-                {/*              onCheckedChange={field.onChange}*/}
-                {/*            />*/}
-                {/*          </FormControl>*/}
-                {/*        </div>*/}
-                {/*      </FormItem>*/}
-                {/*    )}*/}
-                {/*  />*/}
-                {/*  <FormField*/}
-                {/*    control={form.control}*/}
-                {/*    name="back_house"*/}
-                {/*    render={({ field }) => (*/}
-                {/*      <FormItem>*/}
-                {/*        <div className="flex gap-3 p-1 h-12 items-center">*/}
-                {/*          <FormLabel>Nhà tóp hậu</FormLabel>*/}
-                {/*          <FormControl>*/}
-                {/*            <Checkbox*/}
-                {/*              checked={field.value}*/}
-                {/*              onCheckedChange={field.onChange}*/}
-                {/*            />*/}
-                {/*          </FormControl>*/}
-                {/*        </div>*/}
-                {/*      </FormItem>*/}
-                {/*    )}*/}
-                {/*  />*/}
-                {/*  <FormField*/}
-                {/*    control={form.control}*/}
-                {/*    name="blooming_house"*/}
-                {/*    render={({ field }) => (*/}
-                {/*      <FormItem>*/}
-                {/*        <div className="flex gap-3 p-1 h-12 items-center">*/}
-                {/*          <FormLabel>Nhà nở hậu</FormLabel>*/}
-                {/*          <FormControl>*/}
-                {/*            <Checkbox*/}
-                {/*              checked={field.value}*/}
-                {/*              onCheckedChange={field.onChange}*/}
-                {/*            />*/}
-                {/*          </FormControl>*/}
-                {/*        </div>*/}
-                {/*      </FormItem>*/}
-                {/*    )}*/}
-                {/*  />*/}
-                {/*  <FormField*/}
-                {/*    control={form.control}*/}
-                {/*    name="not_completed_yet"*/}
-                {/*    render={({ field }) => (*/}
-                {/*      <FormItem>*/}
-                {/*        <div className="flex gap-3 p-1 h-12 items-center">*/}
-                {/*          <FormLabel>Nhà chưa hoàn công</FormLabel>*/}
-                {/*          <FormControl>*/}
-                {/*            <Checkbox*/}
-                {/*              checked={field.value}*/}
-                {/*              onCheckedChange={field.onChange}*/}
-                {/*            />*/}
-                {/*          </FormControl>*/}
-                {/*        </div>*/}
-                {/*      </FormItem>*/}
-                {/*    )}*/}
-                {/*  />*/}
-                {/*  <FormField*/}
-                {/*    control={form.control}*/}
-                {/*    name="land_not_changed_yet"*/}
-                {/*    render={({ field }) => (*/}
-                {/*      <FormItem>*/}
-                {/*        <div className="flex gap-3 p-1 h-12 items-center">*/}
-                {/*          <FormLabel>Đất chưa chuyển thổ</FormLabel>*/}
-                {/*          <FormControl>*/}
-                {/*            <Checkbox*/}
-                {/*              checked={field.value}*/}
-                {/*              onCheckedChange={field.onChange}*/}
-                {/*            />*/}
-                {/*          </FormControl>*/}
-                {/*        </div>*/}
-                {/*      </FormItem>*/}
-                {/*    )}*/}
-                {/*  />*/}
-                {/*  <FormField*/}
-                {/*    control={form.control}*/}
-                {/*    name="planning_or_road"*/}
-                {/*    render={({ field }) => (*/}
-                {/*      <FormItem>*/}
-                {/*        <div className="flex gap-3 p-1 h-12 items-center">*/}
-                {/*          <FormLabel>*/}
-                {/*            Nhà dính quy hoạch / lộ giới*/}
-                {/*          </FormLabel>*/}
-                {/*          <FormControl>*/}
-                {/*            <Checkbox*/}
-                {/*              checked={field.value}*/}
-                {/*              onCheckedChange={field.onChange}*/}
-                {/*            />*/}
-                {/*          </FormControl>*/}
-                {/*        </div>*/}
-                {/*      </FormItem>*/}
-                {/*    )}*/}
-                {/*  />*/}
-                {/*  <FormField*/}
-                {/*    control={form.control}*/}
-                {/*    name="diff_situation"*/}
-                {/*    render={({ field }) => (*/}
-                {/*      <FormItem>*/}
-                {/*        <div className="flex gap-3 p-1 h-12 items-center">*/}
-                {/*          <FormLabel>Hiện trạng khác</FormLabel>*/}
-                {/*          <FormControl>*/}
-                {/*            <Checkbox*/}
-                {/*              checked={field.value}*/}
-                {/*              onCheckedChange={field.onChange}*/}
-                {/*            />*/}
-                {/*          </FormControl>*/}
-                {/*        </div>*/}
-                {/*      </FormItem>*/}
-                {/*    )}*/}
-                {/*  />*/}
-                {/*</div>*/}
-                {/*<FormField*/}
-                {/*  control={form.control}*/}
-                {/*  name="title"*/}
-                {/*  render={({ field }) => (*/}
-                {/*    <FormItem>*/}
-                {/*      <FormLabel>*/}
-                {/*        Tiêu đề tin đăng và Mô tả chi tiết*/}
-                {/*      </FormLabel>*/}
-
-                {/*      <FormControl>*/}
-                {/*        <Input*/}
-                {/*          placeholder="Tiêu đề tin đăng "*/}
-                {/*          {...field}*/}
-                {/*          onFocus={() => setIsFocus(true)}*/}
-                {/*          onBlur={() => setIsFocus(false)}*/}
-                {/*        />*/}
-                {/*      </FormControl>*/}
-
-                {/*      <FormDescription>*/}
-                {/*        {isFocus && (*/}
-                {/*          <h1 className="text-base">*/}
-                {/*            {' '}*/}
-                {/*            Nếu bạn cung cấp thêm một số thông tin chi*/}
-                {/*            tiết như:Phong cách thiết kế: Hiện đại, cổ*/}
-                {/*            điển, tối giản,...Màu sắc chủ đạo: Trắng,*/}
-                {/*            xanh, nâu,..Vị trí nổi bật: Gần công viên,*/}
-                {/*            view sông,...Đặc điểm nổi bật: Ban công rộng,*/}
-                {/*            bếp hiện đại,...*/}
-                {/*          </h1>*/}
-                {/*        )}*/}
-                {/*      </FormDescription>*/}
-                {/*      <FormMessage />*/}
-                {/*    </FormItem>*/}
-                {/*  )}*/}
-                {/*/>*/}
-                {/*<FormField*/}
-                {/*  control={form.control}*/}
-                {/*  name="content"*/}
-                {/*  render={({ field }) => (*/}
-                {/*    <FormItem>*/}
-                {/*      <FormLabel>Mô tả chi tiết</FormLabel>*/}
-
-                {/*      <FormControl>*/}
-                {/*        <Textarea*/}
-                {/*          placeholder="Tiêu đề tin đăng1"*/}
-                {/*          {...field}*/}
-                {/*          onFocus={() => setIsFocusDescribeDetail(true)}*/}
-                {/*          onBlur={() => setIsFocusDescribeDetail(false)}*/}
-                {/*        />*/}
-                {/*      </FormControl>*/}
-                {/*      <FormDescription>*/}
-                {/*        {isFocusDescribeDetail && (*/}
-                {/*          <h1 className="text-base">*/}
-                {/*            {' '}*/}
-                {/*            Nên có: Loại căn hộ chung cư, vị trí, tiện*/}
-                {/*            ích, diện tích, số phòng, thông tin pháp lý,*/}
-                {/*            tình trạng nội thất, v.v. Ví dụ: Tọa lạc tại*/}
-                {/*            đường Số 2 Đ. N4, Căn hộ Duplex Celadon City*/}
-                {/*            Q. Tân Phú 68m2 2PN, 1WC. Tiện ích đầy đủ*/}
-                {/*          </h1>*/}
-                {/*        )}*/}
-                {/*      </FormDescription>*/}
-                {/*      <FormMessage />*/}
-                {/*    </FormItem>*/}
-                {/*  )}*/}
-                {/*/>*/}
-
-                {/* fix */}
-                {/*      <FormField*/}
-                {/*        control={form.control}*/}
-                {/*        name="floor"*/}
-                {/*        render={({ field }) => (*/}
-                {/*          <FormItem>*/}
-                {/*            <FormLabel>Bạn là:</FormLabel>*/}
-
-                {/*            <FormControl>*/}
-                {/*              <div className="flex items-center space-x-2">*/}
-                {/*                <Switch*/}
-                {/*                  id="broker"*/}
-                {/*                  onCheckedChange={handleCheckedChange}*/}
-                {/*                />*/}
-                {/*                <Label htmlFor="broker" className="uppercase">*/}
-                {/*                  Môi giới*/}
-                {/*                </Label>*/}
-                {/*              </div>*/}
-                {/*            </FormControl>*/}
-
-                {/*            <FormMessage />*/}
-                {/*          </FormItem>*/}
-                {/*        )}*/}
-                {/*      />*/}
-
-                {/*      <div className="flex gap-3 mt-3">*/}
-                {/*        <Button variant="outline">Xem trước</Button>*/}
-                {/*        <Button type="submit">Đăng tin</Button>*/}
-                {/*      </div>*/}
-                {/*    </TabsContent>*/}
-                {/*  </form>*/}
-                {/*</Form>*/}
 
                 {/* check rent */}
                 <Form {...form}>
@@ -1389,26 +488,28 @@ const CategoryPage1020 = () => {
                       <FormLabel>Địa chỉ </FormLabel>
                       <FormField
                         control={form.control}
-                        name="city"
+                        name="province_code"
                         render={({ field }) => (
                           <FormItem className="flex items-center gap-4">
                             <FormControl>
                               <>
                                 <Popover
-                                  open={opencity}
-                                  onOpenChange={setOpenCity}
+                                  open={openprovince_code}
+                                  onOpenChange={setOpenprovince_code}
                                 >
                                   <PopoverTrigger asChild>
                                     <Button
                                       variant="outline"
                                       role="combobox"
-                                      aria-expanded={opencity}
+                                      aria-expanded={openprovince_code}
                                       className="w-full justify-between"
                                     >
-                                      {selectedCity
+                                      {selectedprovince_code
                                         ? cities.find(
-                                            (city) => city.Name === selectedCity
-                                          )?.Name
+                                            (city) =>
+                                              city.code ===
+                                              selectedprovince_code
+                                          )?.full_name
                                         : 'Chọn tỉnh thành'}
                                       <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
@@ -1427,24 +528,27 @@ const CategoryPage1020 = () => {
                                           {cities.map((city) => (
                                             <CommandItem
                                               key={city.Id}
-                                              value={city.Name}
+                                              value={city.code} // Gửi mã code khi chọn
                                               onSelect={(currentValue) => {
-                                                setSelectedCity(
-                                                  currentValue === selectedCity
+                                                setSelectedprovince_code(
+                                                  currentValue ===
+                                                    selectedprovince_code
                                                     ? null
                                                     : currentValue
-                                                );
-                                                setOpenCity(false);
-                                                field.onChange(currentValue); // Update form field value
+                                                ); // Lưu mã code
+                                                setOpenprovince_code(false);
+                                                field.onChange(currentValue); // Cập nhật giá trị mã code
                                               }}
                                             >
-                                              {city.Name}
+                                              {city.full_name}{' '}
+                                              {/* Hiển thị tên đầy đủ của thành phố */}
                                               <CheckIcon
                                                 className={cn(
                                                   'ml-auto h-4 w-4',
-                                                  selectedCity === city.Id
+                                                  selectedprovince_code ===
+                                                    city.code
                                                     ? 'opacity-100'
-                                                    : 'opacity-0'
+                                                    : 'opacity-0' // So sánh với mã code
                                                 )}
                                               />
                                             </CommandItem>
@@ -1454,9 +558,12 @@ const CategoryPage1020 = () => {
                                     </Command>
                                   </PopoverContent>
                                 </Popover>
-                                {form.formState.errors.city && (
+                                {form.formState.errors.province_code && (
                                   <p className="text-red-600">
-                                    {form.formState.errors.city.message}
+                                    {
+                                      form.formState.errors.province_code
+                                        .message
+                                    }
                                   </p>
                                 )}
                               </>
@@ -1464,9 +571,10 @@ const CategoryPage1020 = () => {
                           </FormItem>
                         )}
                       />
+
                       <FormField
                         control={form.control}
-                        name="province_code"
+                        name="district_code"
                         render={({ field }) => (
                           <FormItem className="flex items-center gap-4">
                             <FormControl>
@@ -1481,13 +589,13 @@ const CategoryPage1020 = () => {
                                       role="combobox"
                                       aria-expanded={opendistrict}
                                       className="w-full justify-between"
-                                      disabled={!selectedCity}
+                                      disabled={!selectedprovince_code}
                                     >
                                       {selectedDistrict
                                         ? districts.find(
                                             (district) =>
-                                              district.Name === selectedDistrict
-                                          )?.Name
+                                              district.code === selectedDistrict
+                                          )?.full_name
                                         : 'Chọn quận'}
                                       <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
@@ -1506,26 +614,27 @@ const CategoryPage1020 = () => {
                                           {districts.map((district) => (
                                             <CommandItem
                                               key={district.Id}
-                                              value={district.Name}
+                                              value={district.code} // Set value to district code
                                               onSelect={(currentValue) => {
                                                 setSelectedDistrict(
                                                   currentValue ===
                                                     selectedDistrict
                                                     ? null
                                                     : currentValue
-                                                );
+                                                ); // Lưu mã code
                                                 setOpenDistrict(false);
-                                                field.onChange(currentValue); // Update form field value
+                                                field.onChange(currentValue); // Cập nhật giá trị mã code
                                               }}
                                             >
-                                              {district.Name}
+                                              {district.full_name}{' '}
+                                              {/* Hiển thị tên đầy đủ của quận */}
                                               <CheckIcon
                                                 className={cn(
                                                   'ml-auto h-4 w-4',
                                                   selectedDistrict ===
-                                                    district.Id
+                                                    district.code
                                                     ? 'opacity-100'
-                                                    : 'opacity-0'
+                                                    : 'opacity-0' // So sánh với mã code
                                                 )}
                                               />
                                             </CommandItem>
@@ -1545,6 +654,7 @@ const CategoryPage1020 = () => {
                           </FormItem>
                         )}
                       />
+
                       <FormField
                         control={form.control}
                         name="ward_code"
@@ -1566,8 +676,8 @@ const CategoryPage1020 = () => {
                                     >
                                       {selectedWard
                                         ? wards.find(
-                                            (ward) => ward.Name === selectedWard
-                                          )?.Name
+                                            (ward) => ward.code === selectedWard
+                                          )?.full_name
                                         : 'Chọn huyện'}
                                       <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
@@ -1586,24 +696,25 @@ const CategoryPage1020 = () => {
                                           {wards.map((ward) => (
                                             <CommandItem
                                               key={ward.Id}
-                                              value={ward.Name}
+                                              value={ward.code} // Set value to ward code
                                               onSelect={(currentValue) => {
                                                 setSelectedWard(
                                                   currentValue === selectedWard
                                                     ? null
                                                     : currentValue
-                                                );
+                                                ); // Lưu mã code
                                                 setOpenWard(false);
-                                                field.onChange(currentValue); // Update form field value
+                                                field.onChange(currentValue); // Cập nhật giá trị mã code
                                               }}
                                             >
-                                              {ward.Name}
+                                              {ward.full_name}{' '}
+                                              {/* Hiển thị tên đầy đủ của huyện */}
                                               <CheckIcon
                                                 className={cn(
                                                   'ml-auto h-4 w-4',
-                                                  selectedWard === ward.Id
+                                                  selectedWard === ward.code
                                                     ? 'opacity-100'
-                                                    : 'opacity-0'
+                                                    : 'opacity-0' // So sánh với mã code
                                                 )}
                                               />
                                             </CommandItem>

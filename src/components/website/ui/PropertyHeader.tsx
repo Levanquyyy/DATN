@@ -7,6 +7,8 @@ interface PropertyHeaderProps {
 }
 
 export function PropertyHeader({ data }: PropertyHeaderProps) {
+  console.log(data);
+
   return (
     <div className="flex items-center gap-4 mb-6  ">
       <h1 className="text-3xl font-bold">Property Information</h1>

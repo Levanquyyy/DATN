@@ -16,7 +16,7 @@ import { jwtDecode } from 'jwt-decode';
 import { useState, useEffect } from 'react';
 import { FaFacebookF } from 'react-icons/fa6';
 import { useAppStore, useStore } from '@/store';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import apiClient from '@/lib/api-client';
 import { SIGNUP_ROUTE, SIGNIN_ROUTE } from '@/utilities/constant';
@@ -234,6 +234,11 @@ const Auth = () => {
                   </button>
                 </div>
               </div>
+
+              <Link to="/reset_password">
+                <p className="text-center my-3">Quên mật khẩu?</p>
+              </Link>
+
               <div className="space-y-1">
                 <p className="text-center my-2">Hoặc</p>
                 <div className="flex flex-col sm:flex-row gap-3">

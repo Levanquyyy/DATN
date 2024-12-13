@@ -1,23 +1,17 @@
 import apiClient from '@/lib/api-client.js';
 import Cookies from 'js-cookie';
+import axios from 'axios';
 export const fetchUserInfo = async () => {
-  const access_token = Cookies.get('access_token');
-
-  if (access_token) {
-    try {
-      const response = await apiClient.get(
-        `${import.meta.env.VITE_SERVER_URL}/api/auth/user`
-      );
-      return response.data;
-    } catch (error) {
-      console.error(
-        'Error fetching user info:',
-        error.response?.data || error.message
-      );
-      return null;
-    }
-  } else {
-    console.error('No access token found');
+  try {
+    const response = await apiClient.get(
+      `${import.meta.env.VITE_SERVER_URL}/api/auth/user`
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      'Error fetching user info:',
+      error.response?.data || error.message
+    );
     return null;
   }
 };
@@ -47,5 +41,36 @@ export const updateUser = async (values, id) => {
       error.response?.data || error.message
     );
     return false;
+  }
+};
+
+export const forgotPassword = async (values) => {
+  try {
+    const res = await axios.post(
+      `${import.meta.env.VITE_SERVER_URL}/api/forgot-password`,
+      { email: values }
+    );
+
+    return res.data;
+  } catch (error) {
+    console.error(
+      'Error forgot password:',
+      error.response?.data || error.message
+    );
+    return false;
+  }
+};
+export const confirmPasswordReset = async ({ password, id }) => {
+  try {
+    const response = await axios.post(
+      `http://127.0.0.1:8000/api/password/reset/${id}`,
+      {
+        password,
+        id,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response.data;
   }
 };

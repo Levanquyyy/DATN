@@ -2,12 +2,9 @@ import { useEffect, useState } from 'react';
 import Sidebar from '@/components/ui/sidebar';
 import Header from '@/components/ui/header.tsx';
 import { CaretSortIcon, CheckIcon } from '@radix-ui/react-icons';
-import { cn } from '@/lib/utils';
-import { Slider } from '@/components/ui/slider';
+
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import apiClient from '@/lib/api-client';
-import { GET_DATA_PRODUCT_RENTHOUSE } from '@/utilities/constant';
+
 import {
   Select,
   SelectContent,
@@ -43,7 +40,6 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import PropertyListings from '@/components/ui/property-listing';
@@ -51,26 +47,17 @@ import { Button } from '@/components/ui/button';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import axios from 'axios';
-import { toast } from 'sonner';
-import { getFilterData } from '@/routes/apiforRentHouse.jsx';
-const FormSchema = z.object({
-  city: z.string().min(1, {
-    message: 'Vui lòng chọn tỉnh thành',
-  }),
-  district: z.string().min(1, {
-    message: 'Vui lòng chọn quận',
-  }),
-  ward: z.string().min(1, {
-    message: 'Vui lòng chọn huyện',
-  }),
-  space: z.string().optional(),
-});
-const FormSchemaFortransactionTypes = z.object({
-  transactionTypes: z.string().min(1, {
-    message: 'Vui lòng chọn loại hình',
-  }),
-});
+
+import {
+  bedRoomId,
+  getFilterData,
+  minMaxPrice,
+} from '@/routes/apiforRentHouse.jsx';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
+import { fetchLocation } from '@/routes/apiforLocation.jsx';
+
 const FormSchemaForTypeOfHouse = z.object({
   typeOfHouse: z.string().min(1, {
     message: 'Vui lòng chọn loại nhà ở',
@@ -78,32 +65,28 @@ const FormSchemaForTypeOfHouse = z.object({
 });
 
 const FormSchemaForbed = z.object({
-  items: z.array(z.string()).refine((value) => value.some((item) => item), {
-    message: 'You have to select at least one item.',
-  }),
+  bedroom_id: z.string().nonempty('You have to select at least one item.'),
 });
-const FormSchemaForProjects = z.object({
-  items: z.array(z.string()).refine((value) => value.some((item) => item), {
-    message: 'You have to select at least one item.',
-  }),
-});
+
 const FormSchemaForPrices = z.object({
   minPrice: z.string().nonempty('Min price is required'),
   maxPrice: z.string().nonempty('Max price is required'),
 });
+const FormSchema = z.object({
+  province_code: z.string().min(1, {
+    message: 'Vui lòng chọn tỉnh thành',
+  }),
+
+  district_code: z.string().min(1, {
+    message: 'Vui lòng chọn quận',
+  }),
+
+  ward_code: z.string().min(1, {
+    message: 'Vui lòng chọn phường ',
+  }),
+});
 
 const NhatotPage = () => {
-  const [cities, setCities] = useState([]);
-  const [wards, setWards] = useState([]);
-  const [districts, setDistricts] = useState([]);
-  const [selectedCity, setSelectedCity] = useState(null);
-  const [selectedDistrict, setSelectedDistrict] = useState(null);
-  const [selectedWard, setSelectedWard] = useState(null);
-  const [opencity, setOpenCity] = useState(false);
-  const [opendistrict, setOpenDistrict] = useState(false);
-  const [openward, setOpenWard] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const [sliderValue, setSliderValue] = useState();
   const [open, setOpen] = useState(false);
   const [openforBed, setOpenforBed] = useState(false);
   const [openforPrice, setOpenforPrice] = useState(false);
@@ -116,29 +99,79 @@ const NhatotPage = () => {
     category: 'Nhà ở',
     userType: 'Tất cả',
   });
+  const [cities, setCities] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [wards, setWards] = useState([]);
+
+  const [selectedprovince_code, setSelectedprovince_code] = useState(null);
+  const [selectedDistrict, setSelectedDistrict] = useState(null);
+  const [selectedWard, setSelectedWard] = useState(null);
+
+  const [openprovince_code, setOpenprovince_code] = useState(false);
+  const [opendistrict, setOpenDistrict] = useState(false);
+  const [openward, setOpenWard] = useState(false);
+  const form = useForm({
+    resolver: zodResolver(FormSchema),
+    defaultValues: {
+      nameofbuilding: 'Wuys 1',
+      // citi: "",
+      namedistrict: 'Levanquy',
+
+      condition_interior: '',
+      typeofhouse: '',
+      bedroom_id: '',
+      legal_id: '',
+
+      content: 'dsadasd',
+      province_code: '',
+      numberofstreet: '123165',
+      positionBDS: '23/20',
+      block: '5',
+      floor: '6',
+      bathroom_id: '',
+      viewbalcony: '',
+      main_door_id: '',
+      subdivision_code: 'phan khu 1',
+      propertyofhouse: '',
+      horizontal: '',
+      length: '',
+      // fix
+      usable_area: 0,
+      cost: 0,
+
+      land_area: 0,
+
+      ward_code: '',
+
+      code: `${Math.random().toString(36).substr(2, 9)}`,
+      type_product: 1,
+      type_rental: 3,
+      category_id: 1,
+
+      images: '',
+      video: '1',
+      cost_deposit: 0,
+      car_alley: false,
+      back_house: false,
+      blooming_house: false,
+      not_completed_yet: false,
+      land_not_changed_yet: false,
+      planning_or_road: false,
+      diff_situation: false,
+      approved: 2,
+      type_user: false,
+      district_code: '',
+    },
+  });
+  const handleRentSubmit = (data) => {
+    // onSubmit(data, true);
+    console.log(data);
+  };
   const [errors, setErrors] = useState({
     city: null,
     district: null,
     ward: null,
   });
-
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       const response = await apiClient.get(
-  //         `${import.meta.env.VITE_SERVER_URL}/${GET_DATA_PRODUCT_RENTHOUSE}`
-  //       );
-  //       setDataFromServer(response.data.data);
-  //     } catch (error) {
-  //       console.error('Signin error:', error.response?.data || error.message);
-  //       toast.error(
-  //         `Signin failed: ${error.response?.data?.message || error.message}`
-  //       );
-  //     }
-  //   };
-  //
-  //   fetchData();
-  // }, []);
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -153,55 +186,40 @@ const NhatotPage = () => {
     fetchData();
   }, []);
 
+  // xu ly viec lay location
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await axios.get(
-          'https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json'
-        );
-        setCities(res.data);
-        // console.log(res.data);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
+    const fetchCities = async () => {
+      const data = await fetchLocation('provinces', 1);
+      setCities(data);
     };
-
-    fetchData();
+    fetchCities();
   }, []);
-  useEffect(() => {
-    if (selectedCity) {
-      const city = cities.find((city) => city.Name === selectedCity);
-      setDistricts(city?.Districts || []);
-      setSelectedDistrict(null);
-      setWards([]);
-      setSelectedWard(null);
-    }
-  }, [selectedCity, cities]);
 
+  // Fetch districts when a city is selected
+  useEffect(() => {
+    if (selectedprovince_code) {
+      const fetchDistricts = async () => {
+        const data = await fetchLocation('districts', selectedprovince_code);
+        console.log('districts', data);
+        setDistricts(data);
+        setSelectedDistrict(null); // Reset selected district when province_code changes
+      };
+      fetchDistricts();
+    }
+  }, [selectedprovince_code]);
+
+  // Fetch wards when a district is selected
   useEffect(() => {
     if (selectedDistrict) {
-      const district = districts.find(
-        (district) => district.Name === selectedDistrict
-      );
-      setWards(district?.Wards || []);
-      setSelectedWard(null);
+      const fetchWards = async () => {
+        const data = await fetchLocation('wards', selectedDistrict);
+        setWards(data);
+        setSelectedWard(null); // Reset selected ward when district changes
+      };
+      fetchWards();
     }
-  }, [selectedDistrict, districts]);
-  const form = useForm({
-    resolver: zodResolver(FormSchema),
-    defaultValues: {
-      city: '',
-      district: '',
-      ward: '',
-      space: '',
-    },
-  });
-  const formFortransactionTypes = useForm({
-    resolver: zodResolver(FormSchemaFortransactionTypes),
-    defaultValues: {
-      transactionTypes: '',
-    },
-  });
+  }, [selectedDistrict]);
+
   const formForTypeOfHouse = useForm({
     resolver: zodResolver(FormSchemaForTypeOfHouse),
     defaultValues: {
@@ -211,15 +229,10 @@ const NhatotPage = () => {
   const formForBed = useForm({
     resolver: zodResolver(FormSchemaForbed),
     defaultValues: {
-      items: [],
+      bedroom_id: '',
     },
   });
-  const formForProjects = useForm({
-    resolver: zodResolver(FormSchemaForProjects),
-    defaultValues: {
-      items: '',
-    },
-  });
+
   const formForPrices = useForm({
     resolver: zodResolver(FormSchemaForPrices),
     defaultValues: {
@@ -227,83 +240,6 @@ const NhatotPage = () => {
       maxPrice: '',
     },
   });
-
-  const transactionTypes = ['Mua bán', 'Cho thuê'];
-  const filterbypricetag = [
-    { label: 'Tin mới trước', value: 'newest' },
-    { label: 'Giá thấp trước', value: 'low-to-high' },
-    { label: 'Giá cao trước', value: 'high-to-low' },
-  ];
-  const projects = [
-    { value: '152-dien-bien-phu', label: '152 Điện Biên Phủ' },
-    { value: '2t-corporation', label: '2T Corporation' },
-    { value: '319-bo-de', label: '319 Bồ Đề' },
-    {
-      value: '4s-riverside-garden-binh-trieu',
-      label: '4S Riverside Garden Bình Triệu',
-    },
-    { value: '4s-riverside-linh-dong', label: '4S Riverside Linh Đông' },
-    {
-      value: '84-tho-nhuom-hanoi-apartment-center',
-      label: '84 Thợ Nhuộm - Hanoi Apartment Center',
-    },
-    { value: '8x-dam-sen', label: '8x Đầm Sen' },
-    { value: '9-view-apartment', label: '9 View Apartment' },
-    { value: '9x-ciao-quan-9', label: '9X CIAO Quận 9' },
-    { value: 'a10-a14-nam-trung-yen', label: 'A10-A14 Nam Trung Yên' },
-    {
-      value: 'ab-central-square-nha-trang',
-      label: 'AB Central Square Nha Trang',
-    },
-    { value: 'ac-building', label: 'AC Building' },
-    { value: 'acb-office-building', label: 'ACB Office Building' },
-    { value: 'acbr-office-building', label: 'ACBR Office Building' },
-    {
-      value: 'aio-city-sonata-residences',
-      label: 'AIO City (Sonata Residences)',
-    },
-    { value: 'aqh-riverside', label: 'AQH Riverside' },
-    { value: 'at-home', label: 'AT Home' },
-    { value: 'az-lam-vien-complex', label: 'AZ Lâm Viên Complex' },
-    { value: 'abacus-tower', label: 'Abacus Tower' },
-    { value: 'acenza-villas', label: 'Acenza Villas' },
-    { value: 'adi-lucky-home', label: 'Adi Lucky Home' },
-    { value: 'aeon-mall-long-bien', label: 'Aeon Mall Long Biên' },
-    { value: 'agrex-tower-building', label: 'Agrex Tower Building' },
-    { value: 'airlink-city', label: 'Airlink City' },
-    { value: 'airlink-city-3', label: 'Airlink City 3' },
-    { value: 'airlink-residence', label: 'Airlink Residence' },
-    { value: 'airlink-town', label: 'Airlink Town' },
-    { value: 'akari-city', label: 'Akari City' },
-    { value: 'alibaba-long-phuoc', label: 'Alibaba Long Phước' },
-    { value: 'alibaba-tan-thanh', label: 'Alibaba Tân Thành' },
-    { value: 'aloha-beach-village', label: 'Aloha Beach Village' },
-    { value: 'alpha-city-87-cong-quynh', label: 'Alpha City 87 Cống quỳnh' },
-    { value: 'alpha-tower', label: 'Alpha Tower' },
-    { value: 'alphanam-luxury-apartment', label: 'Alphanam Luxury Apartment' },
-    { value: 'altara-residences', label: 'Altara Residences' },
-    { value: 'alva-plaza-binh-duong', label: 'Alva Plaza Bình Dương' },
-    { value: 'amber-court', label: 'Amber Court' },
-    { value: 'amber-riverside', label: 'Amber Riverside' },
-    { value: 'amelie-villa-phu-my-hung', label: 'Amelie Villa Phú Mỹ Hưng' },
-    {
-      value: 'an-binh-building-chung-cu-an-binh-1-dinh-cong',
-      label: 'An Bình Building (Chung cư An Bình 1 Định Công)',
-    },
-    { value: 'an-binh-city', label: 'An Bình City' },
-    { value: 'an-binh-green-home', label: 'An Bình Green Home' },
-    {
-      value: 'an-binh-plaza-sunshine-tower',
-      label: 'An Bình Plaza (Sunshine Tower)',
-    },
-    { value: 'an-binh-plaza-ha-noi', label: 'An Bình Plaza_Hà Nội' },
-    { value: 'an-binh-quan-tan-phu', label: 'An Bình Quận Tân Phú' },
-    { value: 'an-binh-tower', label: 'An Bình Tower' },
-    { value: 'an-binh-riverside-2', label: 'An Bình Riverside 2' },
-    { value: 'an-cuu-city', label: 'An Cựu City' },
-    { value: 'an-dan-residence', label: 'An Dân Residence' },
-    { value: 'an-gia-garden', label: 'An Gia Garden' },
-  ];
 
   const options = [
     {
@@ -381,44 +317,10 @@ const NhatotPage = () => {
     { label: 'Đất Đà Nẵng', value: 'dat-danang' },
   ];
 
-  const onSubmitForLocation = (data) => {
-    let hasError = false;
-    const newErrors = { city: null, district: null, ward: null };
-
-    if (!selectedCity) {
-      newErrors.city = 'Vui lòng chọn tỉnh thành.';
-      hasError = true;
-    }
-    if (!selectedDistrict) {
-      newErrors.district = 'Vui lòng chọn quận.';
-      hasError = true;
-    }
-    if (!selectedWard) {
-      newErrors.ward = 'Vui lòng chọn huyện.';
-      hasError = true;
-    }
-
-    setErrors(newErrors);
-
-    if (!hasError) {
-      // setFormData(data, imageNames, video, true);
-      // toast.success("Form submitted successfully!");
-      // navigate("/preview");
-      console.log(data);
-    }
-  };
-  const onChnagetransactionTypes = (data) => {
-    console.log({ data });
-    if (data === 'Mua bán') {
-      setForSale(true);
-    } else {
-      setForSale(false);
-    }
-  };
   const onChange = (data) => {
     console.log({ data });
   };
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     const minPrice = parseCurrency(data.minPrice);
     const maxPrice = parseCurrency(data.maxPrice);
 
@@ -426,8 +328,10 @@ const NhatotPage = () => {
       setErrorMessage('Giá tối thiểu không được lớn hơn giá tối đa');
     } else {
       setErrorMessage('');
+      console.log({ minPrice, maxPrice });
       // Proceed with form submission
-      console.log(data);
+      const res = await minMaxPrice(minPrice, maxPrice);
+      setDataFromServer(res.data);
     }
   };
   const onChageCategory = (category) => {
@@ -445,16 +349,9 @@ const NhatotPage = () => {
     console.log({ ...filterbyCategory, userType });
   };
 
-  const onSubmitForBed = (data) => {
-    console.log(data);
-  };
-  const onChangeForProjects = (currentValue) => {
-    console.log('Selected project:', currentValue);
-  };
-
-  const handleSliderChange = (event) => {
-    const value = event.target.value;
-    setSliderValue(value);
+  const onSubmitForBed = async (data) => {
+    const res = await bedRoomId(data);
+    console.log(res);
   };
 
   const formatCurrency = (value) => {
@@ -489,65 +386,39 @@ const NhatotPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                 <div className="relative border rounded-md flex ">
                   <Popover>
-                    <PopoverTrigger className="w-full ">
+                    <PopoverTrigger className="w-full h-9  text-left py-2 px-3">
                       Toàn quốc
                     </PopoverTrigger>
                     <PopoverContent>
                       <Form {...form}>
                         <form
-                          onSubmit={form.handleSubmit(onSubmitForLocation)}
-                          className=""
+                          onSubmit={form.handleSubmit(handleRentSubmit)}
+                          className="space-y-8"
                         >
                           <FormField
                             control={form.control}
-                            name="space"
-                            render={({ field }) => (
-                              <FormItem className="">
-                                <FormLabel>Khoảng cách bạn muốn tìm</FormLabel>
-                                <div className="flex items-center gap-3">
-                                  <Input
-                                    placeholder="Nhập số km bạn muốn"
-                                    {...field}
-                                    value={sliderValue}
-                                    onChange={handleSliderChange}
-                                  />
-                                  <span>KM</span>
-                                </div>
-                                <FormControl>
-                                  <Slider
-                                    value={[sliderValue]}
-                                    max={100}
-                                    step={1}
-                                    onChange={handleSliderChange}
-                                  />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="city"
+                            name="province_code"
                             render={({ field }) => (
                               <FormItem className="flex items-center gap-4">
                                 <FormControl>
                                   <>
                                     <Popover
-                                      open={opencity}
-                                      onOpenChange={setOpenCity}
+                                      open={openprovince_code}
+                                      onOpenChange={setOpenprovince_code}
                                     >
                                       <PopoverTrigger asChild>
                                         <Button
                                           variant="outline"
                                           role="combobox"
-                                          aria-expanded={opencity}
+                                          aria-expanded={openprovince_code}
                                           className="w-full justify-between"
                                         >
-                                          {selectedCity
+                                          {selectedprovince_code
                                             ? cities.find(
                                                 (city) =>
-                                                  city.Name === selectedCity
-                                              )?.Name
+                                                  city.code ===
+                                                  selectedprovince_code
+                                              )?.full_name
                                             : 'Chọn tỉnh thành'}
                                           <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                         </Button>
@@ -566,27 +437,29 @@ const NhatotPage = () => {
                                               {cities.map((city) => (
                                                 <CommandItem
                                                   key={city.Id}
-                                                  value={city.Name}
+                                                  value={city.code} // Gửi mã code khi chọn
                                                   onSelect={(currentValue) => {
-                                                    setSelectedCity(
+                                                    setSelectedprovince_code(
                                                       currentValue ===
-                                                        selectedCity
+                                                        selectedprovince_code
                                                         ? null
                                                         : currentValue
-                                                    );
-                                                    setOpenCity(false);
+                                                    ); // Lưu mã code
+                                                    setOpenprovince_code(false);
                                                     field.onChange(
                                                       currentValue
-                                                    ); // Update form field value
+                                                    ); // Cập nhật giá trị mã code
                                                   }}
                                                 >
-                                                  {city.Name}
+                                                  {city.full_name}{' '}
+                                                  {/* Hiển thị tên đầy đủ của thành phố */}
                                                   <CheckIcon
                                                     className={cn(
                                                       'ml-auto h-4 w-4',
-                                                      selectedCity === city.Id
+                                                      selectedprovince_code ===
+                                                        city.code
                                                         ? 'opacity-100'
-                                                        : 'opacity-0'
+                                                        : 'opacity-0' // So sánh với mã code
                                                     )}
                                                   />
                                                 </CommandItem>
@@ -596,9 +469,12 @@ const NhatotPage = () => {
                                         </Command>
                                       </PopoverContent>
                                     </Popover>
-                                    {form.formState.errors.city && (
+                                    {form.formState.errors.province_code && (
                                       <p className="text-red-600">
-                                        {form.formState.errors.city.message}
+                                        {
+                                          form.formState.errors.province_code
+                                            .message
+                                        }
                                       </p>
                                     )}
                                   </>
@@ -606,9 +482,10 @@ const NhatotPage = () => {
                               </FormItem>
                             )}
                           />
+
                           <FormField
                             control={form.control}
-                            name="district"
+                            name="district_code"
                             render={({ field }) => (
                               <FormItem className="flex items-center gap-4">
                                 <FormControl>
@@ -623,14 +500,14 @@ const NhatotPage = () => {
                                           role="combobox"
                                           aria-expanded={opendistrict}
                                           className="w-full justify-between"
-                                          disabled={!selectedCity}
+                                          disabled={!selectedprovince_code}
                                         >
                                           {selectedDistrict
                                             ? districts.find(
                                                 (district) =>
-                                                  district.Name ===
+                                                  district.code ===
                                                   selectedDistrict
-                                              )?.Name
+                                              )?.full_name
                                             : 'Chọn quận'}
                                           <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                         </Button>
@@ -649,28 +526,29 @@ const NhatotPage = () => {
                                               {districts.map((district) => (
                                                 <CommandItem
                                                   key={district.Id}
-                                                  value={district.Name}
+                                                  value={district.code} // Set value to district code
                                                   onSelect={(currentValue) => {
                                                     setSelectedDistrict(
                                                       currentValue ===
                                                         selectedDistrict
                                                         ? null
                                                         : currentValue
-                                                    );
+                                                    ); // Lưu mã code
                                                     setOpenDistrict(false);
                                                     field.onChange(
                                                       currentValue
-                                                    ); // Update form field value
+                                                    ); // Cập nhật giá trị mã code
                                                   }}
                                                 >
-                                                  {district.Name}
+                                                  {district.full_name}{' '}
+                                                  {/* Hiển thị tên đầy đủ của quận */}
                                                   <CheckIcon
                                                     className={cn(
                                                       'ml-auto h-4 w-4',
                                                       selectedDistrict ===
-                                                        district.Id
+                                                        district.code
                                                         ? 'opacity-100'
-                                                        : 'opacity-0'
+                                                        : 'opacity-0' // So sánh với mã code
                                                     )}
                                                   />
                                                 </CommandItem>
@@ -690,9 +568,10 @@ const NhatotPage = () => {
                               </FormItem>
                             )}
                           />
+
                           <FormField
                             control={form.control}
-                            name="ward"
+                            name="ward_code"
                             render={({ field }) => (
                               <FormItem className="flex items-center gap-4">
                                 <FormControl>
@@ -712,8 +591,8 @@ const NhatotPage = () => {
                                           {selectedWard
                                             ? wards.find(
                                                 (ward) =>
-                                                  ward.Name === selectedWard
-                                              )?.Name
+                                                  ward.code === selectedWard
+                                              )?.full_name
                                             : 'Chọn huyện'}
                                           <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                         </Button>
@@ -732,27 +611,28 @@ const NhatotPage = () => {
                                               {wards.map((ward) => (
                                                 <CommandItem
                                                   key={ward.Id}
-                                                  value={ward.Name}
+                                                  value={ward.code} // Set value to ward code
                                                   onSelect={(currentValue) => {
                                                     setSelectedWard(
                                                       currentValue ===
                                                         selectedWard
                                                         ? null
                                                         : currentValue
-                                                    );
+                                                    ); // Lưu mã code
                                                     setOpenWard(false);
                                                     field.onChange(
                                                       currentValue
-                                                    ); // Update form field value
+                                                    ); // Cập nhật giá trị mã code
                                                   }}
                                                 >
-                                                  {ward.Name}
+                                                  {ward.full_name}{' '}
+                                                  {/* Hiển thị tên đầy đủ của huyện */}
                                                   <CheckIcon
                                                     className={cn(
                                                       'ml-auto h-4 w-4',
-                                                      selectedWard === ward.Id
+                                                      selectedWard === ward.code
                                                         ? 'opacity-100'
-                                                        : 'opacity-0'
+                                                        : 'opacity-0' // So sánh với mã code
                                                     )}
                                                   />
                                                 </CommandItem>
@@ -772,52 +652,14 @@ const NhatotPage = () => {
                               </FormItem>
                             )}
                           />
-                          <div className="flex justify-end gap-3">
-                            <Button
-                              variant
-                              onClick={() => window.location.reload()}
-                            >
-                              Xóa lọc
-                            </Button>
-                            <Button type="submit">Áp dụng</Button>
-                          </div>
+                          <Button type="submit" className="w-full">
+                            Lọc
+                          </Button>
                         </form>
                       </Form>
                     </PopoverContent>
                   </Popover>
 
-                  <FaChevronDown className="absolute right-3 top-3 " />
-                </div>
-
-                <div className="relative">
-                  <Form {...formFortransactionTypes}>
-                    <form>
-                      <FormField
-                        control={formFortransactionTypes.control}
-                        name="transactionTypes"
-                        render={({ field }) => (
-                          <Select
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              onChnagetransactionTypes(value);
-                            }}
-                          >
-                            <SelectTrigger className="">
-                              <SelectValue placeholder="Chọn loại hình" />
-                            </SelectTrigger>
-
-                            <SelectContent>
-                              {transactionTypes.map((type, index) => (
-                                <SelectItem key={index} value={type}>
-                                  {type}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </form>
-                  </Form>
                   <FaChevronDown className="absolute right-3 top-3 " />
                 </div>
 
@@ -1015,47 +857,7 @@ const NhatotPage = () => {
                         />
                         <CommandList>
                           <CommandEmpty>Không tìm thấy dự án</CommandEmpty>
-                          <CommandGroup>
-                            <Form {...formForProjects}>
-                              <form className="space-y-8 p-5">
-                                <FormField
-                                  control={formForProjects.control}
-                                  name="items"
-                                  render={({ field }) => (
-                                    <>
-                                      {projects.map((project) => (
-                                        <CommandItem
-                                          key={project.value}
-                                          value={project.value}
-                                          onSelect={(currentValue) => {
-                                            field.onChange(currentValue);
-                                            setValue(
-                                              currentValue === value
-                                                ? ''
-                                                : currentValue
-                                            );
-                                            setOpen(false);
-                                            // Xử lý thay đổi trực tiếp thay vì submit
-                                            onChangeForProjects(currentValue);
-                                          }}
-                                        >
-                                          {project.label}
-                                          <CheckIcon
-                                            className={cn(
-                                              'ml-auto h-4 w-4',
-                                              value === project.value
-                                                ? 'opacity-100'
-                                                : 'opacity-0'
-                                            )}
-                                          />
-                                        </CommandItem>
-                                      ))}
-                                    </>
-                                  )}
-                                />
-                              </form>
-                            </Form>
-                          </CommandGroup>
+                          <CommandGroup></CommandGroup>
                         </CommandList>
                       </Command>
                     </PopoverContent>
@@ -1067,7 +869,6 @@ const NhatotPage = () => {
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        role="combobox"
                         aria-expanded={open}
                         className="w-full justify-between"
                       >
@@ -1085,36 +886,33 @@ const NhatotPage = () => {
                         >
                           <FormField
                             control={formForBed.control}
-                            name="items"
+                            name="bedroom_id"
                             render={({ field }) => (
-                              <FormItem>
-                                {options.map((item) => (
-                                  <FormItem
-                                    key={item.id}
-                                    className="flex flex-row items-start space-x-3 space-y-0"
+                              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroup
+                                    defaultValue="comfortable"
+                                    value={field.value}
+                                    onValueChange={(value) =>
+                                      field.onChange(value)
+                                    }
                                   >
-                                    <FormControl>
-                                      <Checkbox
-                                        checked={field.value?.includes(item.id)}
-                                        onCheckedChange={(checked) => {
-                                          return checked
-                                            ? field.onChange([
-                                                ...field.value,
-                                                item.id,
-                                              ])
-                                            : field.onChange(
-                                                field.value?.filter(
-                                                  (value) => value !== item.id
-                                                )
-                                              );
-                                        }}
-                                      />
-                                    </FormControl>
-                                    <FormLabel className="text-sm font-normal">
-                                      {item.label}
-                                    </FormLabel>
-                                  </FormItem>
-                                ))}
+                                    {options?.map((item, index) => (
+                                      <div
+                                        key={index}
+                                        className="flex items-center space-x-2"
+                                      >
+                                        <RadioGroupItem
+                                          value={item.id}
+                                          id={`r${item.id}`}
+                                        />
+                                        <Label htmlFor={`r${item.id}`}>
+                                          {item.label}
+                                        </Label>
+                                      </div>
+                                    ))}
+                                  </RadioGroup>
+                                </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -1176,36 +974,6 @@ const NhatotPage = () => {
                         {type}
                       </button>
                     ))}
-                  </div>
-                  <div>
-                    <Form {...formFortransactionTypes}>
-                      <form>
-                        <FormField
-                          control={formFortransactionTypes.control}
-                          name="transactionTypes"
-                          render={({ field }) => (
-                            <Select
-                              onValueChange={(value) => {
-                                field.onChange(value);
-                                onChnagetransactionTypes(value);
-                              }}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Sắp xếp theo giá" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {filterbypricetag.map((type, index) => (
-                                  <SelectItem key={index} value={type.value}>
-                                    {type.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                      </form>
-                    </Form>
-                    <FaChevronDown className="absolute right-3 top-3" />
                   </div>
                 </div>
               </div>

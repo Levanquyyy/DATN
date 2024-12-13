@@ -5,7 +5,6 @@ import {
   FaEye,
   FaMapMarkerAlt,
   FaCalendarAlt,
-  FaClock,
   FaHeart,
   FaPlus,
   FaStore,
@@ -225,104 +224,106 @@ const BillPage = () => {
                 ))}
               </div>
             </div>
-            {currentProducts.map((item) => (
-              <div
-                className="bg-white rounded-lg shadow-lg overflow-hidden"
-                key={item.id}
-              >
-                <div className="md:flex">
-                  <div className="md:w-1/2">
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="w-full h-[400px] object-cover"
-                    />
-                  </div>
+            {currentProducts.map((item) => {
+              const firstImageUrl = item.images[0]; // Get the first image URL
 
-                  <div className="md:w-1/2 p-6">
-                    <div className="flex justify-between items-start">
-                      <h1 className="text-2xl font-bold text-gray-800">
-                        {item.title}
-                      </h1>
-                      <button
-                        onClick={() => setIsLiked(!isLiked)}
-                        className={`p-2 rounded-full ${
-                          isLiked ? 'text-red-500' : 'text-gray-400'
-                        }`}
-                      >
-                        <FaHeart className="text-xl" />
-                      </button>
-                    </div>
-
-                    <div className="mt-4 flex items-center">
-                      <FaCoins className="mr-2" />
-                      <p className="text-3xl font-bold text-blue-600">
-                        {item.cost}
-                      </p>
-                    </div>
-
-                    <div className="mt-6 space-y-3">
-                      <div className="flex items-center text-gray-600">
-                        <FaMapMarkerAlt className="mr-2" />
-                        <span>
-                          {item.province_code + ' - ' + item.ward_code}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center text-gray-600">
-                        <FaCalendarAlt className="mr-2" />
-                        <span>
-                          Ngày đăng tin:{' '}
-                          {format(new Date(item.updated_at), 'dd/MM/yyyy')}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center text-gray-600">
-                        <FaEye className="mr-2" />
-                        <span>{item.views} lượt xem</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-8 space-x-4">
-                      <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                        Xem chi tiết
-                      </button>
-                      <PostItem
-                        key={item.id}
-                        id={item.id}
-                        onHiddenToggle={handleHiddenToggle}
-                      />
-                      <button
-                        className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-                        onClick={() => checkLoadBtn(item.id)}
-                      >
-                        Đẩy tin ({item.load_btn_post})
-                      </button>
-                      <PostBoostPurchase
-                        isOpen={flagged}
-                        onClose={() => setFlagged(false)}
-                        onPurchase={handlePurchase}
+              return (
+                <div
+                  className="bg-white rounded-lg shadow-lg overflow-hidden"
+                  key={item.id}
+                >
+                  <div className="md:flex">
+                    <div className="md:w-1/2">
+                      <img
+                        src={firstImageUrl}
+                        alt={`${item.title} 1`}
+                        className="w-full h-[400px] object-cover"
                       />
                     </div>
 
-                    <div className="mt-6">
-                      <h2 className="font-semibold text-gray-700">
-                        Dịch vụ gần đây
-                      </h2>
-                      <p className="text-gray-500 mt-1">
-                        {item.type_posting_id === 1
-                          ? 'đăng tin thường'
-                          : item.type_posting_id === 2
-                            ? 'đăng tin VIP'
-                            : item.type_posting_id === 3
-                              ? 'đăng tin ưu tiên'
-                              : 'Chưa mua gói'}
-                      </p>
+                    <div className="md:w-1/2 p-6">
+                      <div className="flex justify-between items-start">
+                        <h1 className="text-2xl font-bold text-gray-800">
+                          {item.title}
+                        </h1>
+                        <button
+                          onClick={() => setIsLiked(!isLiked)}
+                          className={`p-2 rounded-full ${isLiked ? 'text-red-500' : 'text-gray-400'}`}
+                        >
+                          <FaHeart className="text-xl" />
+                        </button>
+                      </div>
+
+                      <div className="mt-4 flex items-center">
+                        <FaCoins className="mr-2" />
+                        <p className="text-3xl font-bold text-blue-600">
+                          {item.cost}
+                        </p>
+                      </div>
+
+                      <div className="mt-6 space-y-3">
+                        <div className="flex items-center text-gray-600">
+                          <FaMapMarkerAlt className="mr-2" />
+                          <span>
+                            {item.province_code + ' - ' + item.ward_code}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center text-gray-600">
+                          <FaCalendarAlt className="mr-2" />
+                          <span>
+                            Ngày đăng tin:{' '}
+                            {format(new Date(item.updated_at), 'dd/MM/yyyy')}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center text-gray-600">
+                          <FaEye className="mr-2" />
+                          <span>{item.views} lượt xem</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-8 space-x-4">
+                        <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                          Xem chi tiết
+                        </button>
+                        <PostItem
+                          key={item.id}
+                          id={item.id}
+                          onHiddenToggle={handleHiddenToggle}
+                        />
+                        <button
+                          className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                          onClick={() => checkLoadBtn(item.id)}
+                        >
+                          Đẩy tin ({item.load_btn_post})
+                        </button>
+                        <PostBoostPurchase
+                          isOpen={flagged}
+                          onClose={() => setFlagged(false)}
+                          onPurchase={handlePurchase}
+                        />
+                      </div>
+
+                      <div className="mt-6">
+                        <h2 className="font-semibold text-gray-700">
+                          Dịch vụ gần đây
+                        </h2>
+                        <p className="text-gray-500 mt-1">
+                          {item.type_posting_id === 1
+                            ? 'đăng tin thường'
+                            : item.type_posting_id === 2
+                              ? 'đăng tin VIP'
+                              : item.type_posting_id === 3
+                                ? 'đăng tin ưu tiên'
+                                : 'Chưa mua gói'}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </main>
       </div>

@@ -261,18 +261,21 @@ const DetailPage = () => {
   useEffect(() => {
     const nhaDat = searchParams.get('nhadat');
     const id = searchParams.get('id');
-    if (id) {
-      const fetchData = async () => {
+
+    const fetchData = async () => {
+      if (id) {
         const res = await getDataProductByIdRent(id); // Giả sử đây là API
+
         const mappedData = mapApiDataToPropertyDetails(res.data);
         setData(mappedData); // Lưu trữ vào state
-      };
+        console.log(123);
+      }
+    };
 
-      fetchData();
-    }
+    fetchData();
+
     if (nhaDat) {
       setIsNhaDat(true);
-      console.log('nhaDat:', nhaDat); // Kiểm tra giá trị của query parameter
     } else {
       setIsNhaDat(false);
     }

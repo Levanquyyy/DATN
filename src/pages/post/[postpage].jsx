@@ -16,8 +16,6 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { v4 as uuidv4 } from 'uuid';
 
-import { format, isBefore, startOfDay } from 'date-fns';
-
 import apiClient from '@/lib/api-client';
 import { GET_DATA_POSTINGTYPE1 } from '@/utilities/constant';
 import { getDecryptedCookie } from '@/store/cookies/cookies.js';
@@ -25,29 +23,19 @@ import { toast } from 'sonner';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getDataProductByIdRent } from '@/routes/apiforRentHouse.jsx';
 import { fetchUserInfo } from '@/routes/apiforUser.jsx';
-import { postPayment } from '@/routes/apiforpayment.jsx';
+import { postPayment, postPaymentForPaypal } from '@/routes/apiforpayment.jsx';
 
 const PropertyPost = ({ id }) => {
   const navigate = useNavigate();
   const [postingType, setPostingType] = useState([]);
-  const [selectedService, setSelectedService] = useState(null);
-  const [date, setDate] = React.useState();
-  const [time, setTime] = React.useState();
+
   const [selectedDays, setSelectedDays] = React.useState();
-  const [selectedOption, setSelectedOption] = React.useState(null);
-  const [posting_data_type, setPosting_data_type] = useState([]);
-  const [selectedTimeSlots, setSelectedTimeSlots] = useState([]);
+
   const [isFirstOptionExpanded, setIsFirstOptionExpanded] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [postCount, setPostCount] = useState(1);
-  const today = startOfDay(new Date());
   const [saveindex, setSaveIndex] = useState(0);
-  useEffect(() => {
-    setSelectedTimeSlots([]);
-  }, [selectedOption]);
-  const isDateDisabled = (date) => {
-    return isBefore(date, today);
-  };
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
 
   const calculateTotalPrice = () => {
     let totalPrice = 0;
@@ -77,12 +65,6 @@ const PropertyPost = ({ id }) => {
           `${import.meta.env.VITE_SERVER_URL}/${GET_DATA_POSTINGTYPE1}`
         );
         setPostingType(response.data.data);
-
-        response.data.data.map((item) => {
-          if (item.code === 'nZa6Z81KVR') {
-            setPosting_data_type(item.posting_data_type);
-          }
-        });
       } catch (error) {
         console.error('Signin error:', error.response?.data || error.message);
         toast.error(
@@ -128,7 +110,7 @@ const PropertyPost = ({ id }) => {
 
   const createTransformedData = (userData, product_id, totalPrice) => {
     const transformSelectedDays = parseInt(selectedDays);
-    const transformTime = parseInt(selectedOption);
+
     console.log(transformSelectedDays);
     const vnp_txnref = uuidv4();
     if (userData && product_id && totalPrice) {
@@ -144,6 +126,30 @@ const PropertyPost = ({ id }) => {
       return;
     }
   };
+  const transformDataForPaypal = (userData, product_id, totalPrice) => {
+    const transformSelectedDays = parseInt(selectedDays);
+
+    console.log(transformSelectedDays);
+    if (userData && product_id && totalPrice) {
+      return {
+        user_id: userData,
+        product_id: product_id,
+        type_posting_id: saveindex,
+        load_key_post: postCount,
+        price: totalPrice,
+      };
+    } else {
+      return;
+    }
+  };
+  const handlePaymentMethodSelect = (method) => {
+    setSelectedPaymentMethod(method);
+    // console.log(`Selected payment method: ${method}`);
+
+    toast.success(
+      `Đã chọn phương thức thanh toán: ${method === 'vnpay' ? 'VNPay' : 'PayPal'}`
+    );
+  };
 
   const onSubmit = async () => {
     const getData = await getDataProductByIdRent(id);
@@ -154,6 +160,7 @@ const PropertyPost = ({ id }) => {
     total = parseFloat(total.replace(/[^\d.-]/g, '')) * 1000;
     if (!getData || !getUser) {
       toast.error('Sản phẩm không hợp lệ! hoặc bạn chưa đăng nhập');
+      return;
     }
 
     try {
@@ -162,16 +169,31 @@ const PropertyPost = ({ id }) => {
         getData.data.id,
         total
       );
+      const transformedDataForPaypal = transformDataForPaypal(
+        getUser.id,
+        getData.data.id,
+        total
+      );
 
       if (transformedData === undefined) {
         navigate('/myads');
-      } else {
+      } else if (selectedPaymentMethod === 'vnpay') {
+        transformedData.payment_method = selectedPaymentMethod;
         const paymentResponse = await postPayment(transformedData);
-
         if (paymentResponse.message === 'success') {
           window.open(paymentResponse.data, '_blank');
-          toast.success('Payment successful!');
+          toast.success(`Payment successful with ${selectedPaymentMethod}!`);
         }
+      } else if (selectedPaymentMethod === 'paypal') {
+        const paymentResponse = await postPaymentForPaypal(
+          transformedDataForPaypal
+        );
+        if (paymentResponse.message === 'Thanh toán thành công') {
+          window.open(paymentResponse.approval_link, '_blank');
+          toast.success(`Payment successful with ${selectedPaymentMethod}!`);
+          // console.log(123);
+        }
+        console.log('Paypal');
       }
     } catch (error) {
       toast.error(
@@ -179,17 +201,7 @@ const PropertyPost = ({ id }) => {
       );
     }
   };
-  const handleTimeChange = (selectedTime) => {
-    console.log('Selected time: ', selectedTime);
 
-    setSelectedTimeSlots((prev) => {
-      if (prev.includes(selectedTime)) {
-        return prev.filter((item) => item !== selectedTime);
-      } else {
-        return [...prev, selectedTime];
-      }
-    });
-  };
   return (
     <div className="w-full max-w-3xl mx-auto p-4 space-y-6">
       <Card>
@@ -314,11 +326,49 @@ const PropertyPost = ({ id }) => {
             ))}
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between items-center">
+        <CardFooter className="flex flex-col items-start space-y-4">
           <div className="text-lg font-semibold">
             Tổng tiền: {calculateTotalPrice()}
           </div>
-          <Button size="lg" className="px-8" onClick={onSubmit}>
+          <div className="flex flex-col space-y-2 w-full">
+            <p className="font-medium">Chọn phương thức thanh toán:</p>
+            <div className="flex space-x-4">
+              <Button
+                variant={
+                  selectedPaymentMethod === 'vnpay' ? 'default' : 'outline'
+                }
+                onClick={() => handlePaymentMethodSelect('vnpay')}
+                className="flex-1 h-20 flex flex-col items-center justify-center"
+              >
+                <img
+                  src="/imgs/vnpay.png"
+                  alt="VNPay logo"
+                  className="h-10 w-20 object-contain mb-2"
+                />
+                <span>VNPay</span>
+              </Button>
+              <Button
+                variant={
+                  selectedPaymentMethod === 'paypal' ? 'default' : 'outline'
+                }
+                onClick={() => handlePaymentMethodSelect('paypal')}
+                className="flex-1 h-20 flex flex-col items-center justify-center"
+              >
+                <img
+                  src="/imgs/paypal.png"
+                  alt="VNPay logo"
+                  className="h-10 w-20 object-contain mb-2"
+                />
+                <span>PayPal</span>
+              </Button>
+            </div>
+          </div>
+          <Button
+            size="lg"
+            className="px-8 w-full"
+            onClick={onSubmit}
+            disabled={!selectedPaymentMethod}
+          >
             Thanh Toán
           </Button>
         </CardFooter>
