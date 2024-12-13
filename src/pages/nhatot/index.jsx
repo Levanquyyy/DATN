@@ -57,6 +57,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { fetchLocation } from '@/routes/apiforLocation.jsx';
+import { PropertyFilterSkeleton } from '@/components/ui/PropertyFilterSkeleton';
 
 const FormSchemaForTypeOfHouse = z.object({
   typeOfHouse: z.string().min(1, {
@@ -110,6 +111,7 @@ const NhatotPage = () => {
   const [openprovince_code, setOpenprovince_code] = useState(false);
   const [opendistrict, setOpenDistrict] = useState(false);
   const [openward, setOpenWard] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const form = useForm({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -172,6 +174,7 @@ const NhatotPage = () => {
     district: null,
     ward: null,
   });
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -316,7 +319,18 @@ const NhatotPage = () => {
     { label: 'Nhà đất Bình Dương', value: 'nhadat-binhduong' },
     { label: 'Đất Đà Nẵng', value: 'dat-danang' },
   ];
+  useEffect(() => {
+    // Simulate loading delay
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
 
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return <PropertyFilterSkeleton />;
+  }
   const onChange = (data) => {
     console.log({ data });
   };
