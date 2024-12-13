@@ -12,6 +12,7 @@ import BillPage from './pages/bill/[bill].jsx';
 import Profile from './pages/profile/[profile].jsx';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
+import Snowfall from 'react-snowfall'
 import { useEffect, useState } from 'react';
 const AuthRoutes = ({ children }) => {
   const access_token = Cookies.get('access_token');
@@ -94,6 +95,14 @@ function App() {
               path="/nhatot"
               element={
                 <PrivateRoute>
+                  <Snowfall
+                    // Changes the snowflake color
+                    color="grey"
+                    // Applied to the canvas element
+                    style={{ background: 'transparent', zIndex: 1 }}
+                    // Controls the number of snowflakes that are created (default 150)
+                    snowflakeCount={200}
+                  />
                   <NhatotPage />
                 </PrivateRoute>
               }
