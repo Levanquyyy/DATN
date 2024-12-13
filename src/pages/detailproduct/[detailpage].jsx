@@ -1,4 +1,5 @@
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+
 import Sidebar from '@/components/ui/sidebar';
 import Header from '@/components/ui/header.tsx';
 import { Button } from '@/components/ui/button';
@@ -95,7 +96,8 @@ import { FaStar, FaStarHalfAlt } from 'react-icons/fa';
 import Cookies from 'js-cookie';
 import { getDataProductByIdRent } from '@/routes/apiforRentHouse.jsx';
 import { fetchUserInfo } from '@/routes/apiforUser.jsx';
-import { PropertyHeader } from '@/components/website/ui/PropertyHeader.tsx';
+
+import { Badge } from '@/components/ui/badge';
 const DetailPage = () => {
   // nha dat
   const [searchParams] = useSearchParams();
@@ -130,6 +132,7 @@ const DetailPage = () => {
   const [loanTenure, setLoanTenure] = useState('');
   const [monthlyPayment, setMonthlyPayment] = useState(null);
   const [showDetailedDescription, setShowDetailedDescription] = useState(false);
+
   const rating = 0;
   const totalReviews = 0;
 
@@ -185,31 +188,6 @@ const DetailPage = () => {
     setShowDetailedDescription((prev) => !prev);
   };
 
-  const imagesForHouse = [
-    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2',
-    'https://images.unsplash.com/photo-1564013799919-ab600027ffc6',
-    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750',
-    'https://images.unsplash.com/photo-1512915922686-57c11dde9b6b',
-  ];
-
-  const mapApiDataToPropertyDetails = (apiData) => ({
-    address: `${apiData.ward_code || 'N/A'}, ${apiData.district_code || 'N/A'}, ${
-      apiData.province_code || 'N/A'
-    }`,
-    pricePerSqm: apiData.cost ? `${apiData.cost} VND` : 'N/A',
-    status: apiData.status || 0,
-    bedrooms: apiData.bedroom_id || 0,
-    floors: apiData.floor || 0,
-    legalStatus: 'Full ownership',
-    propertyType: 'Townhouse',
-    width: `${apiData.horizontal || 0}m`,
-    description: apiData.content || 'No description available',
-    detailedDescription: apiData.title || 'No details available',
-    images: apiData.images
-      ? apiData.images.split(',').map((img) => `url_path/${img}`)
-      : [],
-  });
-
   const chartData = {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
     datasets: [
@@ -258,6 +236,8 @@ const DetailPage = () => {
   const [activeImage, setActiveImage] = useState(0);
   const [showContact, setShowContact] = useState(false);
   const [showWarranty, setShowWarranty] = useState(false);
+  const [imgsFromApi, setImgsFromApi] = useState([]);
+
   useEffect(() => {
     const nhaDat = searchParams.get('nhadat');
     const id = searchParams.get('id');
@@ -266,9 +246,10 @@ const DetailPage = () => {
       if (id) {
         const res = await getDataProductByIdRent(id); // Giả sử đây là API
 
-        const mappedData = mapApiDataToPropertyDetails(res.data);
-        setData(mappedData); // Lưu trữ vào state
-        console.log(123);
+        // const mappedData = mapApiDataToPropertyDetails(res.data);
+        setData(res.data); // Lưu trữ vào state
+        setImgsFromApi(res.data.images);
+        console.log(res.data.images);
       }
     };
 
@@ -280,18 +261,15 @@ const DetailPage = () => {
       setIsNhaDat(false);
     }
   }, [location.search]);
-  const images = [
-    'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
-    'https://images.unsplash.com/photo-1558980664-769d59546b3d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
-    'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
-  ];
 
   const nextImage = () => {
-    setActiveImage((prev) => (prev + 1) % images.length);
+    setActiveImage((prev) => (prev + 1) % imgsFromApi.length);
   };
 
   const prevImage = () => {
-    setActiveImage((prev) => (prev - 1 + images.length) % images.length);
+    setActiveImage(
+      (prev) => (prev - 1 + imgsFromApi.length) % imgsFromApi.length
+    );
   };
 
   const similarListings = [
@@ -322,13 +300,20 @@ const DetailPage = () => {
         <Header />
         {isNhaDat ? (
           <div className="max-w-7xl mx-auto p-6 b rounded-lg shadow-lg">
-            <PropertyHeader data={data} />
+            <div className="flex items-center gap-4 mb-6  ">
+              <h1 className="text-3xl font-bold">Thông tin sản phẩm</h1>
+              {data.status === 0 ? (
+                <Badge variant="destructive">Đã bán</Badge>
+              ) : (
+                <Badge variant="default">Còn trống</Badge>
+              )}
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
                 <div className="relative h-96 mb-4 rounded-lg overflow-hidden shadow-md">
                   <img
-                    src={imagesForHouse[activeImage]}
+                    src={imgsFromApi[activeImage]}
                     alt={`Full size property view ${activeImage + 1}`}
                     className="w-full h-full object-cover cursor-pointer"
                     onClick={toggleFullImage}
@@ -350,7 +335,7 @@ const DetailPage = () => {
                 </div>
 
                 <div className="flex space-x-2 mb-4 overflow-x-auto">
-                  {imagesForHouse.map((img, index) => (
+                  {imgsFromApi.map((img, index) => (
                     <img
                       key={index}
                       src={img}
@@ -365,25 +350,25 @@ const DetailPage = () => {
 
                 <div className=" p-6 rounded-lg shadow-md">
                   <h2 className="text-2xl font-semibold mb-4 ">
-                    Property Details
+                    Thông tin chi tiết
                   </h2>
-                  <p className=" mb-2">Address: {data.address}</p>
-                  <p className=" mb-2">Price per sqm: {data.pricePerSqm}</p>
+
+                  <p className=" mb-2">Giá thuê {data.cost_deposit}</p>
                   <div className="flex items-center mb-2">
                     <FaBed className="mr-2" />
-                    <span>{data.bedrooms} Bedrooms</span>
+                    <span>{data.bedroom_id} phòng ngủ</span>
                   </div>
                   <div className="flex items-center mb-2">
                     <FaBuilding className="mr-2" />
-                    <span>{data.floors} Floors</span>
+                    <span>{data.floor} cửa chính</span>
                   </div>
                   <div className="flex items-center mb-2">
                     <FaFileAlt className="mr-2" />
-                    <span>Legal Status: {data.legalStatus}</span>
+                    <span>Tình trạng nôij thất: đầy đủ</span>
                   </div>
                   <div className="flex items-center mb-2">
                     <FaRulerCombined className="mr-2" />
-                    <span>Width: {data.width}</span>
+                    <span>Chiều dài: {data.length} m²</span>
                   </div>
                   <p className="mt-4">{data.description}</p>
                   <button
@@ -398,7 +383,8 @@ const DetailPage = () => {
                   {showDetailedDescription && (
                     <div className="mt-4 p-4 dark:bg-gray-100 dark:text-black rounded-lg">
                       <pre className="whitespace-pre-wrap text-sm">
-                        {data.detailedDescription}
+                        {data.content}
+                        {data.title}
                       </pre>
                     </div>
                   )}
@@ -716,7 +702,7 @@ const DetailPage = () => {
                 onClick={toggleFullImage}
               >
                 <img
-                  src={imagesForHouse[activeImage]}
+                  src={imgsFromApi[activeImage]}
                   alt={`Full size property view ${activeImage + 1}`}
                   className="max-w-full max-h-full object-contain"
                 />
@@ -770,7 +756,7 @@ const DetailPage = () => {
                     <div className="relative h-64 md:h-full">
                       <img
                         className="w-full h-full object-cover"
-                        src={images[activeImage]}
+                        src={imgsFromApi[activeImage]}
                         alt={`Product image ${activeImage + 1}`}
                       />
                       <button
@@ -789,7 +775,7 @@ const DetailPage = () => {
                       </button>
                     </div>
                     <div className="flex mt-4 space-x-2 overflow-x-auto p-2">
-                      {images.map((img, index) => (
+                      {imgsFromApi.map((img, index) => (
                         <img
                           key={index}
                           src={img}

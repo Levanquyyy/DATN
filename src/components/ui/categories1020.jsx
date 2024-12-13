@@ -318,7 +318,6 @@ const CategoryPage1020 = () => {
     }
   }, [selectedDistrict]);
 
-  const [video, setVideo] = useState([]);
 
   // Update the handleFileChange function
   const handleFileChange = (event) => {
