@@ -80,7 +80,7 @@ const PropertyPost = ({ id }) => {
       if (index === 0) {
         // Tin thường
         if (checked) {
-          setSaveIndex(1); // Set index value = 1 cho Tin thường
+          setSaveIndex(1);
           return [1];
         } else {
           return prev.filter((opt) => opt !== 1 && opt !== 3);
@@ -88,16 +88,25 @@ const PropertyPost = ({ id }) => {
       } else if (index === 1) {
         // Tin Vip
         if (checked) {
-          setSaveIndex(4); // Set index value = 4 cho Tin Vip
+          setSaveIndex(4);
           return [2];
         } else {
-          return prev.filter((opt) => opt !== 2);
+          return prev.filter((opt) => opt !== 2 && opt !== 3);
         }
       } else if (index === 2) {
         // Load tin
         if (checked) {
-          setSaveIndex(1); // Set index value = 4 (Load tin thuộc cùng loại)
-          return [...new Set([...prev, 1, 3])];
+          if (prev.includes(1)) {
+            setSaveIndex(1);
+            return [...new Set([...prev, 3])];
+          } else if (prev.includes(2)) {
+            setSaveIndex(4);
+            return [...new Set([...prev, 3])];
+          } else {
+            // If neither Tin thường nor Tin Vip is selected, default to Tin thường
+            setSaveIndex(1);
+            return [1, 3];
+          }
         } else {
           return prev.filter((opt) => opt !== 3);
         }
@@ -105,7 +114,9 @@ const PropertyPost = ({ id }) => {
       return prev;
     });
 
-    setIsFirstOptionExpanded((prev) => (index === 0 ? checked : prev));
+    setIsFirstOptionExpanded((prev) =>
+      index === 0 || index === 1 ? checked : prev
+    );
   };
 
   const createTransformedData = (userData, product_id, totalPrice) => {
@@ -227,7 +238,6 @@ const PropertyPost = ({ id }) => {
                       onCheckedChange={(checked) =>
                         handleCheckboxChange(index, checked)
                       }
-                      disabled={index === 1 && selectedOptions.includes(1)}
                     />
                     <div className="flex-1 space-y-2">
                       <label
@@ -244,7 +254,7 @@ const PropertyPost = ({ id }) => {
                       <ul className="list-disc list-inside text-sm text-muted-foreground mt-2 space-y-1">
                         <li>{service.benefits}</li>
                       </ul>
-                      {index === 0 && isFirstOptionExpanded && (
+                      {selectedOptions.includes(index + 1) && (
                         <Card className="mt-4 border border-dashed">
                           <CardContent className="p-4">
                             <div className="flex items-start space-x-4">

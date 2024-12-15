@@ -8,37 +8,37 @@ import Header from '@/components/ui/header.tsx';
 const items = [
   {
     id: 1,
-    image: 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131',
+    image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa',
     text: 'Bất động sản',
   },
   {
     id: 2,
-    image: 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131',
+    image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf',
     text: 'Xe cộ',
   },
   {
     id: 3,
-    image: 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131',
+    image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661',
     text: 'Đồ điện tử',
   },
   {
     id: 4,
-    image: 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131',
+    image: 'https://images.unsplash.com/photo-1556228453-efd6c1ff04f6',
     text: 'Đồ gia dụng, nội thất, cây cảnh',
   },
   {
     id: 5,
-    image: 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131',
+    image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211',
     text: 'Giải trí, Thể thao, Sở thích',
   },
   {
     id: 6,
-    image: 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131',
+    image: 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9',
     text: 'Mẹ và bé',
   },
   {
     id: 7,
-    image: 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131',
+    image: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800',
     text: 'Dịch vụ, Du lịch',
   },
 ];

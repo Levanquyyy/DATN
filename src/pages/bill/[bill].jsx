@@ -27,12 +27,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { postPayment } from '@/routes/apiforpayment.jsx';
 const initialTabs = [
   { name: 'ĐANG HIỂN THỊ', count: 0 },
-  { name: 'HẾT HẠN', count: 0 },
-  { name: 'BỊ TỪ CHỐI', count: 0 },
-  { name: 'CẦN THANH TOÁN', count: 0 },
-  { name: 'TIN NHẬP', count: 0 },
-  { name: 'CHỜ DUYỆT', count: 0 },
-  { name: 'ĐÃ ẨN', count: 0 },
+  { name: 'Tin Vip', count: 0 },
+  { name: 'Đã ẩn', count: 0 },
 ];
 
 const BillPage = () => {
@@ -64,9 +60,6 @@ const BillPage = () => {
 
   const handlePurchase = async (amount) => {
     try {
-      // Simulating an API call
-      // await new Promise((resolve) => setTimeout(resolve, 1000));
-      // toast.success(`Đã mua thành công ${amount} lượt đẩy tin`);
       const vnp_txnref = uuidv4();
       const userInfo = await fetchUserInfo();
 
@@ -183,7 +176,7 @@ const BillPage = () => {
         <Header />
 
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-          <div className="max-w-7xl mx-auto p-4 bg-gray-50">
+          <div className="w-full  p-4 bg-gray-50">
             <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
               <div className="p-4 flex justify-between items-center border-b">
                 <div className="flex items-center space-x-4">
@@ -257,18 +250,11 @@ const BillPage = () => {
                       <div className="mt-4 flex items-center">
                         <FaCoins className="mr-2" />
                         <p className="text-3xl font-bold text-blue-600">
-                          {item.cost}
+                          {item.cost} VND
                         </p>
                       </div>
 
                       <div className="mt-6 space-y-3">
-                        <div className="flex items-center text-gray-600">
-                          <FaMapMarkerAlt className="mr-2" />
-                          <span>
-                            {item.province_code + ' - ' + item.ward_code}
-                          </span>
-                        </div>
-
                         <div className="flex items-center text-gray-600">
                           <FaCalendarAlt className="mr-2" />
                           <span>
@@ -276,10 +262,15 @@ const BillPage = () => {
                             {format(new Date(item.updated_at), 'dd/MM/yyyy')}
                           </span>
                         </div>
-
-                        <div className="flex items-center text-gray-600">
-                          <FaEye className="mr-2" />
-                          <span>{item.views} lượt xem</span>
+                        <div className="mt-6">
+                          <h2 className="font-semibold text-gray-700">
+                            Dịch vụ gần đây: {''}
+                            {item.type_posting_id === 1
+                              ? 'Đăng tin thường'
+                              : item.type_posting_id === 4
+                                ? 'Đăng tin VIP'
+                                : 'Gói không xác định'}
+                          </h2>
                         </div>
                       </div>
 
@@ -303,21 +294,6 @@ const BillPage = () => {
                           onClose={() => setFlagged(false)}
                           onPurchase={handlePurchase}
                         />
-                      </div>
-
-                      <div className="mt-6">
-                        <h2 className="font-semibold text-gray-700">
-                          Dịch vụ gần đây
-                        </h2>
-                        <p className="text-gray-500 mt-1">
-                          {item.type_posting_id === 1
-                            ? 'đăng tin thường'
-                            : item.type_posting_id === 2
-                              ? 'đăng tin VIP'
-                              : item.type_posting_id === 3
-                                ? 'đăng tin ưu tiên'
-                                : 'Chưa mua gói'}
-                        </p>
                       </div>
                     </div>
                   </div>

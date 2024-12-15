@@ -170,30 +170,30 @@ const PropertyDetails = memo(({ id }) => {
               />
               <DetailItem
                 icon={<FaBed />}
-                label="Bedrooms"
+                label="Số phòng ngủ"
                 value={data?.bedroom_id}
               />
               <DetailItem
                 icon={<FaBath />}
-                label="Bathrooms"
+                label="Số phòng tắm"
                 value={data?.bathroom_id}
               />
               <DetailItem
                 icon={<FaCompass />}
-                label="Main Door Direction"
+                label="Số tầng"
                 value={data?.main_door_id}
               />
               <DetailItem
                 icon={<FaFileContract />}
-                label="Legal Documents"
+                label="Bản hợp đồng hợp lệ"
                 value={data?.legal_id}
               />
               <DetailItem
                 icon={<FaCouch />}
-                label="Furnishing Status"
+                label="Tình trạng nội thất"
                 value={conditionInteriorValue}
               />
-              <DetailItem icon={<FaExpand />} label="Size" value="42 m²" />
+
               <DetailItem
                 icon={<FaRegBuilding />}
                 label="Phân khu/Lô"
