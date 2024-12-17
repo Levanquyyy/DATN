@@ -241,10 +241,6 @@ const NhatotPage = () => {
       id: '6',
       label: '6',
     },
-    {
-      id: 'more_than_6',
-      label: 'More than 6',
-    },
   ];
 
   const propertyCategories = [
@@ -336,8 +332,14 @@ const NhatotPage = () => {
   };
 
   const onSubmitForBed = async (data) => {
-    const res = await bedRoomId(data);
-    console.log(res);
+    const { bedroom_id } = data;
+    // console.log(bedroom_id);
+    try {
+      const res = await bedRoomId(bedroom_id);
+      setDataFromServer(res.data);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
   };
 
   const formatCurrency = (value) => {

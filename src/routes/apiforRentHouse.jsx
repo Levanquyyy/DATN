@@ -136,9 +136,9 @@ export const minMaxPrice = async (price_gte, price_lte) => {
 };
 export const bedRoomId = async (bedroom_id) => {
   try {
+    const endcodeId = encodeURIComponent(bedroom_id);
     const response = await apiClient.get(
-      `${import.meta.env.VITE_SERVER_URL}/api/auth/product/get-data-post?type=1`,
-      { params: { bedroom_id } } // Sử dụng `params` để truyền query parameters
+      `${import.meta.env.VITE_SERVER_URL}/api/auth/product/get-data-post?type=1&bedroom_id=${endcodeId}`
     );
     return response.data;
   } catch (error) {
