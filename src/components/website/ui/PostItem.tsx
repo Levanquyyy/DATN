@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 interface PostItemProps {
   id: string;
@@ -37,15 +38,8 @@ export function PostItem({ id, onHiddenToggle }: PostItemProps) {
   };
 
   return (
-    <button
-      className={`text-white px-6 py-2 rounded-lg transition-colors ${
-        isHidden
-          ? 'bg-yellow-600 hover:bg-yellow-700'
-          : 'bg-green-600 hover:bg-green-700'
-      }`}
-      onClick={handleHiddenToggle}
-    >
+    <Button variant="outline" onClick={handleHiddenToggle}>
       {isHidden ? 'Gỡ bỏ ẩn tin' : 'Ẩn tin'}
-    </button>
+    </Button>
   );
 }

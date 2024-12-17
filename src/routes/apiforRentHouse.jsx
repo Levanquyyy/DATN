@@ -41,7 +41,7 @@ export const getFilterData = async () => {
     const response = await apiClient.get(
       `${import.meta.env.VITE_SERVER_URL}/api/auth/product/get-data-post?type=1`
     );
-    return response.data;
+    return response.data.data;
   } catch (error) {
     console.error(
       'Error fetching product by id:',
@@ -141,6 +141,20 @@ export const bedRoomId = async (bedroom_id) => {
       { params: { bedroom_id } } // Sử dụng `params` để truyền query parameters
     );
     return response.data;
+  } catch (error) {
+    console.error(
+      'Error fetching product by id:',
+      error.response?.data || error.message
+    );
+    return null;
+  }
+};
+export const filterLocation = async (formattedString) => {
+  try {
+    const response = await apiClient.get(
+      `${import.meta.env.VITE_SERVER_URL}/api/auth/product/get-data-post?type=1&location=${formattedString}`
+    );
+    return response.data; // Return data from API
   } catch (error) {
     console.error(
       'Error fetching product by id:',

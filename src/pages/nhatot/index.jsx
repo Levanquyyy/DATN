@@ -50,6 +50,7 @@ import { z } from 'zod';
 
 import {
   bedRoomId,
+  filterLocation,
   getFilterData,
   minMaxPrice,
 } from '@/routes/apiforRentHouse.jsx';
@@ -58,6 +59,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { fetchLocation } from '@/routes/apiforLocation.jsx';
 import { PropertyFilterSkeleton } from '@/components/ui/PropertyFilterSkeleton';
+import { toast } from 'sonner';
 
 const FormSchemaForTypeOfHouse = z.object({
   typeOfHouse: z.string().min(1, {
@@ -78,13 +80,9 @@ const FormSchema = z.object({
     message: 'Vui lòng chọn tỉnh thành',
   }),
 
-  district_code: z.string().min(1, {
-    message: 'Vui lòng chọn quận',
-  }),
+  district_code: z.string().optional(),
 
-  ward_code: z.string().min(1, {
-    message: 'Vui lòng chọn phường ',
-  }),
+  ward_code: z.string().optional(),
 });
 
 const NhatotPage = () => {
@@ -115,71 +113,45 @@ const NhatotPage = () => {
   const form = useForm({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      nameofbuilding: 'Wuys 1',
-      // citi: "",
-      namedistrict: 'Levanquy',
-
-      condition_interior: '',
-      typeofhouse: '',
-      bedroom_id: '',
-      legal_id: '',
-
-      content: 'dsadasd',
-      province_code: '',
-      numberofstreet: '123165',
-      positionBDS: '23/20',
-      block: '5',
-      floor: '6',
-      bathroom_id: '',
-      viewbalcony: '',
-      main_door_id: '',
-      subdivision_code: 'phan khu 1',
-      propertyofhouse: '',
-      horizontal: '',
-      length: '',
-      // fix
-      usable_area: 0,
-      cost: 0,
-
-      land_area: 0,
-
       ward_code: '',
-
-      code: `${Math.random().toString(36).substr(2, 9)}`,
-      type_product: 1,
-      type_rental: 3,
-      category_id: 1,
-
-      images: '',
-      video: '1',
-      cost_deposit: 0,
-      car_alley: false,
-      back_house: false,
-      blooming_house: false,
-      not_completed_yet: false,
-      land_not_changed_yet: false,
-      planning_or_road: false,
-      diff_situation: false,
-      approved: 2,
-      type_user: false,
       district_code: '',
+      province_code: '',
     },
   });
-  const handleRentSubmit = (data) => {
-    // onSubmit(data, true);
-    console.log(data);
+  const formatLocationString = (data) => {
+    if (!data.district_code && !data.ward_code) {
+      return `${data.province_code}`;
+    } else if (!data.ward_code) {
+      return `${data.district_code}d${data.province_code}`;
+    } else {
+      return `${data.district_code}d${data.province_code}w${data.ward_code}`;
+    }
   };
-  const [errors, setErrors] = useState({
-    city: null,
-    district: null,
-    ward: null,
-  });
+
+  const handleRentSubmit = async (data) => {
+    console.log(data);
+    const formattedString = formatLocationString(data);
+    // console.log(formattedString); // Check the formatted string
+
+    try {
+      const res = await filterLocation(formattedString); // Gọi API với formatted string
+      console.log(res); // Kiểm tra dữ liệu trả về
+
+      if (res && res.data) {
+        setDataFromServer(res.data); // Gán dữ liệu vào state
+      } else {
+        setDataFromServer([]); // Xử lý khi không có dữ liệu
+      }
+    } catch {
+      toast.error('Error');
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await getFilterData();
-        setDataFromServer(res.data);
+        setDataFromServer(res);
         // console.log(res.data);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -678,98 +650,6 @@ const NhatotPage = () => {
                 </div>
 
                 <div className="relative">
-                  <Form {...formForTypeOfHouse}>
-                    <form>
-                      <FormField
-                        control={formForTypeOfHouse.control}
-                        name="typeOfHouse"
-                        render={({ field }) => (
-                          <Select
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              onChange(value);
-                            }}
-                          >
-                            <SelectTrigger className="">
-                              <SelectValue placeholder="Chọn loại hình nhà ở" />
-                            </SelectTrigger>
-
-                            <SelectContent>
-                              {typeofhouse.map((type, index) => (
-                                <SelectItem key={index} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </form>
-                  </Form>
-                </div>
-
-                <div className="relative">
-                  <Form {...formForTypeOfHouse}>
-                    <form>
-                      <FormField
-                        control={formForTypeOfHouse.control}
-                        name="typeOfHouse"
-                        render={({ field }) => (
-                          <Select
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              onChange(value);
-                            }}
-                          >
-                            <SelectTrigger className="">
-                              <SelectValue placeholder="Lọc theo khoảng giá" />
-                            </SelectTrigger>
-
-                            <SelectContent>
-                              {filterbyprice.map((type, index) => (
-                                <SelectItem key={index} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </form>
-                  </Form>
-                </div>
-                {/* fix */}
-                <div className="relative">
-                  <Form {...formForTypeOfHouse}>
-                    <form>
-                      <FormField
-                        control={formForTypeOfHouse.control}
-                        name="typeOfHouse"
-                        render={({ field }) => (
-                          <Select
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              onChange(value);
-                            }}
-                          >
-                            <SelectTrigger className="">
-                              <SelectValue placeholder="Loại hình nổi bật" />
-                            </SelectTrigger>
-
-                            <SelectContent>
-                              {highlightoftypes.map((type, index) => (
-                                <SelectItem key={index} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </form>
-                  </Form>
-                </div>
-                <div className="relative">
                   <Popover open={openforPrice} onOpenChange={setOpenforPrice}>
                     <PopoverTrigger asChild>
                       <Button
@@ -846,37 +726,7 @@ const NhatotPage = () => {
                     </PopoverContent>
                   </Popover>
                 </div>
-                {/* Projects filter */}
-                <div className="relative">
-                  <Popover open={open} onOpenChange={setOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={open}
-                        className="w-full justify-between"
-                      >
-                        {value
-                          ? projects.find((project) => project.value === value)
-                              ?.label
-                          : 'Chọn dự án'}
-                        <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[300px] p-0">
-                      <Command>
-                        <CommandInput
-                          placeholder="tìm dự án..."
-                          className="h-9"
-                        />
-                        <CommandList>
-                          <CommandEmpty>Không tìm thấy dự án</CommandEmpty>
-                          <CommandGroup></CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
+
                 <div className="relative">
                   {/* for bed */}
                   <Popover open={openforBed} onOpenChange={setOpenforBed}>
@@ -1000,7 +850,7 @@ const NhatotPage = () => {
                 {filterbyCategory.category === 'Nhà ở' &&
                   filterbyCategory.userType === 'Tất cả' && (
                     <>
-                      {dataFromServer.length === 0 ? (
+                      {dataFromServer?.length === 0 ? (
                         <div className="text-center">No data found</div>
                       ) : (
                         <PropertyListings dataFromServer={dataFromServer} />

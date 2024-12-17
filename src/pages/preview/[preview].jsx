@@ -3,7 +3,6 @@ import Header from '@/components/ui/header.tsx';
 import { Button } from '@/components/ui/button';
 
 import {
-  FaMapMarkerAlt,
   FaBed,
   FaBath,
   FaCompass,
