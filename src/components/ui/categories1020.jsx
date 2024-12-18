@@ -51,21 +51,21 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { fetchUserInfo } from '@/routes/apiforUser.jsx';
-import { postProduct } from '@/routes/apiforRentHouse.jsx';
+import { getdataTypeOfHouse, postProduct } from '@/routes/apiforRentHouse.jsx';
 import { fetchLocation } from '@/routes/apiforLocation.jsx';
 
 const FormSchema = z.object({
   nameofbuilding: z.string().min(2, {
     message: 'Vui lòng nhập tên tòa nhà',
   }),
-  condition_interior: z.string().min(1, {
+  condition_interior: z.number().min(1, {
     message: 'Vui lòng nhập nội thất',
   }),
   namedistrict: z.string().min(2, {
     message: 'Vui lòng nhâp tên đường',
   }),
 
-  legal_id: z.string().min(1, {
+  legal_id: z.number().min(1, {
     message: 'Vui lòng chọn giấy tờ pháp lý',
   }),
 
@@ -73,10 +73,10 @@ const FormSchema = z.object({
     message: 'Vui lòng chọn tỉnh thành',
   }),
 
-  typeofhouse: z.string().min(1, {
+  typeofhouse: z.number().min(1, {
     message: 'Vui lòng chọn loại hình căn hộ',
   }),
-  bedroom_id: z.string().min(1, {
+  bedroom_id: z.number().min(1, {
     message: 'Vui lòng chọn số phòng ngủ',
   }),
 
@@ -112,9 +112,9 @@ const FormSchema = z.object({
   floor: z.string().min(1, {
     message: 'Vui lòng nhập số tầng',
   }),
-  bathroom_id: z.string().optional(),
-  viewbalcony: z.string().optional(),
-  main_door_id: z.string().optional(),
+  bathroom_id: z.number().optional(),
+  viewbalcony: z.number().optional(),
+  main_door_id: z.number().optional(),
 
   subdivision_code: z.string().optional(),
   propertyofhouse: z.string().optional(),
@@ -183,7 +183,7 @@ const CategoryPage1020 = () => {
       category_id: 1,
 
       images: '',
-      video: '1',
+      video: '',
       cost_deposit: 0,
       car_alley: false,
       back_house: false,
@@ -215,7 +215,52 @@ const CategoryPage1020 = () => {
   // Add these state variables at the top with other useState declarations
   const [selectedImages, setSelectedImages] = useState([]);
   const [selectedVideo, setSelectedVideo] = useState(null);
+  const [typeOfHouse, setTypeOfHouse] = useState([]);
+  const [bedRoom, setBedRoom] = useState([]);
+  const [bathRoom, setBathRoom] = useState([]);
+  const [viewBalcony, setViewBalcony] = useState([]);
+  const [mainDoor, setMainDoor] = useState([]);
+  const [legal, setLegal] = useState([]);
+  const [interior, setInterior] = useState([]);
 
+  useEffect(() => {
+    const fetchDataTypeOfHouse = async () => {
+      const res = await getdataTypeOfHouse('loai-hinh-nha-o');
+      setTypeOfHouse(res);
+    };
+    const fetchDataBedRoom = async () => {
+      const res = await getdataTypeOfHouse('so-phong-ngu');
+      setBedRoom(res);
+    };
+    const fetchDataBathRoom = async () => {
+      const res = await getdataTypeOfHouse('so-phong-ve-sinh');
+      setBathRoom(res);
+    };
+    const fetchDataViewBalcony = async () => {
+      const res = await getdataTypeOfHouse('huong-ban-cong');
+      setViewBalcony(res);
+    };
+    const fetchDataMainDoor = async () => {
+      const res = await getdataTypeOfHouse('huong-cua-chinh');
+      setMainDoor(res);
+    };
+    const fetchDataLegal = async () => {
+      const res = await getdataTypeOfHouse('giay-to-phap-ly');
+      setLegal(res);
+    };
+    const fetchDatainterior = async () => {
+      const res = await getdataTypeOfHouse('tinh-trang-noi-that');
+      setInterior(res);
+    };
+
+    fetchDataTypeOfHouse();
+    fetchDataBedRoom();
+    fetchDataBathRoom();
+    fetchDataViewBalcony();
+    fetchDataMainDoor();
+    fetchDataLegal();
+    fetchDatainterior();
+  }, []);
   const CurrencyInput = ({ form, name, placeholder }) => {
     const [numericValue, setNumericValue] = useState(null);
     const [displayValue, setDisplayValue] = useState('');
@@ -273,12 +318,7 @@ const CategoryPage1020 = () => {
     district_code: null,
     ward: null,
   });
-  const funitureOptions = [
-    { value: '1', label: 'Nội thất cao cấp' },
-    { value: '2', label: 'Nội thất đầy đủ' },
-    { value: '3', label: 'Hoàn thiện cơ bản' },
-    { value: '4', label: 'Bàn giao thô' },
-  ];
+
   useEffect(() => {
     const access_token = Cookies.get('access_token');
     if (!access_token) {
@@ -318,11 +358,9 @@ const CategoryPage1020 = () => {
     }
   }, [selectedDistrict]);
 
-
   // Update the handleFileChange function
   const handleFileChange = (event) => {
     const files = Array.from(event.target.files);
-    console.log(files);
 
     setSelectedImages(files); // Store the actual files instead of just names
   };
@@ -331,8 +369,6 @@ const CategoryPage1020 = () => {
   const handleVideoChange = (event) => {
     const files = Array.from(event.target.files);
     setSelectedVideo(files[0]); // Store the first video file
-    const fileNames = files.map((file) => file.name);
-    setVideo(fileNames);
   };
 
   // Update the onSubmit function
@@ -376,7 +412,7 @@ const CategoryPage1020 = () => {
 
     // Append video if exists
     if (selectedVideo) {
-      formData.append('video', selectedVideo);
+      formData.append('file', selectedVideo);
     }
 
     let hasError = false;
@@ -811,27 +847,34 @@ const CategoryPage1020 = () => {
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
                             <FormLabel>Loại hình nhà ở:</FormLabel>
-                            <Select {...field} onValueChange={field.onChange}>
+                            <Select
+                              value={
+                                field.value ? field.value.toString() : undefined
+                              }
+                              onValueChange={(value) =>
+                                field.onChange(parseInt(value, 10))
+                              }
+                            >
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || 'Loại hình căn hộ'}
+                                  {field.value
+                                    ? typeOfHouse.find(
+                                        (type) => type.id === field.value
+                                      )?.name
+                                    : 'Loại hình căn hộ'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectGroup>
                                   <SelectLabel>Loại hình nhà ở:</SelectLabel>
-                                  <SelectItem value="Nhà mặt phố/ mặt tiền">
-                                    Nhà mặt phố/ mặt tiền
-                                  </SelectItem>
-                                  <SelectItem value="Nhà ngõ, hẻm">
-                                    Nhà ngõ, hẻm
-                                  </SelectItem>
-                                  <SelectItem value="Nhà biệt thự">
-                                    Nhà biệt thự
-                                  </SelectItem>
-                                  <SelectItem value="Nhà phố liền kề">
-                                    Nhà phố liền kề
-                                  </SelectItem>
+                                  {typeOfHouse.map((type) => (
+                                    <SelectItem
+                                      key={type.id}
+                                      value={type.id.toString()}
+                                    >
+                                      {type.name}
+                                    </SelectItem>
+                                  ))}
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
@@ -843,30 +886,41 @@ const CategoryPage1020 = () => {
                           </div>
                         )}
                       />
+
                       <FormField
                         control={form.control}
                         name="bedroom_id"
                         render={({ field }) => (
-                          <div className="mt-2 ">
+                          <div className="mt-2 flex flex-col gap-3">
                             <FormLabel>Số phòng ngủ: </FormLabel>
-                            <Select {...field} onValueChange={field.onChange}>
+                            <Select
+                              value={
+                                field.value ? field.value.toString() : undefined
+                              }
+                              onValueChange={(value) =>
+                                field.onChange(parseInt(value, 10))
+                              }
+                            >
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || 'Số phòng ngủ'}
+                                  {field.value
+                                    ? bedRoom.find(
+                                        (type) => type.id === field.value
+                                      )?.name
+                                    : 'Số phòng ngủ'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectGroup>
                                   <SelectLabel>Số phòng ngủ</SelectLabel>
-                                  <SelectItem value="1">1</SelectItem>
-                                  <SelectItem value="2">2</SelectItem>
-                                  <SelectItem value="3">3</SelectItem>
-                                  <SelectItem value="4">4</SelectItem>
-                                  <SelectItem value="5">5</SelectItem>
-                                  <SelectItem value="6">6</SelectItem>
-                                  <SelectItem value=">6">
-                                    Nhiều hơn 6
-                                  </SelectItem>
+                                  {bedRoom.map((type) => (
+                                    <SelectItem
+                                      key={type.id}
+                                      value={type.id.toString()}
+                                    >
+                                      {type.name}
+                                    </SelectItem>
+                                  ))}
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
@@ -878,30 +932,41 @@ const CategoryPage1020 = () => {
                           </div>
                         )}
                       />
+
                       <FormField
                         control={form.control}
                         name="bathroom_id"
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
                             <FormLabel>Số phòng vệ sinh</FormLabel>
-                            <Select {...field} onValueChange={field.onChange}>
+                            <Select
+                              value={
+                                field.value ? field.value.toString() : undefined
+                              }
+                              onValueChange={(value) =>
+                                field.onChange(parseInt(value, 10))
+                              }
+                            >
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || 'Số phòng vệ sinh'}
+                                  {field.value
+                                    ? bathRoom.find(
+                                        (type) => type.id === field.value
+                                      )?.name
+                                    : 'Số phòng vệ sinh'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectGroup>
                                   <SelectLabel>Số phòng vệ sinh</SelectLabel>
-                                  <SelectItem value="1">1</SelectItem>
-                                  <SelectItem value="2">2</SelectItem>
-                                  <SelectItem value="3">3</SelectItem>
-                                  <SelectItem value="4">4</SelectItem>
-                                  <SelectItem value="5">5</SelectItem>
-                                  <SelectItem value="6">6</SelectItem>
-                                  <SelectItem value="Nhiều hơn 6">
-                                    Nhiều hơn 6
-                                  </SelectItem>
+                                  {bathRoom.map((type) => (
+                                    <SelectItem
+                                      key={type.id}
+                                      value={type.id.toString()}
+                                    >
+                                      {type.name}
+                                    </SelectItem>
+                                  ))}
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
@@ -919,25 +984,34 @@ const CategoryPage1020 = () => {
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
                             <FormLabel>Hướng ban công</FormLabel>
-                            <Select {...field} onValueChange={field.onChange}>
+                            <Select
+                              value={
+                                field.value ? field.value.toString() : undefined
+                              }
+                              onValueChange={(value) =>
+                                field.onChange(parseInt(value, 10))
+                              }
+                            >
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || 'Hướng ban công:'}
+                                  {field.value
+                                    ? viewBalcony.find(
+                                        (type) => type.id === field.value
+                                      )?.name
+                                    : 'Hướng ban công:'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectGroup>
                                   <SelectLabel>Hướng ban công:</SelectLabel>
-                                  <SelectItem value="Đông">Đông</SelectItem>
-                                  <SelectItem value="Tây">Tây</SelectItem>
-                                  <SelectItem value="Nam">Nam</SelectItem>
-                                  <SelectItem value="Bắc">Bắc</SelectItem>
-                                  <SelectItem value="Đông Bắc">
-                                    Đông Bắc
-                                  </SelectItem>
-                                  <SelectItem value="Đông Nam">
-                                    Đông Nam
-                                  </SelectItem>
+                                  {viewBalcony.map((type) => (
+                                    <SelectItem
+                                      key={type.id}
+                                      value={type.id.toString()}
+                                    >
+                                      {type.name}
+                                    </SelectItem>
+                                  ))}
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
@@ -955,21 +1029,34 @@ const CategoryPage1020 = () => {
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
                             <FormLabel>Hướng cửa chính</FormLabel>
-                            <Select {...field} onValueChange={field.onChange}>
+                            <Select
+                              value={
+                                field.value ? field.value.toString() : undefined
+                              }
+                              onValueChange={(value) =>
+                                field.onChange(parseInt(value, 10))
+                              }
+                            >
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || 'Hướng cửa chính:'}
+                                  {field.value
+                                    ? mainDoor.find(
+                                        (type) => type.id === field.value
+                                      )?.name
+                                    : 'Hướng cửa chính:'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectGroup>
                                   <SelectLabel>Hướng cửa chính</SelectLabel>
-                                  <SelectItem value="1">Đông</SelectItem>
-                                  <SelectItem value="2">Tây</SelectItem>
-                                  <SelectItem value="3">Nam</SelectItem>
-                                  <SelectItem value="4">Bắc</SelectItem>
-                                  <SelectItem value="5">Đông Bắc</SelectItem>
-                                  <SelectItem value="6">Đông Nam</SelectItem>
+                                  {mainDoor.map((type) => (
+                                    <SelectItem
+                                      key={type.id}
+                                      value={type.id.toString()}
+                                    >
+                                      {type.name}
+                                    </SelectItem>
+                                  ))}
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
@@ -1088,25 +1175,34 @@ const CategoryPage1020 = () => {
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
                             <FormLabel>Thông tin khác</FormLabel>
-
-                            <Select {...field} onValueChange={field.onChange}>
+                            <Select
+                              value={
+                                field.value ? field.value.toString() : undefined
+                              }
+                              onValueChange={(value) =>
+                                field.onChange(parseInt(value, 10))
+                              }
+                            >
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || 'Giấy tờ pháp lý'}
+                                  {field.value
+                                    ? legal.find(
+                                        (type) => type.id === field.value
+                                      )?.name
+                                    : 'Giấy tờ pháp lý'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectGroup>
                                   <SelectLabel>Giấy tờ pháp lý:</SelectLabel>
-                                  <SelectItem value="1">Đã có sổ</SelectItem>
-                                  <SelectItem value="2">Đang chờ sổ</SelectItem>
-                                  <SelectItem value="3">Không có sổ</SelectItem>
-                                  <SelectItem value="4">
-                                    Sổ chung / công chứng vi bằng
-                                  </SelectItem>
-                                  <SelectItem value="5">
-                                    Giấy tờ viết tay
-                                  </SelectItem>
+                                  {legal.map((type) => (
+                                    <SelectItem
+                                      key={type.id}
+                                      value={type.id.toString()}
+                                    >
+                                      {type.name}
+                                    </SelectItem>
+                                  ))}
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
@@ -1124,22 +1220,32 @@ const CategoryPage1020 = () => {
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
                             <FormLabel>Nội thất</FormLabel>
-                            <Select {...field} onValueChange={field.onChange}>
+                            <Select
+                              value={
+                                field.value ? field.value.toString() : undefined
+                              }
+                              onValueChange={(value) =>
+                                field.onChange(parseInt(value, 10))
+                              }
+                            >
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || 'Nội thất'}
+                                  {field.value
+                                    ? interior.find(
+                                        (type) => type.id === field.value
+                                      )?.name
+                                    : 'Nội thất'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectGroup>
                                   <SelectLabel>Nội thất</SelectLabel>
-
-                                  {funitureOptions.map((option) => (
+                                  {interior.map((type) => (
                                     <SelectItem
-                                      key={option.value}
-                                      value={option.value}
+                                      key={type.id}
+                                      value={type.id.toString()}
                                     >
-                                      {option.label}
+                                      {type.name}
                                     </SelectItem>
                                   ))}
                                 </SelectGroup>

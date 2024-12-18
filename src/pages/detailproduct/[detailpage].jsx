@@ -1,29 +1,31 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-
-import Sidebar from '@/components/ui/sidebar';
-import Header from '@/components/ui/header.tsx';
-import { Button } from '@/components/ui/button';
-import {
-  FaChevronLeft,
-  FaChevronRight,
-  FaMapMarkerAlt,
-  FaClock,
-  FaPhone,
-  FaMotorcycle,
-  FaMoneyBillWave,
-  FaExchangeAlt,
-  FaInfoCircle,
-} from 'react-icons/fa';
-
-// page nha dat
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import emailjs from 'emailjs-com';
 import { toast } from 'sonner';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import Cookies from 'js-cookie';
+
+import Sidebar from '@/components/ui/sidebar';
+import Header from '@/components/ui/header';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-
+import { Badge } from '@/components/ui/badge';
 import {
   Carousel,
   CarouselContent,
@@ -41,6 +43,49 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaMapMarkerAlt,
+  FaClock,
+  FaPhone,
+  FaMotorcycle,
+  FaMoneyBillWave,
+  FaExchangeAlt,
+  FaInfoCircle,
+  FaArrowLeft,
+  FaArrowRight,
+  FaBed,
+  FaRulerCombined,
+  FaBuilding,
+  FaFileAlt,
+  FaStar,
+  FaStarHalfAlt,
+  FaPlay,
+} from 'react-icons/fa';
+
+import MapIframe from '@/components/Map';
+import { getDataProductByIdRent } from '@/routes/apiforRentHouse';
+import { fetchUserInfo } from '@/routes/apiforUser';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const formSchema = z.object({
   username: z.string().min(2, {
@@ -53,75 +98,11 @@ const formSchema = z.object({
     message: 'Phone number must be at least 10 characters.',
   }),
 });
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 
-import {
-  FaArrowLeft,
-  FaArrowRight,
-  FaBed,
-  FaRulerCombined,
-  FaBuilding,
-  FaFileAlt,
-} from 'react-icons/fa';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
-import { useEffect, useState } from 'react';
-import MapIframe from '@/components/Map.jsx';
-import { FaStar, FaStarHalfAlt } from 'react-icons/fa';
-import Cookies from 'js-cookie';
-import { getDataProductByIdRent } from '@/routes/apiforRentHouse.jsx';
-import { fetchUserInfo } from '@/routes/apiforUser.jsx';
-
-import { Badge } from '@/components/ui/badge';
 const DetailPage = () => {
-  // nha dat
   const [searchParams] = useSearchParams();
-  const [data, setData] = useState([]);
+  const [data, setData] = useState({});
   const navigate = useNavigate();
-
-  const handleClick = async () => {
-    const res = await fetchUserInfo();
-    if (res) {
-      // Nếu có token, hiển thị số liên lạc
-      setShowContact(true);
-      return true;
-    } else {
-      // Nếu không có, chuyển hướng về trang /auth
-      navigate('/auth');
-    }
-  };
-  useEffect(() => {
-    // Giả lập việc tải dữ liệu
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-  }, []);
-
   const [isLoading, setIsLoading] = useState(true);
   const [isNhaDat, setIsNhaDat] = useState(false);
   const location = useLocation();
@@ -132,9 +113,73 @@ const DetailPage = () => {
   const [loanTenure, setLoanTenure] = useState('');
   const [monthlyPayment, setMonthlyPayment] = useState(null);
   const [showDetailedDescription, setShowDetailedDescription] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showContact, setShowContact] = useState(false);
+  const [showWarranty, setShowWarranty] = useState(false);
+  const [mediaItems, setMediaItems] = useState([]);
 
   const rating = 0;
   const totalReviews = 0;
+
+  const form = useForm({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      username: '',
+      email: '',
+      phone: '',
+    },
+  });
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLastUpdate((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const nhaDat = searchParams.get('nhadat');
+    const id = searchParams.get('id');
+
+    const fetchData = async () => {
+      if (id) {
+        const res = await getDataProductByIdRent(id);
+        setData(res.data);
+        const newMediaItems = [
+          ...res.data.images.map((img) => ({ type: 'image', url: img })),
+        ];
+        if (res.data.linkPlay) {
+          newMediaItems.push({
+            type: 'video',
+            url: res.data.linkPlay,
+            thumbnail: res.data.videoThumbnail || res.data.images[0],
+          });
+        }
+        setMediaItems(newMediaItems);
+      }
+    };
+
+    fetchData();
+    setIsNhaDat(!!nhaDat);
+  }, [location.search, searchParams]);
+
+  const handleClick = async () => {
+    const res = await fetchUserInfo();
+    if (res) {
+      setShowContact(true);
+      return true;
+    } else {
+      navigate('/auth');
+    }
+  };
 
   const renderStars = (rating) => {
     const stars = [];
@@ -150,15 +195,6 @@ const DetailPage = () => {
     return stars;
   };
 
-  const form = useForm({
-    resolver: zodResolver(formSchema),
-
-    defaultValues: {
-      username: '',
-      email: '',
-      phone: '',
-    },
-  });
   function onSubmit(values) {
     const templateParams = {
       email_id: values.username,
@@ -184,8 +220,54 @@ const DetailPage = () => {
         }
       );
   }
+
   const toggleDetailedDescription = () => {
     setShowDetailedDescription((prev) => !prev);
+  };
+
+  const calculateLoan = () => {
+    const accessToken = Cookies.get('access_token');
+    if (accessToken) {
+      const principal = parseFloat(loanAmount);
+      const rate = parseFloat(interestRate) / 100 / 12;
+      const time = parseFloat(loanTenure) * 12;
+      if (principal && rate && time) {
+        const x = Math.pow(1 + rate, time);
+        const monthly = (principal * x * rate) / (x - 1);
+        setMonthlyPayment(monthly);
+      } else {
+        setMonthlyPayment(null);
+      }
+    } else {
+      navigate('/auth');
+    }
+  };
+
+  const toggleFullImage = () => {
+    setShowFullImage((prev) => !prev);
+  };
+
+  const nextItem = () => {
+    setActiveIndex((prev) => (prev + 1) % mediaItems.length);
+    setIsPlaying(false);
+  };
+
+  const prevItem = () => {
+    setActiveIndex(
+      (prev) => (prev - 1 + mediaItems.length) % mediaItems.length
+    );
+    setIsPlaying(false);
+  };
+
+  const handleThumbnailClick = (index) => {
+    setActiveIndex(index);
+    setIsPlaying(false);
+  };
+
+  const toggleVideo = () => {
+    if (mediaItems[activeIndex].type === 'video') {
+      setIsPlaying(!isPlaying);
+    }
   };
 
   const chartData = {
@@ -198,78 +280,6 @@ const DetailPage = () => {
         tension: 0.1,
       },
     ],
-  };
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setLastUpdate((prev) => prev + 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-  const toggleFullImage = () => {
-    setShowFullImage((prev) => !prev);
-  };
-  const calculateLoan = () => {
-    // Kiểm tra xem có access_token trong cookie không
-    const accessToken = Cookies.get('access_token');
-
-    if (accessToken) {
-      // Nếu có token, hiển thị số liên lạc
-      const principal = parseFloat(loanAmount);
-      const rate = parseFloat(interestRate) / 100 / 12;
-      const time = parseFloat(loanTenure) * 12;
-
-      if (principal && rate && time) {
-        const x = Math.pow(1 + rate, time);
-        const monthly = (principal * x * rate) / (x - 1);
-        setMonthlyPayment(monthly.toFixed(2));
-      } else {
-        setMonthlyPayment(null);
-      }
-    } else {
-      // Nếu không có, chuyển hướng về trang /auth
-      navigate('/auth');
-    }
-  };
-  //xe
-
-  const [activeImage, setActiveImage] = useState(0);
-  const [showContact, setShowContact] = useState(false);
-  const [showWarranty, setShowWarranty] = useState(false);
-  const [imgsFromApi, setImgsFromApi] = useState([]);
-
-  useEffect(() => {
-    const nhaDat = searchParams.get('nhadat');
-    const id = searchParams.get('id');
-
-    const fetchData = async () => {
-      if (id) {
-        const res = await getDataProductByIdRent(id); // Giả sử đây là API
-
-        // const mappedData = mapApiDataToPropertyDetails(res.data);
-        setData(res.data); // Lưu trữ vào state
-        setImgsFromApi(res.data.images);
-        console.log(res.data.images);
-      }
-    };
-
-    fetchData();
-
-    if (nhaDat) {
-      setIsNhaDat(true);
-    } else {
-      setIsNhaDat(false);
-    }
-  }, [location.search]);
-
-  const nextImage = () => {
-    setActiveImage((prev) => (prev + 1) % imgsFromApi.length);
-  };
-
-  const prevImage = () => {
-    setActiveImage(
-      (prev) => (prev - 1 + imgsFromApi.length) % imgsFromApi.length
-    );
   };
 
   const similarListings = [
@@ -299,8 +309,8 @@ const DetailPage = () => {
       <div className="flex flex-col">
         <Header />
         {isNhaDat ? (
-          <div className="max-w-7xl mx-auto p-6 b rounded-lg shadow-lg">
-            <div className="flex items-center gap-4 mb-6  ">
+          <div className="max-w-7xl mx-auto p-6 rounded-lg shadow-lg">
+            <div className="flex items-center gap-4 mb-6">
               <h1 className="text-3xl font-bold">Thông tin sản phẩm</h1>
               {data.status === 0 ? (
                 <Badge variant="destructive">Đã bán</Badge>
@@ -312,48 +322,92 @@ const DetailPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
                 <div className="relative h-96 mb-4 rounded-lg overflow-hidden shadow-md">
-                  <img
-                    src={imgsFromApi[activeImage]}
-                    alt={`Full size property view ${activeImage + 1}`}
-                    className="w-full h-full object-cover cursor-pointer"
-                    onClick={toggleFullImage}
-                  />
+                  {mediaItems[activeIndex]?.type === 'video' ? (
+                    <div className="relative w-full h-full">
+                      {isPlaying ? (
+                        <video
+                          src={mediaItems[activeIndex].url}
+                          className="w-full h-full object-cover"
+                          controls
+                          autoPlay
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      ) : (
+                        <div
+                          className="relative w-full h-full"
+                          onClick={toggleVideo}
+                        >
+                          <img
+                            src={
+                              mediaItems[activeIndex].thumbnail ||
+                              mediaItems[activeIndex].url
+                            }
+                            alt="Video thumbnail"
+                            className="w-full h-full object-cover cursor-pointer"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+                            <FaPlay className="w-16 h-16 text-white opacity-80" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <img
+                      src={mediaItems[activeIndex]?.url}
+                      alt={`Full size view ${activeIndex + 1}`}
+                      className="w-full h-full object-cover cursor-pointer"
+                      onClick={toggleFullImage}
+                    />
+                  )}
                   <button
-                    onClick={prevImage}
-                    className="absolute left-2 top-1/2 transform -translate-y-1/2  bg-opacity-50 p-2 rounded-full"
-                    aria-label="Previous image"
+                    onClick={prevItem}
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full"
+                    aria-label="Previous item"
                   >
-                    <FaArrowLeft className="" />
+                    <FaArrowLeft className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={nextImage}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2  bg-opacity-50 p-2 rounded-full"
-                    aria-label="Next image"
+                    onClick={nextItem}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full"
+                    aria-label="Next item"
                   >
-                    <FaArrowRight className="" />
+                    <FaArrowRight className="w-4 h-4" />
                   </button>
                 </div>
 
                 <div className="flex space-x-2 mb-4 overflow-x-auto">
-                  {imgsFromApi.map((img, index) => (
-                    <img
+                  {mediaItems.map((item, index) => (
+                    <div
                       key={index}
-                      src={img}
-                      alt={`Thumbnail ${index + 1}`}
-                      className={`w-20 h-20 object-cover cursor-pointer rounded ${
-                        index === activeImage ? 'ring-2 ring-blue-500' : ''
+                      className={`relative flex-shrink-0 cursor-pointer ${
+                        index === activeIndex ? 'ring-2 ring-blue-500' : ''
                       }`}
-                      onClick={() => setActiveImage(index)}
-                    />
+                      onClick={() => handleThumbnailClick(index)}
+                    >
+                      <img
+                        src={
+                          item.type === 'video'
+                            ? item.thumbnail || item.url
+                            : item.url
+                        }
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-20 h-20 object-cover rounded"
+                      />
+                      {item.type === 'video' && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded">
+                          <FaPlay className="w-6 h-6 text-white opacity-80" />
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
 
-                <div className=" p-6 rounded-lg shadow-md">
-                  <h2 className="text-2xl font-semibold mb-4 ">
+                <div className="p-6 rounded-lg shadow-md">
+                  <h2 className="text-2xl font-semibold mb-4">
                     Thông tin chi tiết
                   </h2>
-
-                  <p className=" mb-2">Giá thuê {data.cost_deposit}</p>
+                  <p className="mb-2">Giá thuê {data.cost_deposit}</p>
                   <div className="flex items-center mb-2">
                     <FaBed className="mr-2" />
                     <span>{data.bedroom_id} phòng ngủ</span>
@@ -364,7 +418,7 @@ const DetailPage = () => {
                   </div>
                   <div className="flex items-center mb-2">
                     <FaFileAlt className="mr-2" />
-                    <span>Tình trạng nôij thất: đầy đủ</span>
+                    <span>Tình trạng nội thất: đầy đủ</span>
                   </div>
                   <div className="flex items-center mb-2">
                     <FaRulerCombined className="mr-2" />
@@ -389,7 +443,7 @@ const DetailPage = () => {
                     </div>
                   )}
 
-                  <div className=" p-4 flex items-center justify-between gap-3">
+                  <div className="p-4 flex items-center justify-between gap-3">
                     <Dialog>
                       <DialogTrigger>
                         <Button>Đăng ký vay mua nhà</Button>
@@ -420,7 +474,6 @@ const DetailPage = () => {
                                       {...field}
                                     />
                                   </FormControl>
-
                                   <FormMessage />
                                 </FormItem>
                               )}
@@ -437,7 +490,6 @@ const DetailPage = () => {
                                       {...field}
                                     />
                                   </FormControl>
-
                                   <FormMessage />
                                 </FormItem>
                               )}
@@ -454,7 +506,6 @@ const DetailPage = () => {
                                       {...field}
                                     />
                                   </FormControl>
-
                                   <FormMessage />
                                 </FormItem>
                               )}
@@ -467,7 +518,7 @@ const DetailPage = () => {
 
                     <Button variant="outline">GỌI CHUYÊN GIA TƯ VẤN</Button>
                     {showContact ? (
-                      <p className="mt-1 text-xl font-semibold ">
+                      <p className="mt-1 text-xl font-semibold">
                         <FaPhone className="inline mr-2" />
                         0932685801
                       </p>
@@ -476,15 +527,15 @@ const DetailPage = () => {
                     )}
                   </div>
 
-                  <div className=" p-4 flex items-center justify-between gap-3">
+                  <div className="p-4 flex items-center justify-between gap-3">
                     <MapIframe address={data.address} />
                   </div>
                 </div>
               </div>
 
               <div>
-                <div className=" p-6 rounded-lg shadow-md mb-6">
-                  <h2 className="text-2xl font-semibold mb-4 ">Price Trend</h2>
+                <div className="p-6 rounded-lg shadow-md mb-6">
+                  <h2 className="text-2xl font-semibold mb-4">Price Trend</h2>
                   <Line data={chartData} options={{ responsive: true }} />
                 </div>
                 {isLoading ? (
@@ -496,12 +547,12 @@ const DetailPage = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className=" p-6 rounded-lg shadow-md">
-                    <h2 className="text-2xl font-semibold mb-4 ">
+                  <div className="p-6 rounded-lg shadow-md">
+                    <h2 className="text-2xl font-semibold mb-4">
                       Loan Calculator
                     </h2>
                     <div className="mb-4">
-                      <label htmlFor="loanAmount" className="block  mb-2">
+                      <label htmlFor="loanAmount" className="block mb-2">
                         Loan Amount (VND)
                       </label>
                       <input
@@ -513,7 +564,7 @@ const DetailPage = () => {
                       />
                     </div>
                     <div className="mb-4">
-                      <label htmlFor="interestRate" className="block  mb-2 ">
+                      <label htmlFor="interestRate" className="block mb-2">
                         Interest Rate (%)
                       </label>
                       <input
@@ -525,7 +576,7 @@ const DetailPage = () => {
                       />
                     </div>
                     <div className="mb-4">
-                      <label htmlFor="loanTenure" className="block  mb-2">
+                      <label htmlFor="loanTenure" className="block mb-2">
                         Loan Tenure (Years)
                       </label>
                       <input
@@ -540,8 +591,9 @@ const DetailPage = () => {
                       Calculate
                     </Button>
                     {monthlyPayment && (
-                      <p className="mt-4 text-lg font-semibold ">
-                        Estimated Monthly Payment: {monthlyPayment} VND
+                      <p className="mt-4 text-lg font-semibold">
+                        Estimated Monthly Payment: {monthlyPayment.toFixed(2)}{' '}
+                        VND
                       </p>
                     )}
                   </div>
@@ -556,7 +608,7 @@ const DetailPage = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className=" p-6 rounded-lg shadow-md">
+                  <div className="p-6 rounded-lg shadow-md">
                     <Form {...form}>
                       <form
                         onSubmit={form.handleSubmit(onSubmit)}
@@ -574,7 +626,6 @@ const DetailPage = () => {
                               <FormControl>
                                 <Input placeholder="Put your name" {...field} />
                               </FormControl>
-
                               <FormMessage />
                             </FormItem>
                           )}
@@ -591,7 +642,6 @@ const DetailPage = () => {
                                   {...field}
                                 />
                               </FormControl>
-
                               <FormMessage />
                             </FormItem>
                           )}
@@ -608,7 +658,6 @@ const DetailPage = () => {
                                   {...field}
                                 />
                               </FormControl>
-
                               <FormMessage />
                             </FormItem>
                           )}
@@ -670,7 +719,7 @@ const DetailPage = () => {
                               </div>
 
                               {showContact ? (
-                                <p className="mt-1 text-xl font-semibold text-center p-3 ">
+                                <p className="mt-1 text-xl font-semibold text-center p-3">
                                   <FaPhone className="inline mr-2" />
                                   0932685801
                                 </p>
@@ -694,7 +743,7 @@ const DetailPage = () => {
               </div>
             </div>
 
-            <p className="mt-6  text-right">Updated {lastUpdate} seconds ago</p>
+            <p className="mt-6 text-right">Updated {lastUpdate} seconds ago</p>
 
             {showFullImage && (
               <div
@@ -702,8 +751,8 @@ const DetailPage = () => {
                 onClick={toggleFullImage}
               >
                 <img
-                  src={imgsFromApi[activeImage]}
-                  alt={`Full size property view ${activeImage + 1}`}
+                  src={mediaItems[activeIndex]?.url}
+                  alt={`Full size view ${activeIndex + 1}`}
                   className="max-w-full max-h-full object-contain"
                 />
               </div>
@@ -722,16 +771,14 @@ const DetailPage = () => {
                       className="w-full h-48 object-cover"
                     />
                     <div className="p-4">
-                      <h3 className="text-lg font-semibold ">
-                        {listing.title}
-                      </h3>
-                      <p className="mt-2 text-xl font-bold ">{listing.price}</p>
-                      <p className="mt-1 text-sm ">{listing.type}</p>
-                      <p className="mt-1 text-sm ">
+                      <h3 className="text-lg font-semibold">{listing.title}</h3>
+                      <p className="mt-2 text-xl font-bold">{listing.price}</p>
+                      <p className="mt-1 text-sm">{listing.type}</p>
+                      <p className="mt-1 text-sm">
                         <FaClock className="inline mr-1" />
                         {listing.time}
                       </p>
-                      <p className="mt-1 text-sm ">
+                      <p className="mt-1 text-sm">
                         <FaMapMarkerAlt className="inline mr-1" />
                         {listing.location}
                       </p>
@@ -744,30 +791,30 @@ const DetailPage = () => {
         ) : (
           <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
             <div
-              className="flex  rounded-lg border border-dashed shadow-sm"
+              className="flex rounded-lg border border-dashed shadow-sm"
               x-chunk="dashboard-02-chunk-1"
             >
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mx-auto py-3"></div>
             </div>
             <div className="min-h-screen bg-gradient-to-br p-8">
-              <div className="max-w-6xl mx-auto  rounded-xl shadow-lg overflow-hidden">
+              <div className="max-w-6xl mx-auto rounded-xl shadow-lg overflow-hidden">
                 <div className="md:flex">
                   <div className="md:flex-shrink-0 w-full md:w-1/2">
                     <div className="relative h-64 md:h-full">
                       <img
                         className="w-full h-full object-cover"
-                        src={imgsFromApi[activeImage]}
-                        alt={`Product image ${activeImage + 1}`}
+                        src={mediaItems[activeIndex]?.url}
+                        alt={`Product image ${activeIndex + 1}`}
                       />
                       <button
-                        onClick={prevImage}
+                        onClick={prevItem}
                         className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full"
                         aria-label="Previous image"
                       >
                         <FaChevronLeft />
                       </button>
                       <button
-                        onClick={nextImage}
+                        onClick={nextItem}
                         className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full"
                         aria-label="Next image"
                       >
@@ -775,60 +822,73 @@ const DetailPage = () => {
                       </button>
                     </div>
                     <div className="flex mt-4 space-x-2 overflow-x-auto p-2">
-                      {imgsFromApi.map((img, index) => (
-                        <img
+                      {mediaItems.map((item, index) => (
+                        <div
                           key={index}
-                          src={img}
-                          alt={`Thumbnail ${index + 1}`}
-                          className={`w-20 h-20 object-cover cursor-pointer rounded-md ${
-                            index === activeImage ? 'ring-2 ring-pink-500' : ''
+                          className={`relative flex-shrink-0 cursor-pointer ${
+                            index === activeIndex ? 'ring-2 ring-pink-500' : ''
                           }`}
-                          onClick={() => setActiveImage(index)}
-                        />
+                          onClick={() => handleThumbnailClick(index)}
+                        >
+                          <img
+                            src={
+                              item.type === 'video'
+                                ? item.thumbnail || item.url
+                                : item.url
+                            }
+                            alt={`Thumbnail ${index + 1}`}
+                            className="w-20 h-20 object-cover rounded-md"
+                          />
+                          {item.type === 'video' && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded-md">
+                              <FaPlay className="w-6 h-6 text-white opacity-80" />
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </div>
                   <div className="p-8 md:w-1/2">
-                    <div className="uppercase tracking-wide text-sm  font-semibold">
+                    <div className="uppercase tracking-wide text-sm font-semibold">
                       Honda
                     </div>
                     <h1 className="mt-2 text-3xl leading-8 font-extrabold tracking-tight sm:text-4xl">
-                      Clit
+                      Click
                     </h1>
-                    <p className="mt-2 text-xl ">
+                    <p className="mt-2 text-xl">
                       Pink • 2013 • 30,000 km • Used
                     </p>
-                    <p className="mt-4 text-4xl font-bold ">10,500,000 VND</p>
+                    <p className="mt-4 text-4xl font-bold">10,500,000 VND</p>
                     <div className="mt-4 border-t border-gray-200 pt-4">
-                      <h2 className="text-lg font-medium ">Price Range</h2>
-                      <p className="mt-1 text-sm ">
+                      <h2 className="text-lg font-medium">Price Range</h2>
+                      <p className="mt-1 text-sm">
                         5,000,000 VND - 7,000,000 VND
                       </p>
                     </div>
                     <div className="mt-4 border-t border-gray-200 pt-4">
-                      <h2 className="text-lg font-medium ">Location</h2>
-                      <p className="mt-1 text-sm ">
+                      <h2 className="text-lg font-medium">Location</h2>
+                      <p className="mt-1 text-sm">
                         <FaMapMarkerAlt className="inline mr-2" />
                         Phường Thạc Gián, Quận Thanh Khê, Đà Nẵng
                       </p>
                     </div>
                     <div className="mt-4 border-t border-gray-200 pt-4">
-                      <h2 className="text-lg font-medium ">Post Details</h2>
-                      <p className="mt-1 text-sm ">
+                      <h2 className="text-lg font-medium">Post Details</h2>
+                      <p className="mt-1 text-sm">
                         <FaClock className="inline mr-2" />
                         Posted: 13 minutes ago
                       </p>
-                      <p className="mt-2 text-sm ">
+                      <p className="mt-2 text-sm">
                         "Xe đẹp nguyên rin mua bán tại nhà áo đẹp lốp mới Chạy
                         nhẹ"
                       </p>
                     </div>
                     <div className="mt-4 border-t border-gray-200 pt-4">
-                      <h2 className="text-lg font-medium ">
+                      <h2 className="text-lg font-medium">
                         Contact Information
                       </h2>
                       {showContact ? (
-                        <p className="mt-1 text-xl font-semibold ">
+                        <p className="mt-1 text-xl font-semibold">
                           <FaPhone className="inline mr-2" />
                           0932685801
                         </p>
@@ -839,8 +899,8 @@ const DetailPage = () => {
                       )}
                     </div>
                     <div className="mt-4 border-t border-gray-200 pt-4">
-                      <h2 className="text-lg font-medium ">Specifications</h2>
-                      <ul className="mt-2 space-y-2 text-sm ">
+                      <h2 className="text-lg font-medium">Specifications</h2>
+                      <ul className="mt-2 space-y-2 text-sm">
                         <li>Brand: Honda</li>
                         <li>Model: Click</li>
                         <li>Registration Year: 2013</li>
@@ -850,38 +910,38 @@ const DetailPage = () => {
                         <li>Origin: Not specified</li>
                       </ul>
                     </div>
-                    <div className="mt-4 border-t  pt-4">
-                      <h2 className="text-lg font-medium ">
+                    <div className="mt-4 border-t pt-4">
+                      <h2 className="text-lg font-medium">
                         Hiện mô tả chi tiết
                       </h2>
                       {showWarranty ? (
-                        <p className="mt-1 text-sm ">Manufacturer's warranty</p>
+                        <p className="mt-1 text-sm">Manufacturer's warranty</p>
                       ) : (
                         <button
                           onClick={() => setShowWarranty(true)}
-                          className="mt-1 text-sm font-medium "
+                          className="mt-1 text-sm font-medium"
                         >
                           View More
                         </button>
                       )}
                     </div>
                     <div className="mt-6 border-t border-gray-200 pt-4">
-                      <h2 className="text-lg font-medium  ">
+                      <h2 className="text-lg font-medium">
                         Utility Services Options
                       </h2>
                       <div className="mt-2 grid grid-cols-2 gap-4">
-                        <button className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md  bg-indigo-600 hover:bg-indigo-700">
+                        <button className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md bg-indigo-600 hover:bg-indigo-700 text-white">
                           <FaMotorcycle className="mr-2" /> Buy old motorcycles
                         </button>
-                        <button className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md  bg-green-600 hover:bg-green-700">
+                        <button className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md bg-green-600 hover:bg-green-700 text-white">
                           <FaClock className="mr-2" /> Fast selling within 2
                           hours
                         </button>
-                        <button className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md  bg-yellow-600 hover:bg-yellow-700">
+                        <button className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md bg-yellow-600 hover:bg-yellow-700 text-white">
                           <FaMoneyBillWave className="mr-2" /> Instant cash
                           payment
                         </button>
-                        <button className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md  bg-purple-600 hover:bg-purple-700">
+                        <button className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md bg-purple-600 hover:bg-purple-700 text-white">
                           <FaExchangeAlt className="mr-2" /> Easy ownership
                           transfer support
                         </button>
@@ -903,18 +963,18 @@ const DetailPage = () => {
                           className="w-full h-48 object-cover"
                         />
                         <div className="p-4">
-                          <h3 className="text-lg font-semibold ">
+                          <h3 className="text-lg font-semibold">
                             {listing.title}
                           </h3>
-                          <p className="mt-2 text-xl font-bold ">
+                          <p className="mt-2 text-xl font-bold">
                             {listing.price}
                           </p>
-                          <p className="mt-1 text-sm ">{listing.type}</p>
-                          <p className="mt-1 text-sm ">
+                          <p className="mt-1 text-sm">{listing.type}</p>
+                          <p className="mt-1 text-sm">
                             <FaClock className="inline mr-1" />
                             {listing.time}
                           </p>
-                          <p className="mt-1 text-sm ">
+                          <p className="mt-1 text-sm">
                             <FaMapMarkerAlt className="inline mr-1" />
                             {listing.location}
                           </p>
@@ -931,4 +991,5 @@ const DetailPage = () => {
     </div>
   );
 };
+
 export default DetailPage;

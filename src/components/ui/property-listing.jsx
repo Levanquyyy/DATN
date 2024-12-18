@@ -15,7 +15,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Star, MapPin, ArrowRight } from 'lucide-react';
+import { Star, MapPin, ArrowRight, Home, BedDouble, Bath } from 'lucide-react';
 import {
   Pagination,
   PaginationContent,
@@ -37,7 +37,6 @@ export default function PropertyListings({ dataFromServer = [] }) {
   const currentItems = dataFromServer.slice(indexOfFirstItem, indexOfLastItem);
 
   useEffect(() => {
-    // Simulate loading delay
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 1500);
@@ -50,7 +49,6 @@ export default function PropertyListings({ dataFromServer = [] }) {
     setIsLoading(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Simulate loading delay when changing pages
     setTimeout(() => {
       setIsLoading(false);
     }, 1000);
@@ -58,7 +56,7 @@ export default function PropertyListings({ dataFromServer = [] }) {
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-1">
+      <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3">
         {isLoading
           ? Array.from({ length: itemsPerPage }).map((_, index) => (
               <PropertyListingSkeleton key={index} />
@@ -78,12 +76,12 @@ export default function PropertyListings({ dataFromServer = [] }) {
                         : 'hover:border-primary/50'
                     }`}
                   >
-                    <div className="flex flex-col md:flex-row md:h-[300px]">
-                      <CardHeader className="relative p-0 md:w-2/5 lg:w-1/3">
+                    <div className="flex flex-col h-full">
+                      <CardHeader className="relative p-0">
                         <img
                           src={firstImageUrl}
                           alt="Property"
-                          className="w-full h-64 md:h-full object-cover rounded-t-lg md:rounded-l-lg md:rounded-tr-none"
+                          className="w-full h-64 object-cover rounded-t-lg"
                           loading="lazy"
                         />
                         {item.type_posting_id === 4 && (
@@ -92,61 +90,74 @@ export default function PropertyListings({ dataFromServer = [] }) {
                           </Badge>
                         )}
                       </CardHeader>
-                      <div className="flex flex-col md:w-3/5 lg:w-2/3 p-4 md:p-6 justify-between">
-                        <div>
-                          <CardTitle
-                            className={`text-xl mb-3 ${
-                              item.type_posting_id === 4 ? 'text-primary' : ''
-                            }`}
-                          >
-                            {item.title}
-                          </CardTitle>
-                          <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-2">
-                            <MapPin className="w-4 h-4" />
+                      <CardContent className="flex-grow p-4">
+                        <CardTitle
+                          className={`text-xl mb-3 line-clamp-2 ${
+                            item.type_posting_id === 4 ? 'text-primary' : ''
+                          }`}
+                        >
+                          {item.title}
+                        </CardTitle>
+                        <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-2">
+                          <MapPin className="w-4 h-4" />
+                          <span>{item.address}</span>
+                        </div>
+                        <p className="font-semibold mb-3 text-lg">
+                          {new Intl.NumberFormat('vi-VN', {
+                            style: 'currency',
+                            currency: 'VND',
+                          }).format(item.cost)}
+                        </p>
+                        <div className="flex justify-between text-sm text-muted-foreground mb-3">
+                          <div className="flex items-center">
+                            <Home className="w-4 h-4 mr-1" />
                             <span>{item.land_area} m²</span>
                           </div>
-                          <p className="font-semibold mb-3 text-lg">
-                            Giá: {item.cost} VNĐ
-                          </p>
-                          <p className="text-sm text-muted-foreground mb-3 line-clamp-3">
-                            {item.content}
-                          </p>
-                          <p
-                            className={`text-sm ${
-                              item.type_posting_id === 4
-                                ? 'text-primary'
-                                : 'text-muted-foreground'
-                            }`}
-                          >
-                            Người đăng: {item.user_name}
-                          </p>
+                          <div className="flex items-center">
+                            <BedDouble className="w-4 h-4 mr-1" />
+                            <span>{item.bedroom_id} phòng ngủ</span>
+                          </div>
+                          <div className="flex items-center">
+                            <Bath className="w-4 h-4 mr-1" />
+                            <span>{item.bathroom_id} phòng tắm</span>
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center mt-4 pt-4 border-t">
-                          {item.type_posting_id === 4 ? (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className="flex items-center space-x-1 text-primary">
-                                    <Star className="w-4 h-4 fill-current" />
-                                    <Star className="w-4 h-4 fill-current" />
-                                    <Star className="w-4 h-4 fill-current" />
-                                    <Star className="w-4 h-4 fill-current" />
-                                    <Star className="w-4 h-4 fill-current" />
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Tin VIP - Ưu tiên hiển thị</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          ) : (
-                            <div className="flex-grow" />
-                          )}
-                          <Button variant="outline" className="ml-auto">
-                            Xem chi tiết <ArrowRight className="w-4 h-4 ml-2" />
-                          </Button>
-                        </div>
-                      </div>
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-3 font-bold ">
+                          Tiêu đề: {item.content}
+                        </p>
+                      </CardContent>
+                      <CardFooter className="flex justify-between items-center pt-4 border-t">
+                        <p
+                          className={`text-sm ${
+                            item.type_posting_id === 4
+                              ? 'text-primary'
+                              : 'text-muted-foreground'
+                          }`}
+                        >
+                          {item.user_name}
+                        </p>
+                        {item.type_posting_id === 4 && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center space-x-1 text-primary">
+                                  <Star className="w-4 h-4 fill-current" />
+                                  <Star className="w-4 h-4 fill-current" />
+                                  <Star className="w-4 h-4 fill-current" />
+                                  <Star className="w-4 h-4 fill-current" />
+                                  <Star className="w-4 h-4 fill-current" />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Tin VIP - Ưu tiên hiển thị</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                        <Button variant="outline" size="sm">
+                          Chi tiết <ArrowRight className="w-4 h-4 ml-2" />
+                        </Button>
+                      </CardFooter>
                     </div>
                   </Card>
                 </Link>
