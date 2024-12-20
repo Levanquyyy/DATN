@@ -103,10 +103,7 @@ export default function PropertyListings({ dataFromServer = [] }) {
                           <span>{item.address}</span>
                         </div>
                         <p className="font-semibold mb-3 text-lg">
-                          {new Intl.NumberFormat('vi-VN', {
-                            style: 'currency',
-                            currency: 'VND',
-                          }).format(item.cost)}
+                          {item.cost} VNĐ
                         </p>
                         <div className="flex justify-between text-sm text-muted-foreground mb-3">
                           <div className="flex items-center">

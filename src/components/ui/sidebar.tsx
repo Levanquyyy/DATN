@@ -1,10 +1,5 @@
 import { Link } from 'react-router-dom';
-import {
-  BriefcaseBusiness,
-  Building,
-  LaptopMinimal,
-  Package2,
-} from 'lucide-react';
+import { Car, Building, Package2, LaptopMinimal } from 'lucide-react';
 
 import {
   Popover,
@@ -23,12 +18,12 @@ const frameworks = [
     label: 'Nhà Hope',
   },
   {
-    value: 'Xe Hope',
+    value: 'xetot',
     label: 'Xe Hope',
   },
   {
-    value: 'Việc Hope',
-    label: 'Việc Hope',
+    value: 'dientuhope',
+    label: 'Điện tử Hope',
   },
 ];
 import { CaretSortIcon, CheckIcon } from '@radix-ui/react-icons';
@@ -160,36 +155,30 @@ const Sidebar = () => {
                       <LaptopMinimal className="mr-2" /> Đồ điện tử
                     </MenubarSubTrigger>
                     <MenubarSubContent>
-                      <MenubarItem>Điện thoại</MenubarItem>
-                      <MenubarItem>Máy tính bảng</MenubarItem>
-                      <MenubarItem>Laptop</MenubarItem>
-                      <MenubarItem>Máy tính để bàn</MenubarItem>
-                      <MenubarItem>Máy ảnh, Máy quay</MenubarItem>
-                      <MenubarItem>Tivi, Âm thanh</MenubarItem>
-                      <MenubarItem>Thiết bị đeo thông minh</MenubarItem>
-                      <MenubarItem>Phụ kiện (Màn hình, Chuột,...)</MenubarItem>
-                      <MenubarItem>Linh kiện (RAM, Card,...)</MenubarItem>
+                      <MenubarItem>
+                        <Link to="/dang-tin?category=1020" className="w-full">
+                          Điện thoại
+                        </Link>
+                      </MenubarItem>
+
+                      <MenubarItem>
+                        <Link to="/dang-tin?category=1090" className="w-full">
+                          Laptop
+                        </Link>
+                      </MenubarItem>
                     </MenubarSubContent>
                   </MenubarSub>
                   <MenubarSub>
                     <MenubarSubTrigger>
-                      <BriefcaseBusiness className="mr-2" /> Việc làm
+                      <Car className="mr-2" /> Xe
                     </MenubarSubTrigger>
 
                     <MenubarSubContent>
-                      <MenubarItem>Bán hàng</MenubarItem>
-                      <MenubarItem>Nhân viên phục vụ</MenubarItem>
-                      <MenubarItem>Tài xế giao hàng xe máy</MenubarItem>
-                      <MenubarItem>Tạp vụ</MenubarItem>
-                      <MenubarItem>Pha chế</MenubarItem>
-                      <MenubarItem>Phụ bếp</MenubarItem>
-                      <MenubarItem>Nhân viên kinh doanh</MenubarItem>
-                      <MenubarItem>Công nhân</MenubarItem>
-                      <MenubarItem>Nhân viên kho vận</MenubarItem>
-                      <MenubarItem>Bảo vệ</MenubarItem>
-                      <MenubarItem>Chăm sóc khách hàng</MenubarItem>
-                      <MenubarItem>Công việc khác</MenubarItem>
-                      <MenubarItem>Xem thêm</MenubarItem>
+                      <MenubarItem>
+                        <Link to="/dang-tin?category=1100" className="w-full">
+                          Ô tô
+                        </Link>
+                      </MenubarItem>
                     </MenubarSubContent>
                   </MenubarSub>
                   <MenubarSeparator />

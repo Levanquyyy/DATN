@@ -13,9 +13,9 @@ import Profile from './pages/profile/[profile].jsx';
 import ForgotPasswordForm from './pages/forgot-password/forgot-password.jsx';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
-import Snowfall from 'react-snowfall';
-import { useEffect, useState } from 'react';
+
 import ConfirmPasswordForm from '@/pages/confirm-password/confirm-password.jsx';
+import XetotPage from './pages/xetot/index.jsx';
 const AuthRoutes = ({ children }) => {
   const access_token = Cookies.get('access_token');
 
@@ -108,7 +108,31 @@ function App() {
                   <NhatotPage />
                 </PrivateRoute>
               }
+            />{' '}
+            <Route
+              path="/xetot"
+              element={
+                <PrivateRoute>
+                  {/*<Snowfall*/}
+                  {/*  // Changes the snowflake color*/}
+                  {/*  color="grey"*/}
+                  {/*  // Applied to the canvas element*/}
+                  {/*  style={{ background: 'transparent', zIndex: 1 }}*/}
+                  {/*  // Controls the number of snowflakes that are created (default 150)*/}
+                  {/*  snowflakeCount={200}*/}
+                  {/*/>*/}
+                  <XetotPage />
+                </PrivateRoute>
+              }
             />
+            <Route
+              path="/myads"
+              element={
+                <PrivateRoute>
+                  <BillPage />
+                </PrivateRoute>
+              }
+            />{' '}
             <Route
               path="/myads"
               element={

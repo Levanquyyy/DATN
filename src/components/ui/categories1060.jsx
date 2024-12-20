@@ -1,14 +1,14 @@
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import Sidebar from "@/components/ui/sidebar";
-import Header from "@/components/ui/header.tsx";
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import Sidebar from '@/components/ui/sidebar';
+import Header from '@/components/ui/header.tsx';
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 
 import {
   Form,
@@ -18,10 +18,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from '@/components/ui/form';
 
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -30,291 +30,184 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-// select city ward district
-import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
+} from '@/components/ui/select';
 
-import { cn } from "@/lib/utils";
-
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { useAppStore } from "@/store";
+import { useEffect, useState } from 'react';
 
 const FormSchema = z.object({
   status: z.string().min(2, {
-    message: "Vui lòng chọn trạng thái",
+    message: 'Vui lòng chọn trạng thái',
   }),
   brand: z.string().min(2, {
-    message: "Vui lòng chọn trạng thái",
+    message: 'Vui lòng chọn trạng thái',
   }),
   color: z.string().min(2, {
-    message: "Vui lòng chọn màu sắc",
+    message: 'Vui lòng chọn màu sắc',
   }),
   memory: z.string().min(2, {
-    message: "Vui lòng chọn dung lượng",
+    message: 'Vui lòng chọn dung lượng',
   }),
   warranty_policy: z.string().min(2, {
-    message: "Vui lòng chọn chính sách bảo hành",
+    message: 'Vui lòng chọn chính sách bảo hành',
   }),
   from: z.string().min(2, {
-    message: "Vui lòng chọn nguồn gốc",
+    message: 'Vui lòng chọn nguồn gốc',
   }),
 
   price: z.string().min(2, {
-    message: "Vui lòng nhập giá tiền",
+    message: 'Vui lòng nhập giá tiền',
   }),
   title: z.string().min(2, {
-    message: "Vui lòng nhập tiêu đề tin đăng",
+    message: 'Vui lòng nhập tiêu đề tin đăng',
   }),
   describedetail: z.string().min(2, {
-    message: "Vui lòng nhập mô tả chi tiết",
-  }),
-  city: z.string().min(1, {
-    message: "Vui lòng chọn tỉnh thành",
-  }),
-  district: z.string().min(1, {
-    message: "Vui lòng chọn quận",
-  }),
-  ward: z.string().min(1, {
-    message: "Vui lòng chọn huyện",
+    message: 'Vui lòng nhập mô tả chi tiết',
   }),
 });
 const colors = [
-  "Bạc",
-  "Đen",
-  "Đen bóng - Jet black",
-  "Đỏ",
-  "Hồng",
-  "Trắng",
-  "Vàng",
-  "Vàng hồng",
-  "Xám",
-  "Xanh dương",
-  "Xanh lá",
-  "Tím",
-  "Cam",
-  "Màu khác",
+  'Bạc',
+  'Đen',
+  'Đen bóng - Jet black',
+  'Đỏ',
+  'Hồng',
+  'Trắng',
+  'Vàng',
+  'Vàng hồng',
+  'Xám',
+  'Xanh dương',
+  'Xanh lá',
+  'Tím',
+  'Cam',
+  'Màu khác',
 ];
 const memory = [
-  "< 8GB",
-  "8 GB",
-  "16 GB",
-  "32 GB",
-  "64 GB",
-  "128 GB",
-  "256 GB",
-  "512 GB",
-  "1 TB",
-  "2 TB",
-  "> 2 TB",
+  '< 8GB',
+  '8 GB',
+  '16 GB',
+  '32 GB',
+  '64 GB',
+  '128 GB',
+  '256 GB',
+  '512 GB',
+  '1 TB',
+  '2 TB',
+  '> 2 TB',
 ];
 const phones = [
-  "Alcatel",
-  "Apple",
-  "Aquos",
-  "Arbutus",
-  "Asanzo",
-  "Asus",
-  "BKAV",
-  "Blackberry",
-  "Bluboo",
-  "Coolpad",
-  "Dopod",
-  "Elephone",
-  "Epic",
-  "Essential",
-  "Fujitsu",
-  "Gionee",
-  "Google",
-  "Hero",
-  "Honor",
-  "HTC",
-  "Huawei",
-  "Infinix",
-  "Intel",
-  "Itel",
-  "Kechaoda",
-  "Kyocera",
-  "Land Rover",
-  "Leagoo",
-  "Lenovo",
-  "LG",
-  "Masstel",
-  "Meitu",
-  "Meizu",
-  "Microsoft",
-  "Mobell",
-  "Mobiado",
-  "Mobiistar",
-  "Motorola",
-  "Nokia phổ thông",
-  "Nokia thông minh",
-  "Nothing",
-  "Nubia",
-  "Obi",
-  "OnePlus",
-  "Oppo",
-  "Oukitel",
-  "Palm",
-  "Philips",
-  "Pocophone",
-  "Q Mobile",
-  "Razer",
-  "Realme",
-  "Samsung",
-  "Sharp",
-  "Sky",
-  "Sony",
-  "Tecno",
-  "Uimi",
-  "Ulefone",
-  "Umidigi",
-  "Vertu",
-  "Vivo",
-  "Vsmart",
-  "Wiko",
-  "Wing",
-  "Xiaomi",
-  "ZiP",
-  "Hãng khác",
+  'Alcatel',
+  'Apple',
+  'Aquos',
+  'Arbutus',
+  'Asanzo',
+  'Asus',
+  'BKAV',
+  'Blackberry',
+  'Bluboo',
+  'Coolpad',
+  'Dopod',
+  'Elephone',
+  'Epic',
+  'Essential',
+  'Fujitsu',
+  'Gionee',
+  'Google',
+  'Hero',
+  'Honor',
+  'HTC',
+  'Huawei',
+  'Infinix',
+  'Intel',
+  'Itel',
+  'Kechaoda',
+  'Kyocera',
+  'Land Rover',
+  'Leagoo',
+  'Lenovo',
+  'LG',
+  'Masstel',
+  'Meitu',
+  'Meizu',
+  'Microsoft',
+  'Mobell',
+  'Mobiado',
+  'Mobiistar',
+  'Motorola',
+  'Nokia phổ thông',
+  'Nokia thông minh',
+  'Nothing',
+  'Nubia',
+  'Obi',
+  'OnePlus',
+  'Oppo',
+  'Oukitel',
+  'Palm',
+  'Philips',
+  'Pocophone',
+  'Q Mobile',
+  'Razer',
+  'Realme',
+  'Samsung',
+  'Sharp',
+  'Sky',
+  'Sony',
+  'Tecno',
+  'Uimi',
+  'Ulefone',
+  'Umidigi',
+  'Vertu',
+  'Vivo',
+  'Vsmart',
+  'Wiko',
+  'Wing',
+  'Xiaomi',
+  'ZiP',
+  'Hãng khác',
 ];
 const froms = [
-  "Việt Nam",
-  "Ấn Độ",
-  "Hàn Quốc",
-  "Thái Lan",
-  "Nhật Bản",
-  "Trung Quốc",
-  "Mỹ",
-  "Đức",
-  "Đài Loan",
-  "Nước khác",
+  'Việt Nam',
+  'Ấn Độ',
+  'Hàn Quốc',
+  'Thái Lan',
+  'Nhật Bản',
+  'Trung Quốc',
+  'Mỹ',
+  'Đức',
+  'Đài Loan',
+  'Nước khác',
 ];
 const warranty_policy = [
-  "Hết bảo hành",
-  "1 tháng",
-  "2 tháng",
-  "3 tháng",
-  "4-6 tháng",
-  "7-12 tháng",
-  ">12 tháng",
-  "Còn bảo hành",
+  'Hết bảo hành',
+  '1 tháng',
+  '2 tháng',
+  '3 tháng',
+  '4-6 tháng',
+  '7-12 tháng',
+  '>12 tháng',
+  'Còn bảo hành',
 ];
 const CategoryPage1060 = () => {
-  const setFormData = useAppStore((state) => state.setFormData);
-  const setpage1060 = useAppStore((state) => state.setpage1060);
   const form = useForm({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      price: "",
-      title: "",
-      describedetail: "",
-      city: "",
-      district: "",
-      ward: "",
-      status: "",
-      brand: "",
-      color: "",
-      memory: "",
-      warranty_policy: "",
-      from: "",
+      price: '',
+      title: '',
+      describedetail: '',
+      status: '',
+      brand: '',
+      color: '',
+      memory: '',
+      warranty_policy: '',
+      from: '',
     },
   });
 
   const navigate = useNavigate();
-  const [cities, setCities] = useState([]);
-  const [districts, setDistricts] = useState([]);
-  const [wards, setWards] = useState([]);
-  const [selectedCity, setSelectedCity] = useState(null);
-  const [selectedDistrict, setSelectedDistrict] = useState(null);
-  const [selectedWard, setSelectedWard] = useState(null);
-  const [opencity, setOpenCity] = useState(false);
-  const [opendistrict, setOpenDistrict] = useState(false);
-  const [openward, setOpenWard] = useState(false);
 
   const [isFocus, setIsFocus] = useState(false);
   const [isFocusDescribeDetail, setIsFocusDescribeDetail] = useState(false);
-  const [brandPhone, setBrandPhone] = useState([]);
-  const [errors, setErrors] = useState({
-    city: null,
-    district: null,
-    ward: null,
-  });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await axios.get(
-          "https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json"
-        );
-        setCities(res.data);
-        // console.log(res.data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // useEffect(() => {
-  //   const fetchDataForPhone = async () => {
-  //     const options = {
-  //       method: "GET",
-  //       url: "https://mobile-phones2.p.rapidapi.com/brands",
-  //       headers: {
-  //         "x-rapidapi-key": `${import.meta.env.VITE_CLIENT_API_PHONE}`,
-  //         "x-rapidapi-host": `${import.meta.env.VITE_CLIENT_API_CREDENTIAL}`,
-  //       },
-  //     };
-
-  //     try {
-  //       const response = await axios.request(options);
-  //       console.log(response.data);
-
-  //       setBrandPhone(response.data);
-  //     } catch (error) {
-  //       console.error(error);
-  //     }
-  //   };
-
-  //   fetchDataForPhone();
-  // }, []);
-  useEffect(() => {
-    if (selectedCity) {
-      const city = cities.find((city) => city.Name === selectedCity);
-      setDistricts(city?.Districts || []);
-      setSelectedDistrict(null);
-      setWards([]);
-      setSelectedWard(null);
-    }
-  }, [selectedCity, cities]);
-
-  useEffect(() => {
-    if (selectedDistrict) {
-      const district = districts.find(
-        (district) => district.Name === selectedDistrict
-      );
-      setWards(district?.Wards || []);
-      setSelectedWard(null);
-    }
-  }, [selectedDistrict, districts]);
   const [searchParams] = useSearchParams();
-  const categoryId = searchParams.get("category");
+
   const [imageNames, setImageNames] = useState([]);
   const [video, setVideo] = useState([]);
 
@@ -331,30 +224,6 @@ const CategoryPage1060 = () => {
 
   const onSubmit = (data) => {
     console.log(data);
-
-    let hasError = false;
-    const newErrors = { city: null, district: null, ward: null };
-
-    if (!selectedCity) {
-      newErrors.city = "Vui lòng chọn tỉnh thành.";
-      hasError = true;
-    }
-    if (!selectedDistrict) {
-      newErrors.district = "Vui lòng chọn quận.";
-      hasError = true;
-    }
-    if (!selectedWard) {
-      newErrors.ward = "Vui lòng chọn huyện.";
-      hasError = true;
-    }
-
-    setErrors(newErrors);
-
-    if (!hasError) {
-      setpage1060(true);
-      setFormData(data, imageNames, video, null, true);
-      navigate("/preview");
-    }
   };
 
   return (
@@ -418,257 +287,6 @@ const CategoryPage1060 = () => {
                   >
                     <TabsContent value="sale">
                       <FormLabel>Địa chỉ </FormLabel>
-                      <FormField
-                        control={form.control}
-                        name="city"
-                        render={({ field }) => (
-                          <FormItem className="flex items-center gap-4">
-                            <FormControl>
-                              <>
-                                <Popover
-                                  open={opencity}
-                                  onOpenChange={setOpenCity}
-                                >
-                                  <PopoverTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      role="combobox"
-                                      aria-expanded={opencity}
-                                      className="w-full justify-between"
-                                    >
-                                      {selectedCity
-                                        ? cities.find(
-                                            (city) => city.Name === selectedCity
-                                          )?.Name
-                                        : "Chọn tỉnh thành"}
-                                      <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-[200px] p-0">
-                                    <Command>
-                                      <CommandInput
-                                        placeholder="Search city..."
-                                        className="h-9"
-                                      />
-                                      <CommandList>
-                                        <CommandEmpty>
-                                          No city found.
-                                        </CommandEmpty>
-                                        <CommandGroup>
-                                          {cities.map((city) => (
-                                            <CommandItem
-                                              key={city.Id}
-                                              value={city.Name}
-                                              onSelect={(currentValue) => {
-                                                setSelectedCity(
-                                                  currentValue === selectedCity
-                                                    ? null
-                                                    : currentValue
-                                                );
-                                                setOpenCity(false);
-                                                field.onChange(currentValue); // Update form field value
-                                              }}
-                                            >
-                                              {city.Name}
-                                              <CheckIcon
-                                                className={cn(
-                                                  "ml-auto h-4 w-4",
-                                                  selectedCity === city.Id
-                                                    ? "opacity-100"
-                                                    : "opacity-0"
-                                                )}
-                                              />
-                                            </CommandItem>
-                                          ))}
-                                        </CommandGroup>
-                                      </CommandList>
-                                    </Command>
-                                  </PopoverContent>
-                                </Popover>
-                                {form.formState.errors.city && (
-                                  <p className="text-red-600">
-                                    {form.formState.errors.city.message}
-                                  </p>
-                                )}
-                              </>
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="district"
-                        render={({ field }) => (
-                          <FormItem className="flex items-center gap-4">
-                            <FormControl>
-                              <>
-                                <Popover
-                                  open={opendistrict}
-                                  onOpenChange={setOpenDistrict}
-                                >
-                                  <PopoverTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      role="combobox"
-                                      aria-expanded={opendistrict}
-                                      className="w-full justify-between"
-                                      disabled={!selectedCity}
-                                    >
-                                      {selectedDistrict
-                                        ? districts.find(
-                                            (district) =>
-                                              district.Name === selectedDistrict
-                                          )?.Name
-                                        : "Chọn quận"}
-                                      <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-full p-0">
-                                    <Command>
-                                      <CommandInput
-                                        placeholder="Search district..."
-                                        className="h-9"
-                                      />
-                                      <CommandList>
-                                        <CommandEmpty>
-                                          No district found.
-                                        </CommandEmpty>
-                                        <CommandGroup>
-                                          {districts.map((district) => (
-                                            <CommandItem
-                                              key={district.Id}
-                                              value={district.Name}
-                                              onSelect={(currentValue) => {
-                                                setSelectedDistrict(
-                                                  currentValue ===
-                                                    selectedDistrict
-                                                    ? null
-                                                    : currentValue
-                                                );
-                                                setOpenDistrict(false);
-                                                field.onChange(currentValue); // Update form field value
-                                              }}
-                                            >
-                                              {district.Name}
-                                              <CheckIcon
-                                                className={cn(
-                                                  "ml-auto h-4 w-4",
-                                                  selectedDistrict ===
-                                                    district.Id
-                                                    ? "opacity-100"
-                                                    : "opacity-0"
-                                                )}
-                                              />
-                                            </CommandItem>
-                                          ))}
-                                        </CommandGroup>
-                                      </CommandList>
-                                    </Command>
-                                  </PopoverContent>
-                                </Popover>
-                                {form.formState.errors.district && (
-                                  <p className="text-red-600">
-                                    {form.formState.errors.district.message}
-                                  </p>
-                                )}
-                              </>
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="ward"
-                        render={({ field }) => (
-                          <FormItem className="flex items-center gap-4">
-                            <FormControl>
-                              <>
-                                <Popover
-                                  open={openward}
-                                  onOpenChange={setOpenWard}
-                                >
-                                  <PopoverTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      role="combobox"
-                                      aria-expanded={openward}
-                                      className="w-full justify-between"
-                                      disabled={!selectedDistrict}
-                                    >
-                                      {selectedWard
-                                        ? wards.find(
-                                            (ward) => ward.Name === selectedWard
-                                          )?.Name
-                                        : "Chọn huyện"}
-                                      <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-full p-0">
-                                    <Command>
-                                      <CommandInput
-                                        placeholder="Search ward..."
-                                        className="h-9"
-                                      />
-                                      <CommandList>
-                                        <CommandEmpty>
-                                          No ward found.
-                                        </CommandEmpty>
-                                        <CommandGroup>
-                                          {wards.map((ward) => (
-                                            <CommandItem
-                                              key={ward.Id}
-                                              value={ward.Name}
-                                              onSelect={(currentValue) => {
-                                                setSelectedWard(
-                                                  currentValue === selectedWard
-                                                    ? null
-                                                    : currentValue
-                                                );
-                                                setOpenWard(false);
-                                                field.onChange(currentValue); // Update form field value
-                                              }}
-                                            >
-                                              {ward.Name}
-                                              <CheckIcon
-                                                className={cn(
-                                                  "ml-auto h-4 w-4",
-                                                  selectedWard === ward.Id
-                                                    ? "opacity-100"
-                                                    : "opacity-0"
-                                                )}
-                                              />
-                                            </CommandItem>
-                                          ))}
-                                        </CommandGroup>
-                                      </CommandList>
-                                    </Command>
-                                  </PopoverContent>
-                                </Popover>
-                                {form.formState.errors.ward && (
-                                  <p className="text-red-600">
-                                    {form.formState.errors.ward.message}
-                                  </p>
-                                )}
-                              </>
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="namedistrict"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Tên đường</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Nhập tên đường" {...field} />
-                            </FormControl>
-
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
 
                       <FormField
                         control={form.control}
@@ -678,7 +296,7 @@ const CategoryPage1060 = () => {
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || "Tình trạng"}
+                                  {field.value || 'Tình trạng'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -710,7 +328,7 @@ const CategoryPage1060 = () => {
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || "Hãng sản xuất"}
+                                  {field.value || 'Hãng sản xuất'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -746,7 +364,7 @@ const CategoryPage1060 = () => {
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || "Màu sắc"}
+                                  {field.value || 'Màu sắc'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -777,7 +395,7 @@ const CategoryPage1060 = () => {
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || "Dung lượng:"}
+                                  {field.value || 'Dung lượng:'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -808,7 +426,7 @@ const CategoryPage1060 = () => {
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || "Chính sách bảo hành:"}
+                                  {field.value || 'Chính sách bảo hành:'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -846,7 +464,7 @@ const CategoryPage1060 = () => {
                             <Select {...field} onValueChange={field.onChange}>
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || "Xuất sứ:"}
+                                  {field.value || 'Xuất sứ:'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -906,7 +524,7 @@ const CategoryPage1060 = () => {
                             <FormDescription>
                               {isFocus && (
                                 <h1 className="text-base">
-                                  {" "}
+                                  {' '}
                                   Nếu bạn cung cấp thêm một số thông tin chi
                                   tiết như:Phong cách thiết kế: Hiện đại, cổ
                                   điển, tối giản,...Màu sắc chủ đạo: Trắng,
@@ -938,7 +556,7 @@ const CategoryPage1060 = () => {
                             <FormDescription>
                               {isFocusDescribeDetail && (
                                 <h1 className="text-base">
-                                  {" "}
+                                  {' '}
                                   Nên có: Loại căn hộ chung cư, vị trí, tiện
                                   ích, diện tích, số phòng, thông tin pháp lý,
                                   tình trạng nội thất, v.v. Ví dụ: Tọa lạc tại
