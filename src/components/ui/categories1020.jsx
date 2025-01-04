@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import Cookies from 'js-cookie';
@@ -61,9 +61,6 @@ const FormSchema = z.object({
   condition_interior: z.number().min(1, {
     message: 'Vui lòng nhập nội thất',
   }),
-  namedistrict: z.string().min(2, {
-    message: 'Vui lòng nhâp tên đường',
-  }),
 
   legal_id: z.number().min(1, {
     message: 'Vui lòng chọn giấy tờ pháp lý',
@@ -112,11 +109,11 @@ const FormSchema = z.object({
   floor: z.string().min(1, {
     message: 'Vui lòng nhập số tầng',
   }),
+  address: z.string().optional(),
   bathroom_id: z.number().optional(),
   viewbalcony: z.number().optional(),
   main_door_id: z.number().optional(),
 
-  subdivision_code: z.string().optional(),
   propertyofhouse: z.string().optional(),
   horizontal: z.string().optional(),
   length: z.string().optional(),
@@ -140,7 +137,6 @@ const FormSchema = z.object({
   cost_deposit: z.number().min(1, {
     message: 'Vui lòng nhập giá tiền cọc',
   }),
-  type_user: z.boolean().default(false).optional(),
 });
 
 const CategoryPage1020 = () => {
@@ -149,7 +145,7 @@ const CategoryPage1020 = () => {
     defaultValues: {
       nameofbuilding: 'Wuys 1',
       // citi: "",
-      namedistrict: 'Levanquy',
+      address: '',
 
       condition_interior: '',
       typeofhouse: '',
@@ -165,7 +161,6 @@ const CategoryPage1020 = () => {
       bathroom_id: '',
       viewbalcony: '',
       main_door_id: '',
-      subdivision_code: 'phan khu 1',
       propertyofhouse: '',
       horizontal: '',
       length: '',
@@ -193,7 +188,7 @@ const CategoryPage1020 = () => {
       planning_or_road: false,
       diff_situation: false,
       approved: 2,
-      type_user: false,
+
       district_code: '',
     },
   });
@@ -391,7 +386,7 @@ const CategoryPage1020 = () => {
       land_not_changed_yet: data.land_not_changed_yet ? 1 : 0,
       planning_or_road: data.planning_or_road ? 1 : 0,
       diff_situation: data.diff_situation ? 1 : 0,
-      type_user: data.type_user ? 2 : 1,
+
       user_id: user_id,
     };
 
@@ -772,12 +767,12 @@ const CategoryPage1020 = () => {
 
                       <FormField
                         control={form.control}
-                        name="namedistrict"
+                        name="address"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Tên đường</FormLabel>
+                            <FormLabel>Địa chỉ</FormLabel>
                             <FormControl>
-                              <Input placeholder="Nhập tên đường" {...field} />
+                              <Input placeholder="Nhập Địa chỉ" {...field} />
                             </FormControl>
 
                             <FormMessage />
@@ -812,20 +807,7 @@ const CategoryPage1020 = () => {
                           </FormItem>
                         )}
                       />
-                      <FormField
-                        control={form.control}
-                        name="subdivision_code"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Tên Phân Khu/lô</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Tên phân khu/lô" {...field} />
-                            </FormControl>
 
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
                       <FormField
                         control={form.control}
                         name="block"
@@ -1446,30 +1428,6 @@ const CategoryPage1020 = () => {
                       />
 
                       {/* fix */}
-                      <FormField
-                        control={form.control}
-                        name="type_user"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Bạn là:</FormLabel>
-
-                            <FormControl>
-                              <div className="flex items-center space-x-2">
-                                <Switch
-                                  id="broker"
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                                <Label htmlFor="broker" className="uppercase">
-                                  Môi giới
-                                </Label>
-                              </div>
-                            </FormControl>
-
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
 
                       <div className="flex gap-3 mt-3">
                         <Button variant="outline">Xem trước</Button>

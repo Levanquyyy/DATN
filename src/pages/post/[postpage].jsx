@@ -132,6 +132,7 @@ const PropertyPost = ({ id }) => {
         user_id: userData,
         type_posting_id: saveindex,
         load_key_post: postCount,
+        type: 1,
       };
     } else {
       return;
@@ -142,13 +143,15 @@ const PropertyPost = ({ id }) => {
 
     console.log(transformSelectedDays);
     if (userData && product_id && totalPrice) {
-      return {
-        user_id: userData,
-        product_id: product_id,
-        type_posting_id: saveindex,
-        load_key_post: postCount,
-        price: totalPrice,
-      };
+      return [
+        {
+          user_id: userData,
+          product_id: product_id,
+          type_posting_id: saveindex,
+          load_key_post: postCount,
+          price: totalPrice,
+        },
+      ];
     } else {
       return;
     }
@@ -181,7 +184,7 @@ const PropertyPost = ({ id }) => {
         total
       );
       const transformedDataForPaypal = transformDataForPaypal(
-        getUser.id,
+        +getUser.id,
         getData.data.id,
         total
       );

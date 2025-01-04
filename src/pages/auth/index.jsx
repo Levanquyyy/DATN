@@ -10,7 +10,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
+import { GoogleLogin } from '@react-oauth/google';
 import { useFacebookLogin } from '@kazion/react-facebook-login';
 import { jwtDecode } from 'jwt-decode';
 import { useState, useEffect } from 'react';
@@ -161,6 +161,20 @@ const Auth = () => {
       }
     }
   };
+  const handleSignInGoogle = async (dataUser) => {
+    try {
+      console.log('Google User Data:', dataUser);
+      Cookies.set('google_logged_in', 'true', {
+        expires: 7,
+        secure: true,
+        sameSite: 'strict',
+      });
+      console.log('Cookie set:', Cookies.get('google_logged_in'));
+      navigate('/home-page');
+    } catch (error) {
+      console.error('Error setting cookie:', error);
+    }
+  };
 
   return (
     <div className="flex items-center justify-center h-screen">
@@ -247,6 +261,7 @@ const Auth = () => {
                     width={100}
                     onSuccess={(credentialResponse) => {
                       const decoded = jwtDecode(credentialResponse.credential);
+                      handleSignInGoogle(decoded);
                     }}
                     onError={() => {
                       console.log('Login Failed');

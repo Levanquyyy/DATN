@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Bell,
   BriefcaseBusiness,
@@ -91,22 +91,29 @@ import {
 
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { fetchUserInfo, signOut } from '@/routes/apiforUser.jsx';
-import { toast } from 'sonner';
 import Cookies from 'js-cookie';
 const Header = () => {
   const [openBurger, setOpenBurger] = useState(false);
-
+  const navigate = useNavigate();
   const [value, setValue] = useState('');
   const [position, setPosition] = useState('bottom');
   const [idUser, setIdUser] = useState('');
+  const [signIn, setSignIn] = useState(false);
   const SignOut = async () => {
-    const res = await signOut();
-    console.log(res);
-    if (res) {
-      Cookies.remove('access_token');
-      window.location.href = '/';
-    } else {
-      toast.error('Đăng xuất thất bại');
+    try {
+      const res = await signOut();
+      const signOut_google = Cookies.get('google_logged_in');
+      console.log(res);
+      if (res || signOut_google) {
+        Cookies.remove('access_token');
+        Cookies.remove('google_logged_in');
+        window.location.href = '/';
+      } else {
+        navigate('/auth');
+      }
+    } catch (error) {
+      console.error('Error during sign out:', error);
+      navigate('/auth');
     }
   };
   useEffect(() => {
@@ -114,6 +121,13 @@ const Header = () => {
       const res = await fetchUserInfo();
       setIdUser(res.id);
     };
+    const token = Cookies.get('access_token');
+    const google_logged_in = Cookies.get('google_logged_in');
+    if (token || google_logged_in) {
+      setSignIn(true);
+    } else {
+      setSignIn(false);
+    }
     userFetch();
   }, []);
   return (
@@ -422,7 +436,7 @@ const Header = () => {
           <DropdownMenuSeparator />
           <DropdownMenuItem>
             <Button size="sm" className="w-full" onClick={SignOut}>
-              Đăng xuất
+              {signIn ? 'Đăng xuất' : 'Đăng nhập'}
             </Button>
           </DropdownMenuItem>
         </DropdownMenuContent>

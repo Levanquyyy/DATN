@@ -41,7 +41,7 @@ export const getFilterData = async () => {
     const response = await apiClient.get(
       `${import.meta.env.VITE_SERVER_URL}/api/auth/product/get-data-post?type=1`
     );
-    return response.data.data;
+    return response.data;
   } catch (error) {
     console.error(
       'Error fetching product by id:',
@@ -169,6 +169,18 @@ export const getdataTypeOfHouse = async (key) => {
       `${import.meta.env.VITE_SERVER_URL}/api/auth/product/categories/get-data/?type=${key}`
     );
     return response.data.data; // Return data from API
+  } catch (error) {
+    console.error(
+      'Error fetching product by id:',
+      error.response?.data || error.message
+    );
+    return null;
+  }
+};
+export const getDataNextPage = async (page) => {
+  try {
+    const response = await apiClient.get(page);
+    return response.data; // Return data from API
   } catch (error) {
     console.error(
       'Error fetching product by id:',

@@ -49,11 +49,11 @@ const PropertyDetails = memo(({ id }) => {
 
   const getConditionInteriorLabel = (value) => {
     switch (value) {
-      case 1:
+      case 45:
         return 'Nội thất cao cấp';
-      case 2:
+      case 46:
         return 'Đầy đủ';
-      case 3:
+      case 47:
         return 'Nhà trống';
       default:
         return 'Không xác định';

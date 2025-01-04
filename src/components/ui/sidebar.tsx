@@ -156,7 +156,7 @@ const Sidebar = () => {
                     </MenubarSubTrigger>
                     <MenubarSubContent>
                       <MenubarItem>
-                        <Link to="/dang-tin?category=1020" className="w-full">
+                        <Link to="/dang-tin?category=1060" className="w-full">
                           Điện thoại
                         </Link>
                       </MenubarItem>

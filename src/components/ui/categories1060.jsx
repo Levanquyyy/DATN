@@ -1,4 +1,3 @@
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Sidebar from '@/components/ui/sidebar';
 import Header from '@/components/ui/header.tsx';
 
@@ -6,8 +5,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 
 import {
@@ -33,6 +30,7 @@ import {
 } from '@/components/ui/select';
 
 import { useEffect, useState } from 'react';
+import { getdataPhone } from '@/routes/apiForPhone.jsx';
 
 const FormSchema = z.object({
   status: z.string().min(2, {
@@ -47,13 +45,9 @@ const FormSchema = z.object({
   memory: z.string().min(2, {
     message: 'Vui lòng chọn dung lượng',
   }),
-  warranty_policy: z.string().min(2, {
-    message: 'Vui lòng chọn chính sách bảo hành',
-  }),
   from: z.string().min(2, {
     message: 'Vui lòng chọn nguồn gốc',
   }),
-
   price: z.string().min(2, {
     message: 'Vui lòng nhập giá tiền',
   }),
@@ -64,127 +58,7 @@ const FormSchema = z.object({
     message: 'Vui lòng nhập mô tả chi tiết',
   }),
 });
-const colors = [
-  'Bạc',
-  'Đen',
-  'Đen bóng - Jet black',
-  'Đỏ',
-  'Hồng',
-  'Trắng',
-  'Vàng',
-  'Vàng hồng',
-  'Xám',
-  'Xanh dương',
-  'Xanh lá',
-  'Tím',
-  'Cam',
-  'Màu khác',
-];
-const memory = [
-  '< 8GB',
-  '8 GB',
-  '16 GB',
-  '32 GB',
-  '64 GB',
-  '128 GB',
-  '256 GB',
-  '512 GB',
-  '1 TB',
-  '2 TB',
-  '> 2 TB',
-];
-const phones = [
-  'Alcatel',
-  'Apple',
-  'Aquos',
-  'Arbutus',
-  'Asanzo',
-  'Asus',
-  'BKAV',
-  'Blackberry',
-  'Bluboo',
-  'Coolpad',
-  'Dopod',
-  'Elephone',
-  'Epic',
-  'Essential',
-  'Fujitsu',
-  'Gionee',
-  'Google',
-  'Hero',
-  'Honor',
-  'HTC',
-  'Huawei',
-  'Infinix',
-  'Intel',
-  'Itel',
-  'Kechaoda',
-  'Kyocera',
-  'Land Rover',
-  'Leagoo',
-  'Lenovo',
-  'LG',
-  'Masstel',
-  'Meitu',
-  'Meizu',
-  'Microsoft',
-  'Mobell',
-  'Mobiado',
-  'Mobiistar',
-  'Motorola',
-  'Nokia phổ thông',
-  'Nokia thông minh',
-  'Nothing',
-  'Nubia',
-  'Obi',
-  'OnePlus',
-  'Oppo',
-  'Oukitel',
-  'Palm',
-  'Philips',
-  'Pocophone',
-  'Q Mobile',
-  'Razer',
-  'Realme',
-  'Samsung',
-  'Sharp',
-  'Sky',
-  'Sony',
-  'Tecno',
-  'Uimi',
-  'Ulefone',
-  'Umidigi',
-  'Vertu',
-  'Vivo',
-  'Vsmart',
-  'Wiko',
-  'Wing',
-  'Xiaomi',
-  'ZiP',
-  'Hãng khác',
-];
-const froms = [
-  'Việt Nam',
-  'Ấn Độ',
-  'Hàn Quốc',
-  'Thái Lan',
-  'Nhật Bản',
-  'Trung Quốc',
-  'Mỹ',
-  'Đức',
-  'Đài Loan',
-  'Nước khác',
-];
-const warranty_policy = [
-  'Hết bảo hành',
-  '1 tháng',
-  '2 tháng',
-  '3 tháng',
-  '4-6 tháng',
-  '7-12 tháng',
-  '>12 tháng',
-  'Còn bảo hành',
-];
+
 const CategoryPage1060 = () => {
   const form = useForm({
     resolver: zodResolver(FormSchema),
@@ -196,30 +70,50 @@ const CategoryPage1060 = () => {
       brand: '',
       color: '',
       memory: '',
-      warranty_policy: '',
       from: '',
     },
   });
+  const [status, setStatus] = useState([]);
+  const [brand, setBrand] = useState([]);
+  const [color, setColor] = useState([]);
+  const [from, setFrom] = useState([]);
+  const [ram, setRam] = useState([]);
 
-  const navigate = useNavigate();
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const statusRes = await getdataPhone('tinh-trang');
+        setStatus(statusRes);
+
+        const brandRes = await getdataPhone('hang-dien-thoai');
+        setBrand(brandRes);
+
+        const colorRes = await getdataPhone('mau-sac');
+        setColor(colorRes);
+
+        const fromRes = await getdataPhone('xuat-xu');
+        setFrom(fromRes);
+
+        const ramRes = await getdataPhone('ram');
+        setRam(ramRes);
+      } catch (error) {
+        console.error('Lỗi khi fetch dữ liệu:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const [isFocus, setIsFocus] = useState(false);
   const [isFocusDescribeDetail, setIsFocusDescribeDetail] = useState(false);
 
-  const [searchParams] = useSearchParams();
-
-  const [imageNames, setImageNames] = useState([]);
-  const [video, setVideo] = useState([]);
-
   const handleFileChange = (event) => {
     const files = Array.from(event.target.files);
     const fileNames = files.map((file) => file.name);
-    setImageNames(fileNames);
   };
   const handleVideoChange = (event) => {
     const files = Array.from(event.target.files);
     const fileNames = files.map((file) => file.name);
-    setVideo(fileNames);
   };
 
   const onSubmit = (data) => {
@@ -241,33 +135,33 @@ const CategoryPage1060 = () => {
 
           <div className="flex flex-col sm:flex-row">
             <div className="flex-1">
-              <div class="font-[sans-serif] max-w-md ">
-                <label class="text-base text-gray-500 font-semibold mb-2 block">
+              <div className="font-[sans-serif] max-w-md ">
+                <label className="text-base text-gray-500 font-semibold mb-2 block">
                   ĐĂNG TỪ 03 ĐẾN 12 HÌNH
                 </label>
                 <input
                   type="file"
-                  class="w-full text-gray-400 font-semibold text-sm bg-white border file:cursor-pointer cursor-pointer file:border-0 file:py-3 file:px-4 file:mr-4 file:bg-gray-100 file:hover:bg-gray-200 file:text-gray-500 rounded"
+                  className="w-full text-gray-400 font-semibold text-sm bg-white border file:cursor-pointer cursor-pointer file:border-0 file:py-3 file:px-4 file:mr-4 file:bg-gray-100 file:hover:bg-gray-200 file:text-gray-500 rounded"
                   onChange={handleFileChange}
                   multiple
                   accept="image/*"
                 />
-                <p class="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-gray-400 mt-2">
                   PNG, JPG SVG, WEBP, and GIF are Allowed.
                 </p>
               </div>
 
-              <div class="font-[sans-serif] max-w-md ">
-                <label class="text-base text-gray-500 font-semibold mb-2 block">
+              <div className="font-[sans-serif] max-w-md ">
+                <label className="text-base text-gray-500 font-semibold mb-2 block">
                   ĐĂNG TỐI ĐA 01 VIDEO
                 </label>
                 <input
                   type="file"
-                  class="w-full text-gray-400 font-semibold text-sm bg-white border file:cursor-pointer cursor-pointer file:border-0 file:py-3 file:px-4 file:mr-4 file:bg-gray-100 file:hover:bg-gray-200 file:text-gray-500 rounded"
+                  className="w-full text-gray-400 font-semibold text-sm bg-white border file:cursor-pointer cursor-pointer file:border-0 file:py-3 file:px-4 file:mr-4 file:bg-gray-100 file:hover:bg-gray-200 file:text-gray-500 rounded"
                   onChange={handleVideoChange}
                   accept="video/*"
                 />
-                <p class="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-gray-400 mt-2">
                   MP4, AVI, MOV, and other video formats are allowed.
                 </p>
               </div>
@@ -293,22 +187,33 @@ const CategoryPage1060 = () => {
                         name="status"
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
-                            <Select {...field} onValueChange={field.onChange}>
+                            <Select
+                              {...field}
+                              value={
+                                field.value ? field.value.toString() : undefined
+                              }
+                              onValueChange={(value) =>
+                                field.onChange(parseInt(value, 10))
+                              }
+                            >
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || 'Tình trạng'}
+                                  {status.find(
+                                    (item) => item.id === field.value
+                                  )?.name || 'Tình trạng'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectGroup>
                                   <SelectLabel>Tình trạng máy</SelectLabel>
-                                  <SelectItem value="Mới">Mới</SelectItem>
-                                  <SelectItem value="Đã sử dụng (chưa sửa chữa)">
-                                    Đã sử dụng (chưa sửa chữa)
-                                  </SelectItem>
-                                  <SelectItem value="Đã sử dụng (qua sửa chữa)">
-                                    Đã sử dụng (qua sửa chữa)
-                                  </SelectItem>
+                                  {status.map((statusItem) => (
+                                    <SelectItem
+                                      value={statusItem.id}
+                                      key={statusItem.id}
+                                    >
+                                      {statusItem.name}
+                                    </SelectItem>
+                                  ))}
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
@@ -325,25 +230,32 @@ const CategoryPage1060 = () => {
                         name="brand"
                         render={({ field }) => (
                           <div className="mt-2 ">
-                            <Select {...field} onValueChange={field.onChange}>
+                            <Select
+                              {...field}
+                              value={
+                                field.value ? field.value.toString() : undefined
+                              }
+                              onValueChange={(value) =>
+                                field.onChange(parseInt(value, 10))
+                              }
+                            >
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || 'Hãng sản xuất'}
+                                  {brand.find((item) => item.id === field.value)
+                                    ?.name || 'Hãng sản xuất'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectGroup>
                                   <SelectLabel>Hãng sản xuất</SelectLabel>
-
-                                  {phones.map((brand, index) => {
-                                    // Kiểm tra giá trị của brand.name và brand.id
-
-                                    return (
-                                      <SelectItem value={brand} key={index}>
-                                        {brand}
-                                      </SelectItem>
-                                    );
-                                  })}
+                                  {brand.map((brandItem) => (
+                                    <SelectItem
+                                      key={brandItem.id}
+                                      value={brandItem.id.toString()}
+                                    >
+                                      {brandItem.name}
+                                    </SelectItem>
+                                  ))}
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
@@ -361,18 +273,30 @@ const CategoryPage1060 = () => {
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
                             <FormLabel>Màu sắc</FormLabel>
-                            <Select {...field} onValueChange={field.onChange}>
+                            <Select
+                              {...field}
+                              value={
+                                field.value ? field.value.toString() : undefined
+                              }
+                              onValueChange={(value) =>
+                                field.onChange(parseInt(value, 10))
+                              }
+                            >
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || 'Màu sắc'}
+                                  {color.find((item) => item.id === field.value)
+                                    ?.name || 'Màu sắc'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectGroup>
                                   <SelectLabel>Màu sắc</SelectLabel>
-                                  {colors.map((color, index) => (
-                                    <SelectItem value={color} key={index}>
-                                      {color}
+                                  {color.map((colorItem) => (
+                                    <SelectItem
+                                      value={colorItem.id}
+                                      key={colorItem.id}
+                                    >
+                                      {colorItem.name}
                                     </SelectItem>
                                   ))}
                                 </SelectGroup>
@@ -392,18 +316,30 @@ const CategoryPage1060 = () => {
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
                             <FormLabel>Dung lượng</FormLabel>
-                            <Select {...field} onValueChange={field.onChange}>
+                            <Select
+                              {...field}
+                              value={
+                                field.value ? field.value.toString() : undefined
+                              }
+                              onValueChange={(value) =>
+                                field.onChange(parseInt(value, 10))
+                              }
+                            >
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || 'Dung lượng:'}
+                                  {ram.find((item) => item.id === field.value)
+                                    ?.name || 'Dung lượng'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectGroup>
-                                  <SelectLabel>Dung lượng:</SelectLabel>
-                                  {memory.map((memory, index) => (
-                                    <SelectItem value={memory} key={index}>
-                                      {memory}
+                                  <SelectLabel>Dung lượng</SelectLabel>
+                                  {ram.map((ramItem) => (
+                                    <SelectItem
+                                      value={ramItem.id}
+                                      key={ramItem.id}
+                                    >
+                                      {ramItem.name}
                                     </SelectItem>
                                   ))}
                                 </SelectGroup>
@@ -417,62 +353,37 @@ const CategoryPage1060 = () => {
                           </div>
                         )}
                       />
-                      <FormField
-                        control={form.control}
-                        name="warranty_policy"
-                        render={({ field }) => (
-                          <div className="mt-2 flex flex-col gap-3">
-                            <FormLabel>Chính sách bảo hành</FormLabel>
-                            <Select {...field} onValueChange={field.onChange}>
-                              <SelectTrigger className="w-full">
-                                <SelectValue>
-                                  {field.value || 'Chính sách bảo hành:'}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectGroup>
-                                  <SelectLabel>
-                                    Chính sách bảo hành:
-                                  </SelectLabel>
-                                  {warranty_policy.map(
-                                    (warranty_policy, index) => (
-                                      <SelectItem
-                                        value={warranty_policy}
-                                        key={index}
-                                      >
-                                        {warranty_policy}
-                                      </SelectItem>
-                                    )
-                                  )}
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
-                            {form.formState.errors.warranty_policy && (
-                              <p className="text-red-600">
-                                {form.formState.errors.warranty_policy.message}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      />
+
                       <FormField
                         control={form.control}
                         name="from"
                         render={({ field }) => (
                           <div className="mt-2 flex flex-col gap-3">
                             <FormLabel>Xuất sứ</FormLabel>
-                            <Select {...field} onValueChange={field.onChange}>
+                            <Select
+                              {...field}
+                              value={
+                                field.value ? field.value.toString() : undefined
+                              }
+                              onValueChange={(value) =>
+                                field.onChange(parseInt(value, 10))
+                              }
+                            >
                               <SelectTrigger className="w-full">
                                 <SelectValue>
-                                  {field.value || 'Xuất sứ:'}
+                                  {from.find((item) => item.id === field.value)
+                                    ?.name || 'Xuất sứ'}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectGroup>
                                   <SelectLabel>Xuất sứ</SelectLabel>
-                                  {froms.map((from, index) => (
-                                    <SelectItem value={from} key={index}>
-                                      {from}
+                                  {from.map((fromItem) => (
+                                    <SelectItem
+                                      value={fromItem.id}
+                                      key={fromItem.id}
+                                    >
+                                      {fromItem.name}
                                     </SelectItem>
                                   ))}
                                 </SelectGroup>
@@ -565,27 +476,6 @@ const CategoryPage1060 = () => {
                                 </h1>
                               )}
                             </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name=""
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Bạn là:</FormLabel>
-
-                            <FormControl>
-                              <div className="flex items-center space-x-2">
-                                <Switch id="broker" />
-                                <Label htmlFor="broker" className="uppercase">
-                                  Bán chuyên
-                                </Label>
-                              </div>
-                            </FormControl>
-
                             <FormMessage />
                           </FormItem>
                         )}

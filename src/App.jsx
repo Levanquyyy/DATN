@@ -16,6 +16,7 @@ import Cookies from 'js-cookie';
 
 import ConfirmPasswordForm from '@/pages/confirm-password/confirm-password.jsx';
 import XetotPage from './pages/xetot/index.jsx';
+import DientuPage from '@/pages/dientu/index.jsx';
 const AuthRoutes = ({ children }) => {
   const access_token = Cookies.get('access_token');
 
@@ -45,14 +46,7 @@ function App() {
                 </AuthRoutes>
               }
             />
-            <Route
-              path="/home-page"
-              element={
-                <PrivateRoute>
-                  <HomePage />
-                </PrivateRoute>
-              }
-            />
+            <Route path="/home-page" element={<HomePage />} />
             <Route
               path="/dang-tin"
               element={
@@ -93,22 +87,7 @@ function App() {
                 </PrivateRoute>
               }
             />
-            <Route
-              path="/nhatot"
-              element={
-                <PrivateRoute>
-                  {/*<Snowfall*/}
-                  {/*  // Changes the snowflake color*/}
-                  {/*  color="grey"*/}
-                  {/*  // Applied to the canvas element*/}
-                  {/*  style={{ background: 'transparent', zIndex: 1 }}*/}
-                  {/*  // Controls the number of snowflakes that are created (default 150)*/}
-                  {/*  snowflakeCount={200}*/}
-                  {/*/>*/}
-                  <NhatotPage />
-                </PrivateRoute>
-              }
-            />{' '}
+            <Route path="/nhatot" element={<NhatotPage />} />
             <Route
               path="/xetot"
               element={
@@ -134,10 +113,10 @@ function App() {
               }
             />{' '}
             <Route
-              path="/myads"
+              path="/dientuhope"
               element={
                 <PrivateRoute>
-                  <BillPage />
+                  <DientuPage />
                 </PrivateRoute>
               }
             />{' '}
@@ -154,7 +133,7 @@ function App() {
               path="/confirm_reset_password/:id"
               element={<ConfirmPasswordForm />}
             />
-            <Route path="*" element={<Navigate to="/auth" />} />
+            <Route path="*" element={<Navigate to="/home-page" />} />
           </Routes>
         </Layout>
       </BrowserRouter>

@@ -6,14 +6,6 @@ import { CaretSortIcon, CheckIcon } from '@radix-ui/react-icons';
 import { Input } from '@/components/ui/input';
 
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-
-import {
   Command,
   CommandEmpty,
   CommandGroup,
@@ -151,8 +143,8 @@ const NhatotPage = () => {
     const fetchData = async () => {
       try {
         const res = await getFilterData();
+
         setDataFromServer(res);
-        // console.log(res.data);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -251,42 +243,7 @@ const NhatotPage = () => {
   ];
 
   const userTypes = ['Tất cả', 'Cá nhân', 'Môi giới'];
-  const typeofhouse = [
-    { value: 'can-ho-chung-cu', label: 'Căn hộ/Chung cư' },
-    { value: 'nha-o', label: 'Nhà ở' },
-    {
-      value: 'van-phong-mat-bang-kinh-doanh',
-      label: 'Văn phòng, Mặt bằng kinh doanh',
-    },
-    { value: 'dat', label: 'Đất' },
-    { value: 'phong-tro', label: 'Phòng trọ' },
-    { value: 'can-ho-dich-vu-mini', label: 'Căn hộ dịch vụ, mini' },
-  ];
-  const filterbyprice = [
-    { label: 'Giá dưới 1 tỷ', value: '<1' },
-    { label: 'Giá 1 - 2 tỷ', value: '1-2' },
-    { label: 'Giá 2 - 3 tỷ', value: '2-3' },
-    { label: 'Giá 3 - 5 tỷ', value: '3-5' },
-    { label: 'Giá 5 - 7 tỷ', value: '5-7' },
-    { label: 'Giá 7 - 10 tỷ', value: '7-10' },
-    { label: 'Giá 10 - 15 tỷ', value: '10-15' },
-    { label: 'Giá 15 - 20 tỷ', value: '15-20' },
-    { label: 'Giá 20 - 30 tỷ', value: '20-30' },
-    { label: 'Giá trên 30 tỷ', value: '>30' },
-  ];
-  const highlightoftypes = [
-    { label: 'Loại hình nổi bật', value: 'highlight' },
-    { label: 'Nhà đất Tp Hồ Chí Minh', value: 'nhadat-tphcm' },
-    { label: 'Chung cư Tp Hồ Chí Minh', value: 'chungcu-tphcm' },
-    { label: 'Nhà đất Hà Nội', value: 'nhadat-hanoi' },
-    { label: 'Đất Tp Hồ Chí Minh', value: 'dat-tphcm' },
-    { label: 'Nhà đất Đà Nẵng', value: 'nhadat-danang' },
-    { label: 'Chung cư Hà Nội', value: 'chungcu-hanoi' },
-    { label: 'Đất Bình Dương', value: 'dat-binhduong' },
-    { label: 'Đất Đồng Nai', value: 'dat-dongnai' },
-    { label: 'Nhà đất Bình Dương', value: 'nhadat-binhduong' },
-    { label: 'Đất Đà Nẵng', value: 'dat-danang' },
-  ];
+
   useEffect(() => {
     // Simulate loading delay
     const timer = setTimeout(() => {
@@ -299,9 +256,7 @@ const NhatotPage = () => {
   if (isLoading) {
     return <PropertyFilterSkeleton />;
   }
-  const onChange = (data) => {
-    console.log({ data });
-  };
+
   const onSubmit = async (data) => {
     const minPrice = parseCurrency(data.minPrice);
     const maxPrice = parseCurrency(data.maxPrice);
@@ -855,7 +810,9 @@ const NhatotPage = () => {
                       {dataFromServer?.length === 0 ? (
                         <div className="text-center">No data found</div>
                       ) : (
-                        <PropertyListings dataFromServer={dataFromServer} />
+                        <PropertyListings
+                          initialDataFromServer={dataFromServer}
+                        />
                       )}
                     </>
                   )}
