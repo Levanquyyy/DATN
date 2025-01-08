@@ -122,8 +122,7 @@ const Header = () => {
       setIdUser(res.id);
     };
     const token = Cookies.get('access_token');
-    const google_logged_in = Cookies.get('google_logged_in');
-    if (token || google_logged_in) {
+    if (token) {
       setSignIn(true);
     } else {
       setSignIn(false);

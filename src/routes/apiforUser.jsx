@@ -15,6 +15,19 @@ export const fetchUserInfo = async () => {
     return null;
   }
 };
+export const signInLogin = async (values) => {
+  try {
+    const res = await apiClient.post(
+      `${import.meta.env.VITE_SERVER_URL}/api/auth/google/callback`,
+      values
+    );
+
+    return res.data;
+  } catch (error) {
+    console.error('Error signing in:', error.response?.data || error.message);
+    return false;
+  }
+};
 export const signOut = async () => {
   try {
     const res = await apiClient.post(

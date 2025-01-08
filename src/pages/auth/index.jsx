@@ -21,6 +21,7 @@ import Cookies from 'js-cookie';
 import apiClient from '@/lib/api-client';
 import { SIGNUP_ROUTE, SIGNIN_ROUTE } from '@/utilities/constant';
 import { toast } from 'sonner';
+import { signInLogin } from '@/routes/apiforUser.jsx';
 const Auth = () => {
   const [first, setFirst] = useState('');
   const [last, setLast] = useState('');
@@ -128,49 +129,42 @@ const Auth = () => {
     }
   };
   const handleSignIn = async () => {
-    if (validateSignIn()) {
-      const data = {
-        email: emailForSignIn,
-        password: passwordForSignIn,
-      };
-      try {
-        const response = await apiClient.post(SIGNIN_ROUTE, data);
-        if (response.data.status === 'error') {
-          throw new Error(response.data.message);
-        } else {
-          // Save the token in a cookie
-          const { access_token, expires_in } = response.data;
-          Cookies.set('access_token', access_token, {
-            expires: new Date(expires_in),
-            secure: true,
-            sameSite: 'strict',
-          });
+    if (!validateSignIn()) return;
 
-          // Navigate based on response status
-          if (response.status === 'error') {
-            navigate('/auth');
-          } else {
-            navigate('/home-page');
-          }
-        }
-      } catch (error) {
-        console.error('Signin error:', error.response?.data || error.message);
-        toast.error(
-          `Signin failed: ${error.response?.data?.message || error.message}`
-        );
-      }
-    }
-  };
-  const handleSignInGoogle = async (dataUser) => {
+    const data = { email: emailForSignIn, password: passwordForSignIn };
     try {
-      console.log('Google User Data:', dataUser);
-      Cookies.set('google_logged_in', 'true', {
-        expires: 7,
+      const response = await apiClient.post(SIGNIN_ROUTE, data);
+      if (response.data.status === 'error')
+        throw new Error(response.data.message);
+
+      const { access_token, expires_in } = response.data;
+      Cookies.set('access_token', access_token, {
+        expires: new Date(expires_in),
         secure: true,
         sameSite: 'strict',
       });
-      console.log('Cookie set:', Cookies.get('google_logged_in'));
-      navigate('/home-page');
+
+      navigate(response.status === 'error' ? '/auth' : '/home-page');
+    } catch (error) {
+      console.error('Signin error:', error.response?.data || error.message);
+      toast.error(
+        `Signin failed: ${error.response?.data?.message || error.message}`
+      );
+    }
+  };
+
+  const handleSignInGoogle = async (dataUser) => {
+    try {
+      const res = await signInLogin(dataUser);
+      // console.log('Google User Data:', res);
+      const { access_token, expires_in } = res;
+      Cookies.set('access_token', access_token, {
+        expires: new Date(expires_in),
+        secure: true,
+        sameSite: 'strict',
+      });
+
+      navigate(res.status === 'error' ? '/auth' : '/home-page');
     } catch (error) {
       console.error('Error setting cookie:', error);
     }
