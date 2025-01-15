@@ -149,6 +149,20 @@ export const bedRoomId = async (bedroom_id) => {
     return null;
   }
 };
+export const getType_Product = async (type_product) => {
+  try {
+    const response = await apiClient.get(
+      `${import.meta.env.VITE_SERVER_URL}/api/auth/product/get-data-post?type_product=${type_product}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      'Error fetching product by id:',
+      error.response?.data || error.message
+    );
+    return null;
+  }
+};
 export const filterLocation = async (formattedString) => {
   try {
     const response = await apiClient.get(

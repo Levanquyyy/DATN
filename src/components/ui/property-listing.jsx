@@ -80,7 +80,7 @@ export default function PropertyListings({ initialDataFromServer }) {
               : listings.map((item) => (
                   <Link
                     key={item.id}
-                    href={`/detailproduct?nhadat=true&id=${item.id}`}
+                    to={`/detailproduct?nhadat=true&id=${item.id}`}
                     className="block"
                   >
                     <Card
