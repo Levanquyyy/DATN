@@ -45,6 +45,7 @@ import {
   filterLocation,
   getFilterData,
   minMaxPrice,
+  getType_Product,
 } from '@/routes/apiforRentHouse.jsx';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
