@@ -53,6 +53,7 @@ import { cn } from '@/lib/utils';
 import { fetchLocation } from '@/routes/apiforLocation.jsx';
 import { PropertyFilterSkeleton } from '@/components/ui/PropertyFilterSkeleton';
 import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
 
 const FormSchemaForTypeOfHouse = z.object({
   typeOfHouse: z.string().min(1, {
@@ -103,6 +104,7 @@ const NhatotPage = () => {
   const [opendistrict, setOpenDistrict] = useState(false);
   const [openward, setOpenWard] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSelling, setIsSelling] = useState(false);
   const form = useForm({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -188,12 +190,6 @@ const NhatotPage = () => {
     }
   }, [selectedDistrict]);
 
-  const formForTypeOfHouse = useForm({
-    resolver: zodResolver(FormSchemaForTypeOfHouse),
-    defaultValues: {
-      typeOfHouse: '',
-    },
-  });
   const formForBed = useForm({
     resolver: zodResolver(FormSchemaForbed),
     defaultValues: {
@@ -307,6 +303,29 @@ const NhatotPage = () => {
   };
   const parseCurrency = (value) => {
     return value.replace(/[^\d]/g, '');
+  };
+  const handleSwitchChange = async (checked) => {
+    setIsSelling(checked);
+    if (checked) {
+      try {
+        const data = await getType_Product(1);
+        setDataFromServer(data);
+        console.log('Fetched data for selling:', data);
+        // Handle the fetched data as needed
+      } catch (error) {
+        console.error('Error fetching selling data:', error);
+      }
+    } else {
+      try {
+        const data = await getType_Product(2);
+        setDataFromServer(data);
+
+        console.log('Fetched data for buying:', data);
+        // Handle the fetched data as needed
+      } catch (error) {
+        console.error('Error fetching buying data:', error);
+      }
+    }
   };
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -802,9 +821,19 @@ const NhatotPage = () => {
 
               {/* Featured listings */}
               <div>
-                <h2 className="text-xl font-semibold mb-2">
-                  Danh sách nổi bật
-                </h2>
+                <div className="flex items-center space-x-2 justify-between">
+                  <h2 className="text-xl font-semibold mb-2">
+                    Danh sách nổi bật
+                  </h2>
+                  <div className="flex items-center space-x-2  ">
+                    <Switch
+                      id="sale"
+                      checked={isSelling}
+                      onCheckedChange={handleSwitchChange}
+                    />
+                    <Label htmlFor="sale">{isSelling ? 'Bán' : 'Mua'}</Label>
+                  </div>
+                </div>
                 {filterbyCategory.category === 'Nhà ở' &&
                   filterbyCategory.userType === 'Tất cả' && (
                     <>
