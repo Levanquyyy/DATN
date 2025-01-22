@@ -101,54 +101,21 @@ export const showHiddenPost = async (id, status) => {
   }
 };
 
-// toi xu ly
-// export const filterProductType = async (type) => {
-//   try {
-//     const response = await apiClient.get(
-//       `${import.meta.env.VITE_SERVER_URL}/api/auth/product/get-data-post`,
-//       { type_product: type }
-//     );
-//     if (!response.data) {
-//       return null;
-//     }
-//     return response.data.status;
-//   } catch (error) {
-//     const errorMessage = error.response?.data?.message || error.message;
-//     console.error('Error posting product:', errorMessage);
-//     return { message: errorMessage, status: 'error' };
-//   }
-// };
+export const filterAll = async (data) => {
+  try {
+    const response = await apiClient.get(
+      `${import.meta.env.VITE_SERVER_URL}/api/auth/product/get-data-post${data}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      'Error fetching product by id:',
+      error.response?.data || error.message
+    );
+    return null;
+  }
+};
 
-export const minMaxPrice = async (price_gte, price_lte) => {
-  try {
-    const response = await apiClient.get(
-      `${import.meta.env.VITE_SERVER_URL}/api/auth/product/get-data-post?type=1`,
-      { params: { price_gte, price_lte } } // Sử dụng `params` để truyền query parameters
-    );
-    return response.data;
-  } catch (error) {
-    console.error(
-      'Error fetching product by id:',
-      error.response?.data || error.message
-    );
-    return null;
-  }
-};
-export const bedRoomId = async (bedroom_id) => {
-  try {
-    const endcodeId = encodeURIComponent(bedroom_id);
-    const response = await apiClient.get(
-      `${import.meta.env.VITE_SERVER_URL}/api/auth/product/get-data-post?type=1&bedroom_id=${endcodeId}`
-    );
-    return response.data;
-  } catch (error) {
-    console.error(
-      'Error fetching product by id:',
-      error.response?.data || error.message
-    );
-    return null;
-  }
-};
 export const getType_Product = async (type_product) => {
   try {
     const response = await apiClient.get(
